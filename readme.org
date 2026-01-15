@@ -7,13 +7,12 @@ No restarts. No reloads.
 Just poking the scene and watching it change in real time.
 
 * Run
-- Install dependencies: =lein deps=
-- Run: =lein run=
+- Run: =clj -M:run=
 - When running, an nREPL server starts and prints its port.
 
 * Notes
-- The project is configured for macOS arm64 natives in =project.clj=.
-- On Intel macOS, use =natives-macos= instead of =natives-macos-arm64=.
+- The project is configured for macOS arm64 natives in =deps.edn=.
+- On Intel macOS, use =natives-macos= instead of =natives-macos-arm64= in the =$classifier= lib names.
 - For Windows or Linux, replace with the matching classifier.
 - LWJGL 3.3.x is tested against LTS JDKs; use Java 17/21 if you hit JNI warnings on newer JDKs.
 
@@ -22,3 +21,9 @@ Just poking the scene and watching it change in real time.
 - Example tweak: =clj-nrepl-eval -p <port> "(swap! lwjgl.core/osc-amplitude (constantly 0.15))"=
 - Toggle wireframe: press =W= in the window.
 - Toggle instancing (single rectangle debug): press =I= in the window.
+
+* CIDER
+- Start the app with CIDER middleware: =clj -M:run:cider-deps=
+- In Emacs, run =cider-connect= to the port in =.nrepl-port=.
+- Live tweak example: =(reset! lwjgl.core/rect-color [0.9 0.2 0.2])=
+- Alternative: =clj -M:cider= then =(lwjgl.core/run-app!)= from the REPL.

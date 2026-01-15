@@ -123,7 +123,15 @@
 
 (defn start-nrepl!
   []
-  (let [server (nrepl/start-server :port 0)
+  (let [middleware (try
+                     (require 'cider.nrepl)
+                     (when-let [mw (resolve 'cider.nrepl/cider-middleware)]
+                       (seq (var-get mw)))
+                     (catch Throwable _ nil))
+        handler (if middleware
+                  (apply nrepl/default-handler middleware)
+                  (nrepl/default-handler))
+        server (nrepl/start-server :port 0 :handler handler)
         port (:port server)]
     (spit ".nrepl-port" (str port))
     (println "nREPL listening on port" port)

@@ -2,3 +2,4 @@
 /.lsp/
 /target/
 /.nrepl-port
+/.cpcache/
