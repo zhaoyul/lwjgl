@@ -1,0 +1,3 @@
+[submodule "LearnOpenGL"]
+	path = LearnOpenGL
+	url = https://github.com/JoeyDeVries/LearnOpenGL
