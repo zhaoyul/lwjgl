@@ -1,0 +1,24 @@
+Live coding Clojure + LWJGL (What Minecraft Java runs on)
+
+10,000 rectangles updating instantly.
+
+No restarts. No reloads.
+
+Just poking the scene and watching it change in real time.
+
+* Run
+- Install dependencies: =lein deps=
+- Run: =lein run=
+- When running, an nREPL server starts and prints its port.
+
+* Notes
+- The project is configured for macOS arm64 natives in =project.clj=.
+- On Intel macOS, use =natives-macos= instead of =natives-macos-arm64=.
+- For Windows or Linux, replace with the matching classifier.
+- LWJGL 3.3.x is tested against LTS JDKs; use Java 17/21 if you hit JNI warnings on newer JDKs.
+
+* Live REPL
+- Discover port: =clj-nrepl-eval --discover-ports=
+- Example tweak: =clj-nrepl-eval -p <port> "(swap! lwjgl.core/osc-amplitude (constantly 0.15))"=
+- Toggle wireframe: press =W= in the window.
+- Toggle instancing (single rectangle debug): press =I= in the window.
