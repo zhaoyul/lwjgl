@@ -6,11 +6,13 @@
 
 (defn run-example!
   []
-  (let [error-callback (core/init-glfw!)
-        window (core/create-window 800 600 "LearnOpenGL - Hello Window (LWJGL)")]
+  (let [width 800
+        height 600
+        error-callback (core/init-glfw!)
+        window (core/create-window width height "LearnOpenGL - Hello Window (LWJGL)")]
     (try
       (GL/createCapabilities)
-      (GL11/glViewport 0 0 800 600)
+      (GL11/glViewport 0 0 width height)
       (GLFW/glfwSetFramebufferSizeCallback
        window
        (reify GLFWFramebufferSizeCallbackI
