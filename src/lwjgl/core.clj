@@ -13,6 +13,10 @@
 (defonce osc-amplitude (atom 0.08))
 (defonce wireframe? (atom false))
 (defonce instancing? (atom true))
+(defonce view-angles (atom {:yaw 0.0 :pitch 0.0}))
+(def ^:const view-angle-min -5.0)
+(def ^:const view-angle-max 5.0)
+(def ^:const view-angle-step 1.0)
 
 (def rect-vertices
   (float-array
@@ -28,6 +32,11 @@
   ^double
   [^Random rng ^double min-val ^double max-val]
   (+ min-val (* (- max-val min-val) (.nextFloat rng))))
+
+(defn clamp
+  ^double
+  [^double v ^double min-val ^double max-val]
+  (-> v (max min-val) (min max-val)))
 
 (defn init-instance-state
   [num]
@@ -270,11 +279,25 @@
                (GL11/glPolygonMode GL11/GL_FRONT_AND_BACK mode)))
            (when (and (= key GLFW/GLFW_KEY_I)
                       (= action GLFW/GLFW_PRESS))
-             (swap! instancing? not)))))
-
+             (swap! instancing? not))
+           (when (#{GLFW/GLFW_PRESS GLFW/GLFW_REPEAT} action)
+             (cond
+               (= key GLFW/GLFW_KEY_LEFT)
+               (swap! view-angles update :yaw
+                      #(clamp (- % view-angle-step) view-angle-min view-angle-max))
+               (= key GLFW/GLFW_KEY_RIGHT)
+               (swap! view-angles update :yaw
+                      #(clamp (+ % view-angle-step) view-angle-min view-angle-max))
+               (= key GLFW/GLFW_KEY_UP)
+               (swap! view-angles update :pitch
+                      #(clamp (+ % view-angle-step) view-angle-min view-angle-max))
+               (= key GLFW/GLFW_KEY_DOWN)
+               (swap! view-angles update :pitch
+                      #(clamp (- % view-angle-step) view-angle-min view-angle-max)))))))
       (let [program (create-program (slurp-resource "shaders/instanced.vert")
                                     (slurp-resource "shaders/instanced.frag"))
             time-loc (GL20/glGetUniformLocation program "uTime")
+            view-loc (GL20/glGetUniformLocation program "uViewAngles")
             {:keys [vao vbo]} (create-rectangle-mesh)
             instance-vbo (do
                            (GL30/glBindVertexArray vao)
@@ -296,6 +319,9 @@
               (GL20/glUseProgram program)
               (when (<= 0 time-loc)
                 (GL20/glUniform1f time-loc (float t)))
+              (when (<= 0 view-loc)
+                (let [{:keys [yaw pitch]} @view-angles]
+                  (GL20/glUniform2f view-loc (float yaw) (float pitch))))
               (GL30/glBindVertexArray vao)
               (if @instancing?
                 (do

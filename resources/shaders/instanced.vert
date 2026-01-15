@@ -5,6 +5,7 @@ layout (location = 1) in vec2 iPos;
 layout (location = 2) in vec2 iSize;
 
 uniform float uTime;
+uniform vec2 uViewAngles;
 
 out vec2 vPos;
 
@@ -39,6 +40,23 @@ void main() {
     float dir = (hash1(seed * 17.3) < 0.5) ? -1.0 : 1.0;
     float angle = dir * (uTime * (6.2831853 / period) + phase);
     vec3 world = axisAngle(axis, angle) * local + vec3(iPos, 0.0);
+    float yaw = radians(uViewAngles.x);
+    float pitch = radians(uViewAngles.y);
+    float cy = cos(yaw);
+    float sy = sin(yaw);
+    float cx = cos(pitch);
+    float sx = sin(pitch);
+    mat3 viewRotY = mat3(
+        cy, 0.0, sy,
+        0.0, 1.0, 0.0,
+        -sy, 0.0, cy
+    );
+    mat3 viewRotX = mat3(
+        1.0, 0.0, 0.0,
+        0.0, cx, -sx,
+        0.0, sx, cx
+    );
+    vec3 view = viewRotX * viewRotY * world;
     vPos = world.xy;
-    gl_Position = vec4(world, 1.0);
+    gl_Position = vec4(view, 1.0);
 }
