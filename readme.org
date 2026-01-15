@@ -9,12 +9,14 @@ Just poking the scene and watching it change in real time.
 * Run
 - Run: =clj -M:run=
 - When running, an nREPL server starts and prints its port.
+- LearnOpenGL Chapter 1 (hello triangle) example (basic OpenGL triangle render): =clj -M:chapter1=
 
 * Notes
 - The project is configured for macOS arm64 natives in =deps.edn=.
 - On Intel macOS, use =natives-macos= instead of =natives-macos-arm64= in the =$classifier= lib names.
 - For Windows or Linux, replace with the matching classifier.
 - LWJGL 3.3.x is tested against LTS JDKs; use Java 17/21 if you hit JNI warnings on newer JDKs.
+- The upstream LearnOpenGL examples are available as a submodule at =./LearnOpenGL= for reference.
 
 * Live REPL
 - Discover port: =clj-nrepl-eval --discover-ports=
