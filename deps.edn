@@ -11,9 +11,12 @@
  :aliases {:run {:main-opts ["-m" "lwjgl.core"]
                  :jvm-opts ["-XstartOnFirstThread"
                             "--enable-native-access=ALL-UNNAMED"]}
+           :hello-window {:main-opts ["-m" "lwjgl.hello-window"]
+                          :jvm-opts ["-XstartOnFirstThread"
+                                     "--enable-native-access=ALL-UNNAMED"]}
            :chapter1 {:main-opts ["-m" "lwjgl.hello-triangle"]
-                      :jvm-opts ["-XstartOnFirstThread"
-                                 "--enable-native-access=ALL-UNNAMED"]}
+                       :jvm-opts ["-XstartOnFirstThread"
+                                  "--enable-native-access=ALL-UNNAMED"]}
            :cider {:extra-deps {cider/cider-nrepl {:mvn/version "0.45.0"}}
                    :main-opts ["-m" "nrepl.cmdline"
                                "--middleware"
