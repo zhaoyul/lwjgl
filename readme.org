@@ -10,7 +10,9 @@ Just poking the scene and watching it change in real time.
 - Run: =clj -M:run=
 - When running, an nREPL server starts and prints its port.
 - LearnOpenGL Chapter 1 (hello window) example (basic GLFW window with clear color): =clj -M:hello-window=
+- LearnOpenGL Chapter 1 (hello window clear) example (dynamic clear color): =clj -M:hello-window-clear=
 - LearnOpenGL Chapter 1 (hello triangle) example (basic OpenGL triangle render): =clj -M:chapter1=
+- LearnOpenGL Chapter 1 (indexed triangle) example (EBO + two triangles quad): =clj -M:triangle-indexed=
 
 * Notes
 - The project is configured for macOS arm64 natives in =deps.edn=.
