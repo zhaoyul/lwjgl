@@ -11,6 +11,11 @@
 (def ^:const num-instances 10000)
 (def ^:const tau (* 2.0 Math/PI))
 (defonce osc-amplitude (atom 0.08))
+(defonce rect-color (atom [0.2 0.6 0.9]))
+(defonce background-color (atom [0.06 0.06 0.08 1.0]))
+(defonce rotation-speed (atom 1.0))
+(defonce movement-speed (atom 1.0))
+(defonce size-scale (atom 1.0))
 (defonce wireframe? (atom false))
 (defonce instancing? (atom true))
 (defonce view-angles (atom {:yaw 0.0 :pitch 0.0}))
@@ -76,13 +81,15 @@
      :instance-data instance-data}))
 
 (defn update-instance-data!
-  [base params sizes instance-data t osc-amplitude]
+  [base params sizes instance-data t osc-amplitude movement-speed size-scale]
   (let [^floats base base
         ^floats params params
         ^floats sizes sizes
         ^floats instance-data instance-data
         ^double t t
         ^double osc-amplitude osc-amplitude
+        ^double movement-speed movement-speed
+        ^double size-scale size-scale
         num (quot (alength base) 2)]
     (loop [i 0
            b 0
@@ -98,12 +105,12 @@
               phy (aget params (unchecked-add-int p 3))
               w (aget sizes s)
               h (aget sizes (unchecked-add-int s 1))
-              x (+ bx (* osc-amplitude (Math/sin (+ (* fx t) phx))))
-              y (+ by (* osc-amplitude (Math/sin (+ (* fy t) phy))))]
+              x (+ bx (* osc-amplitude (Math/sin (+ (* fx t movement-speed) phx))))
+              y (+ by (* osc-amplitude (Math/sin (+ (* fy t movement-speed) phy))))]
           (aset instance-data inst (float x))
           (aset instance-data (unchecked-add-int inst 1) (float y))
-          (aset instance-data (unchecked-add-int inst 2) w)
-          (aset instance-data (unchecked-add-int inst 3) h)
+          (aset instance-data (unchecked-add-int inst 2) (float (* w size-scale)))
+          (aset instance-data (unchecked-add-int inst 3) (float (* h size-scale)))
           (recur (unchecked-inc-int i)
                  (unchecked-add-int b 2)
                  (unchecked-add-int p 4)
@@ -255,7 +262,6 @@
       (println "GLSL_VERSION:" (GL11/glGetString GL20/GL_SHADING_LANGUAGE_VERSION))
       (init-viewport! window width height)
       (GL11/glDisable GL11/GL_DEPTH_TEST)
-      (GL11/glClearColor 0.06 0.06 0.08 1.0)
 
       (GLFW/glfwSetFramebufferSizeCallback
        window
@@ -298,6 +304,8 @@
                                     (slurp-resource "shaders/instanced.frag"))
             time-loc (GL20/glGetUniformLocation program "uTime")
             view-loc (GL20/glGetUniformLocation program "uViewAngles")
+            rect-color-loc (GL20/glGetUniformLocation program "uRectColor")
+            rot-speed-loc (GL20/glGetUniformLocation program "uRotationSpeed")
             {:keys [vao vbo]} (create-rectangle-mesh)
             instance-vbo (do
                            (GL30/glBindVertexArray vao)
@@ -308,20 +316,28 @@
         (loop []
           (when (not (GLFW/glfwWindowShouldClose window))
             (let [t (GLFW/glfwGetTime)]
-              (update-instance-data! base params sizes instance-data t @osc-amplitude)
+              (update-instance-data! base params sizes instance-data t @osc-amplitude
+                                     @movement-speed @size-scale)
               (.clear instance-buffer)
               (.put instance-buffer instance-data)
               (.flip instance-buffer)
               (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER instance-vbo)
               (GL15/glBufferSubData GL15/GL_ARRAY_BUFFER 0 instance-buffer)
 
+              (let [[r g b a] @background-color]
+                (GL11/glClearColor (float r) (float g) (float b) (float a)))
               (GL11/glClear GL11/GL_COLOR_BUFFER_BIT)
               (GL20/glUseProgram program)
               (when (<= 0 time-loc)
                 (GL20/glUniform1f time-loc (float t)))
+              (when (<= 0 rot-speed-loc)
+                (GL20/glUniform1f rot-speed-loc (float @rotation-speed)))
               (when (<= 0 view-loc)
                 (let [{:keys [yaw pitch]} @view-angles]
                   (GL20/glUniform2f view-loc (float yaw) (float pitch))))
+              (when (<= 0 rect-color-loc)
+                (let [[r g b] @rect-color]
+                  (GL20/glUniform3f rect-color-loc (float r) (float g) (float b))))
               (GL30/glBindVertexArray vao)
               (if @instancing?
                 (do
