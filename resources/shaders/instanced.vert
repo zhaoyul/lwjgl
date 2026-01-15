@@ -1,15 +1,17 @@
 #version 330 core
 
-layout (location = 0) in vec2 aPos;
-layout (location = 1) in vec2 iPos;
-layout (location = 2) in vec2 iSize;
+layout (location = 0) in vec3 aPos;
+layout (location = 1) in vec3 aNormal;
+layout (location = 2) in vec3 iPos;
+layout (location = 3) in float iSize;
 
 uniform float uTime;
 uniform vec2 uViewAngles;
 uniform float uRotationSpeed;
 
-out vec2 vLocal;
+out vec3 vLocal;
 out vec3 vNormal;
+flat out vec3 vColor;
 
 float hash(vec2 p) {
     return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
@@ -31,7 +33,7 @@ mat3 axisAngle(vec3 axis, float angle) {
 }
 
 void main() {
-    vec3 local = vec3(aPos * iSize, 0.0);
+    vec3 local = aPos * iSize;
     float seed = float(gl_InstanceID) + 1.0;
     float h0 = hash1(seed * 12.9898);
     float h1 = hash1(seed * 78.233);
@@ -42,7 +44,7 @@ void main() {
     float dir = (hash1(seed * 17.3) < 0.5) ? -1.0 : 1.0;
     float angle = dir * (uTime * uRotationSpeed * (6.2831853 / period) + phase);
     mat3 rot = axisAngle(axis, angle);
-    vec3 world = rot * local + vec3(iPos, 0.0);
+    vec3 world = rot * local + iPos;
     float yaw = radians(uViewAngles.x);
     float pitch = radians(uViewAngles.y);
     float cy = cos(yaw);
@@ -61,6 +63,7 @@ void main() {
     );
     vec3 view = viewRotX * viewRotY * world;
     vLocal = aPos;
-    vNormal = normalize(rot * vec3(0.0, 0.0, 1.0));
+    vNormal = normalize(rot * aNormal);
+    vColor = vec3(0.2) + 0.8 * vec3(h0, h1, h2);
     gl_Position = vec4(view, 1.0);
 }
