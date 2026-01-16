@@ -34,7 +34,8 @@ void main() {
                  0.9 -0.5 0.0
                  0.45 0.5 0.0])
         vaos (BufferUtils/createIntBuffer 2)
-        vbos (BufferUtils/createIntBuffer 2)]
+        vbos (BufferUtils/createIntBuffer 2)
+        stride (* 3 Float/BYTES)]
     (GL30/glGenVertexArrays vaos)
     (GL15/glGenBuffers vbos)
     (let [vao1 (.get vaos 0)
@@ -49,7 +50,7 @@ void main() {
       (.flip buf1)
       (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER vbo1)
       (GL15/glBufferData GL15/GL_ARRAY_BUFFER buf1 GL15/GL_STATIC_DRAW)
-      (GL20/glVertexAttribPointer 0 3 GL11/GL_FLOAT false 0 0)
+      (GL20/glVertexAttribPointer 0 3 GL11/GL_FLOAT false stride 0)
       (GL20/glEnableVertexAttribArray 0)
       ;; second triangle
       (GL30/glBindVertexArray vao2)
@@ -57,7 +58,7 @@ void main() {
       (.flip buf2)
       (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER vbo2)
       (GL15/glBufferData GL15/GL_ARRAY_BUFFER buf2 GL15/GL_STATIC_DRAW)
-      (GL20/glVertexAttribPointer 0 3 GL11/GL_FLOAT false 0 0)
+      (GL20/glVertexAttribPointer 0 3 GL11/GL_FLOAT false stride 0)
       (GL20/glEnableVertexAttribArray 0)
       (GL30/glBindVertexArray 0)
       {:vao1 vao1 :vao2 vao2 :vbo1 vbo1 :vbo2 vbo2})))
