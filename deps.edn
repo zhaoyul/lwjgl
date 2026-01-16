@@ -50,6 +50,12 @@
             :shaders-ex3 {:main-opts ["-m" "lwjgl.shaders-exercise3"]
                           :jvm-opts ["-XstartOnFirstThread"
                                      "--enable-native-access=ALL-UNNAMED"]}
+            :textures {:main-opts ["-m" "lwjgl.textures"]
+                       :jvm-opts ["-XstartOnFirstThread"
+                                  "--enable-native-access=ALL-UNNAMED"]}
+            :textures-combined {:main-opts ["-m" "lwjgl.textures-combined"]
+                                :jvm-opts ["-XstartOnFirstThread"
+                                           "--enable-native-access=ALL-UNNAMED"]}
             :cider {:extra-deps {cider/cider-nrepl {:mvn/version "0.45.0"}}
                     :main-opts ["-m" "nrepl.cmdline"
                                 "--middleware"
