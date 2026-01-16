@@ -29,15 +29,30 @@
            :triangle-ex2 {:main-opts ["-m" "lwjgl.hello-triangle-exercise2"]
                           :jvm-opts ["-XstartOnFirstThread"
                                      "--enable-native-access=ALL-UNNAMED"]}
-           :triangle-ex3 {:main-opts ["-m" "lwjgl.hello-triangle-exercise3"]
+            :triangle-ex3 {:main-opts ["-m" "lwjgl.hello-triangle-exercise3"]
+                           :jvm-opts ["-XstartOnFirstThread"
+                                      "--enable-native-access=ALL-UNNAMED"]}
+            :shaders-uniform {:main-opts ["-m" "lwjgl.shaders-uniform"]
+                              :jvm-opts ["-XstartOnFirstThread"
+                                         "--enable-native-access=ALL-UNNAMED"]}
+            :shaders-interpolation {:main-opts ["-m" "lwjgl.shaders-interpolation"]
+                                    :jvm-opts ["-XstartOnFirstThread"
+                                               "--enable-native-access=ALL-UNNAMED"]}
+            :shaders-class {:main-opts ["-m" "lwjgl.shaders-class"]
+                            :jvm-opts ["-XstartOnFirstThread"
+                                       "--enable-native-access=ALL-UNNAMED"]}
+            :shaders-ex1 {:main-opts ["-m" "lwjgl.shaders-exercise1"]
                           :jvm-opts ["-XstartOnFirstThread"
                                      "--enable-native-access=ALL-UNNAMED"]}
-           :shaders-uniform {:main-opts ["-m" "lwjgl.shaders-uniform"]
-                             :jvm-opts ["-XstartOnFirstThread"
-                                        "--enable-native-access=ALL-UNNAMED"]}
-           :cider {:extra-deps {cider/cider-nrepl {:mvn/version "0.45.0"}}
-                   :main-opts ["-m" "nrepl.cmdline"
-                               "--middleware"
+            :shaders-ex2 {:main-opts ["-m" "lwjgl.shaders-exercise2"]
+                          :jvm-opts ["-XstartOnFirstThread"
+                                     "--enable-native-access=ALL-UNNAMED"]}
+            :shaders-ex3 {:main-opts ["-m" "lwjgl.shaders-exercise3"]
+                          :jvm-opts ["-XstartOnFirstThread"
+                                     "--enable-native-access=ALL-UNNAMED"]}
+            :cider {:extra-deps {cider/cider-nrepl {:mvn/version "0.45.0"}}
+                    :main-opts ["-m" "nrepl.cmdline"
+                                "--middleware"
                                "[cider.nrepl/cider-middleware]"]
                    :jvm-opts ["-XstartOnFirstThread"
                               "--enable-native-access=ALL-UNNAMED"]}
