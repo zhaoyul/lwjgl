@@ -161,14 +161,14 @@ void main() {
 
 (defn- set-dir-light!
   [program {:keys [direction ambient diffuse specular]}]
-  (when-let [loc (GL20/glGetUniformLocation program "dirLight.direction")]
-    (when (<= 0 loc) (apply GL20/glUniform3f loc direction)))
-  (when-let [loc (GL20/glGetUniformLocation program "dirLight.ambient")]
-    (when (<= 0 loc) (apply GL20/glUniform3f loc ambient)))
-  (when-let [loc (GL20/glGetUniformLocation program "dirLight.diffuse")]
-    (when (<= 0 loc) (apply GL20/glUniform3f loc diffuse)))
-  (when-let [loc (GL20/glGetUniformLocation program "dirLight.specular")]
-    (when (<= 0 loc) (apply GL20/glUniform3f loc specular))))
+  (let [dir-loc (GL20/glGetUniformLocation program "dirLight.direction")
+        amb-loc (GL20/glGetUniformLocation program "dirLight.ambient")
+        diff-loc (GL20/glGetUniformLocation program "dirLight.diffuse")
+        spec-loc (GL20/glGetUniformLocation program "dirLight.specular")]
+    (when (<= 0 dir-loc) (apply GL20/glUniform3f dir-loc direction))
+    (when (<= 0 amb-loc) (apply GL20/glUniform3f amb-loc ambient))
+    (when (<= 0 diff-loc) (apply GL20/glUniform3f diff-loc diffuse))
+    (when (<= 0 spec-loc) (apply GL20/glUniform3f spec-loc specular))))
 
 (defn- set-point-light!
   [program idx {:keys [position ambient diffuse specular constant linear quadratic]}]

@@ -29,12 +29,12 @@
 
 (defn- set-material!
   [program {:keys [ambient diffuse specular shininess use-diffuse? use-specular? use-emission?]}]
-  (when-let [loc (some-> program (GL20/glGetUniformLocation "material.ambient"))]
-    (when (<= 0 loc) (apply GL20/glUniform3f loc ambient)))
-  (when-let [loc (some-> program (GL20/glGetUniformLocation "material.diffuse"))]
-    (when (<= 0 loc) (apply GL20/glUniform3f loc diffuse)))
-  (when-let [loc (some-> program (GL20/glGetUniformLocation "material.specular"))]
-    (when (<= 0 loc) (apply GL20/glUniform3f loc specular)))
+  (let [amb (GL20/glGetUniformLocation program "material.ambient")
+        diff (GL20/glGetUniformLocation program "material.diffuse")
+        spec (GL20/glGetUniformLocation program "material.specular")]
+    (when (<= 0 amb) (apply GL20/glUniform3f amb ambient))
+    (when (<= 0 diff) (apply GL20/glUniform3f diff diffuse))
+    (when (<= 0 spec) (apply GL20/glUniform3f spec specular)))
   (let [shin (GL20/glGetUniformLocation program "material.shininess")
         use-d (GL20/glGetUniformLocation program "useDiffuseMap")
         use-s (GL20/glGetUniformLocation program "useSpecularMap")
