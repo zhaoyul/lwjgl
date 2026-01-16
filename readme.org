@@ -17,6 +17,11 @@ Just poking the scene and watching it change in real time.
 - LearnOpenGL Chapter 1 (triangle exercise 2) example (two triangles, separate VAOs/VBOs): =clj -M:triangle-ex2=
 - LearnOpenGL Chapter 1 (triangle exercise 3) example (two fragment shaders: orange/yellow): =clj -M:triangle-ex3=
 - LearnOpenGL Chapter 1 (shaders uniform) example (animated uniform color): =clj -M:shaders-uniform=
+- LearnOpenGL Chapter 1 (shaders interpolation) example (vertex color interpolation): =clj -M:shaders-interpolation=
+- LearnOpenGL Chapter 1 (shaders class) example (load shaders from resources): =clj -M:shaders-class=
+- LearnOpenGL Chapter 1 (shaders exercise 1) example (invert Y via vertex shader): =clj -M:shaders-ex1=
+- LearnOpenGL Chapter 1 (shaders exercise 2) example (constant yellow fragment color): =clj -M:shaders-ex2=
+- LearnOpenGL Chapter 1 (shaders exercise 3) example (custom attribute layout/name): =clj -M:shaders-ex3=
 
 * Chapter 1 migration TODO
 - [x] 1.1.hello_window
@@ -27,11 +32,11 @@ Just poking the scene and watching it change in real time.
 - [x] 2.4.hello_triangle_exercise2
 - [x] 2.5.hello_triangle_exercise3
 - [x] 3.1.shaders_uniform
-- [ ] 3.2.shaders_interpolation
-- [ ] 3.3.shaders_class
-- [ ] 3.4.shaders_exercise1
-- [ ] 3.5.shaders_exercise2
-- [ ] 3.6.shaders_exercise3
+- [x] 3.2.shaders_interpolation
+- [x] 3.3.shaders_class
+- [x] 3.4.shaders_exercise1
+- [x] 3.5.shaders_exercise2
+- [x] 3.6.shaders_exercise3
 - [ ] 4.1.textures
 - [ ] 4.2.textures_combined
 - [ ] 4.3.textures_exercise1
