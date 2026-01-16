@@ -47,6 +47,7 @@ Just poking the scene and watching it change in real time.
 - LearnOpenGL Chapter 2 (basic lighting exercise 1) example (animated light color): =clj -M:basic-lighting-ex1=
 - LearnOpenGL Chapter 2 (basic lighting exercise 2) example (animated light color + specular): =clj -M:basic-lighting-ex2=
 - LearnOpenGL Chapter 2 (basic lighting exercise 3) example (per-vertex/Gouraud shading): =clj -M:basic-lighting-ex3=
+- LearnOpenGL Chapter 3 (model loading) example (Assimp import, animated rotation): =clj -M:model-loading=
 
 * Chapter 1 migration TODO
 - [x] 1.1.hello_window
@@ -103,7 +104,7 @@ Just poking the scene and watching it change in real time.
 - [ ] 6.multiple_lights_exercise1
 
 * Chapter 3 migration TODO (Model Loading)
-- [ ] 3.1.model_loading
+- [x] 3.1.model_loading
 
 * Chapter 4 migration TODO (Advanced OpenGL)
 - [ ] 1.1.depth_testing

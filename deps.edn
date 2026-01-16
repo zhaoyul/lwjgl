@@ -3,9 +3,11 @@
         org.lwjgl/lwjgl {:mvn/version "3.3.6"}
         org.lwjgl/lwjgl-glfw {:mvn/version "3.3.6"}
         org.lwjgl/lwjgl-opengl {:mvn/version "3.3.6"}
+        org.lwjgl/lwjgl-assimp {:mvn/version "3.3.6"}
         org.lwjgl/lwjgl$natives-macos-arm64 {:mvn/version "3.3.6"}
         org.lwjgl/lwjgl-glfw$natives-macos-arm64 {:mvn/version "3.3.6"}
         org.lwjgl/lwjgl-opengl$natives-macos-arm64 {:mvn/version "3.3.6"}
+        org.lwjgl/lwjgl-assimp$natives-macos-arm64 {:mvn/version "3.3.6"}
         org.joml/joml {:mvn/version "1.10.8"}
         nrepl/nrepl {:mvn/version "1.1.0"}}
  :aliases {:run {:main-opts ["-m" "lwjgl.core"]
@@ -107,6 +109,9 @@
            :basic-lighting-ex3 {:main-opts ["-m" "lwjgl.basic-lighting-exercise3"]
                                 :jvm-opts ["-XstartOnFirstThread"
                                            "--enable-native-access=ALL-UNNAMED"]}
+           :model-loading {:main-opts ["-m" "lwjgl.model-loading"]
+                           :jvm-opts ["-XstartOnFirstThread"
+                                      "--enable-native-access=ALL-UNNAMED"]}
            :camera-circle {:main-opts ["-m" "lwjgl.camera" "circle"]
                            :jvm-opts ["-XstartOnFirstThread"
                                       "--enable-native-access=ALL-UNNAMED"]}
