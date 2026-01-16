@@ -32,9 +32,12 @@
            :triangle-ex3 {:main-opts ["-m" "lwjgl.hello-triangle-exercise3"]
                           :jvm-opts ["-XstartOnFirstThread"
                                      "--enable-native-access=ALL-UNNAMED"]}
-           :cider {:extra-deps {cider/cider-nrepl {:mvn/version "0.45.0"}}
-                   :main-opts ["-m" "nrepl.cmdline"
-                               "--middleware"
+           :shaders-uniform {:main-opts ["-m" "lwjgl.shaders-uniform"]
+                             :jvm-opts ["-XstartOnFirstThread"
+                                        "--enable-native-access=ALL-UNNAMED"]}
+            :cider {:extra-deps {cider/cider-nrepl {:mvn/version "0.45.0"}}
+                    :main-opts ["-m" "nrepl.cmdline"
+                                "--middleware"
                                "[cider.nrepl/cider-middleware]"]
                    :jvm-opts ["-XstartOnFirstThread"
                               "--enable-native-access=ALL-UNNAMED"]}
