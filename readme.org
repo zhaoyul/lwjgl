@@ -28,6 +28,9 @@ Just poking the scene and watching it change in real time.
 - LearnOpenGL Chapter 1 (textures exercise 2) example (adjust mix factor with arrow keys): =clj -M:textures-ex2=
 - LearnOpenGL Chapter 1 (textures exercise 3) example (rotate texture coordinates 90°): =clj -M:textures-ex3=
 - LearnOpenGL Chapter 1 (textures exercise 4) example (clamp-to-border sampling): =clj -M:textures-ex4=
+- LearnOpenGL Chapter 1 (transformations) example (translate/rotate textured quad): =clj -M:transformations=
+- LearnOpenGL Chapter 1 (transformations exercise 1) example (two quads with differing transforms): =clj -M:transformations-ex1=
+- LearnOpenGL Chapter 1 (transformations exercise 2) example (animated rotation + scaling): =clj -M:transformations-ex2=
 
 * Chapter 1 migration TODO
 - [x] 1.1.hello_window
@@ -49,9 +52,9 @@ Just poking the scene and watching it change in real time.
 - [x] 4.4.textures_exercise2
 - [x] 4.5.textures_exercise3
 - [x] 4.6.textures_exercise4
-- [ ] 5.1.transformations
-- [ ] 5.2.transformations_exercise1
-- [ ] 5.3.transformations_exercise2
+- [x] 5.1.transformations
+- [x] 5.2.transformations_exercise1
+- [x] 5.3.transformations_exercise2
 - [ ] 6.1.coordinate_systems
 - [ ] 6.2.coordinate_systems_depth
 - [ ] 6.3.coordinate_systems_multiple
