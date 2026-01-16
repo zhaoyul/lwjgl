@@ -132,6 +132,7 @@ void main() {
 }")
 
 (def ^:private scene-fs
+  ;; bias = max(scale * (1 - dot(normal, lightDir)), minimum)
   (format "#version 330 core
 in vec3 FragPos;
 in vec3 Normal;
@@ -249,8 +250,9 @@ void main() {
   [{:keys [mode]}]
   (let [{:keys [window] :as env} (setup-window (str "LearnOpenGL - " (name mode)))
         cube (let [mesh (core/create-cube-mesh)
+                   ;; assumes cube-vertices are position + normal matching cube-vertex-stride
                    count (quot (alength core/cube-vertices) cube-vertex-stride)]
-                (assoc mesh :count count))
+               (assoc mesh :count count))
         plane (create-plane)
         quad (create-quad)
         depth-map (create-depth-map)
@@ -359,7 +361,8 @@ void main() {
        :shadow-mapping-base (run-shadow {:mode :shadow-mapping-base})
        :shadow-mapping (run-shadow {:mode :shadow-mapping})
        ;; TODO: dedicated implementations for remaining advanced lighting scenarios; temporary PCF fallback
-       (run-shadow {:mode :shadow-mapping})))))
+       (do (println "advanced-lighting:" (name scenario) "not implemented; using shadow-mapping fallback")
+           (run-shadow {:mode :shadow-mapping}))))))
 
 (defn -main
   [& args]
