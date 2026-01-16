@@ -32,8 +32,8 @@ void main() {
   (let [vertices (float-array
                   [;; positions      ;; colors
                    -0.5 -0.5 0.0     1.0 0.0 0.0
-                    0.5 -0.5 0.0     0.0 1.0 0.0
-                    0.0  0.5 0.0     0.0 0.0 1.0])
+                   0.5 -0.5 0.0     0.0 1.0 0.0
+                   0.0  0.5 0.0     0.0 0.0 1.0])
         vao (GL30/glGenVertexArrays)
         vbo (GL15/glGenBuffers)
         buf (BufferUtils/createFloatBuffer (alength vertices))

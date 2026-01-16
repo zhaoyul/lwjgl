@@ -34,8 +34,8 @@ void main() {
                   [;; positions       ;; tex coords (intentionally >1 to show border)
                    0.5  0.5  0.0      2.0 2.0
                    0.5 -0.5  0.0      2.0 0.0
-                  -0.5 -0.5  0.0      0.0 0.0
-                  -0.5  0.5  0.0      0.0 2.0])
+                   -0.5 -0.5  0.0      0.0 0.0
+                   -0.5  0.5  0.0      0.0 2.0])
         indices (int-array [0 1 3 1 2 3])
         vao (GL30/glGenVertexArrays)
         vbo (GL15/glGenBuffers)

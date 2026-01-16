@@ -3,7 +3,7 @@
   (:require [clojure.java.io :as io]
             [nrepl.server :as nrepl])
   (:import (org.lwjgl.glfw GLFW GLFWErrorCallback GLFWFramebufferSizeCallbackI
-                            GLFWKeyCallbackI)
+                           GLFWKeyCallbackI)
            (org.lwjgl.opengl GL GL11 GL12 GL13 GL15 GL20 GL30 GL31 GL33)
            (org.lwjgl BufferUtils)
            (java.util Arrays Locale Random)))
@@ -37,17 +37,17 @@
    [;; position xyz, normal xyz
     ;; front
     -0.5 -0.5  0.5  0.0  0.0  1.0
-     0.5 -0.5  0.5  0.0  0.0  1.0
-     0.5  0.5  0.5  0.0  0.0  1.0
-     0.5  0.5  0.5  0.0  0.0  1.0
+    0.5 -0.5  0.5  0.0  0.0  1.0
+    0.5  0.5  0.5  0.0  0.0  1.0
+    0.5  0.5  0.5  0.0  0.0  1.0
     -0.5  0.5  0.5  0.0  0.0  1.0
     -0.5 -0.5  0.5  0.0  0.0  1.0
     ;; back
     -0.5 -0.5 -0.5  0.0  0.0 -1.0
     -0.5  0.5 -0.5  0.0  0.0 -1.0
-     0.5  0.5 -0.5  0.0  0.0 -1.0
-     0.5  0.5 -0.5  0.0  0.0 -1.0
-     0.5 -0.5 -0.5  0.0  0.0 -1.0
+    0.5  0.5 -0.5  0.0  0.0 -1.0
+    0.5  0.5 -0.5  0.0  0.0 -1.0
+    0.5 -0.5 -0.5  0.0  0.0 -1.0
     -0.5 -0.5 -0.5  0.0  0.0 -1.0
     ;; left
     -0.5  0.5  0.5 -1.0  0.0  0.0
@@ -57,26 +57,26 @@
     -0.5 -0.5  0.5 -1.0  0.0  0.0
     -0.5  0.5  0.5 -1.0  0.0  0.0
     ;; right
-     0.5  0.5  0.5  1.0  0.0  0.0
-     0.5 -0.5 -0.5  1.0  0.0  0.0
-     0.5  0.5 -0.5  1.0  0.0  0.0
-     0.5 -0.5 -0.5  1.0  0.0  0.0
-     0.5  0.5  0.5  1.0  0.0  0.0
-     0.5 -0.5  0.5  1.0  0.0  0.0
+    0.5  0.5  0.5  1.0  0.0  0.0
+    0.5 -0.5 -0.5  1.0  0.0  0.0
+    0.5  0.5 -0.5  1.0  0.0  0.0
+    0.5 -0.5 -0.5  1.0  0.0  0.0
+    0.5  0.5  0.5  1.0  0.0  0.0
+    0.5 -0.5  0.5  1.0  0.0  0.0
     ;; top
     -0.5  0.5 -0.5  0.0  1.0  0.0
     -0.5  0.5  0.5  0.0  1.0  0.0
-     0.5  0.5  0.5  0.0  1.0  0.0
-     0.5  0.5  0.5  0.0  1.0  0.0
-     0.5  0.5 -0.5  0.0  1.0  0.0
+    0.5  0.5  0.5  0.0  1.0  0.0
+    0.5  0.5  0.5  0.0  1.0  0.0
+    0.5  0.5 -0.5  0.0  1.0  0.0
     -0.5  0.5 -0.5  0.0  1.0  0.0
     ;; bottom
     -0.5 -0.5 -0.5  0.0 -1.0  0.0
-     0.5 -0.5  0.5  0.0 -1.0  0.0
+    0.5 -0.5  0.5  0.0 -1.0  0.0
     -0.5 -0.5  0.5  0.0 -1.0  0.0
-     0.5 -0.5  0.5  0.0 -1.0  0.0
+    0.5 -0.5  0.5  0.0 -1.0  0.0
     -0.5 -0.5 -0.5  0.0 -1.0  0.0
-     0.5 -0.5 -0.5  0.0 -1.0  0.0]))
+    0.5 -0.5 -0.5  0.0 -1.0  0.0]))
 
 (def ^:const font-glyphs
   {\space ["00000"
@@ -800,12 +800,12 @@
                   _ (reset! last-time t)
                   frame-ms (* dt 1000.0)
                   {:keys [fps]} (swap! fps-state
-                                      (fn [{:keys [acc frames fps]}]
-                                        (let [acc (+ acc dt)
-                                              frames (inc frames)]
-                                          (if (>= acc 0.5)
-                                            {:acc 0.0 :frames 0 :fps (/ frames acc)}
-                                            {:acc acc :frames frames :fps fps}))))
+                                       (fn [{:keys [acc frames fps]}]
+                                         (let [acc (+ acc dt)
+                                               frames (inc frames)]
+                                           (if (>= acc 0.5)
+                                             {:acc 0.0 :frames 0 :fps (/ frames acc)}
+                                             {:acc acc :frames frames :fps fps}))))
                   update-start (System/nanoTime)]
               (update-instance-data! base params sizes instance-data t @osc-amplitude
                                      @movement-speed @size-scale)
@@ -846,10 +846,10 @@
                         (GL33/glVertexAttribDivisor 2 1)
                         (GL33/glVertexAttribDivisor 3 1)
                         (GL31/glDrawArraysInstanced GL11/GL_TRIANGLES 0 36 num-instances))
-                    (let [x (aget instance-data 0)
-                          y (aget instance-data 1)
-                          z (aget instance-data 2)
-                          size (aget instance-data 3)]
+                      (let [x (aget instance-data 0)
+                            y (aget instance-data 1)
+                            z (aget instance-data 2)
+                            size (aget instance-data 3)]
                         (GL20/glDisableVertexAttribArray 2)
                         (GL20/glDisableVertexAttribArray 3)
                         (GL33/glVertexAttribDivisor 2 0)
@@ -890,9 +890,9 @@
                           (GL11/glDisable GL11/GL_BLEND)
                           (GL30/glBindVertexArray 0)))))
 
-                (GLFW/glfwSwapBuffers window)
-                (GLFW/glfwPollEvents)
-                (recur))))))
+                  (GLFW/glfwSwapBuffers window)
+                  (GLFW/glfwPollEvents)
+                  (recur))))))
         (cleanup! window vao vbo instance-vbo program
                   overlay-vao overlay-vbo overlay-tex overlay-program
                   error-callback @gl-ready? @nrepl-server))

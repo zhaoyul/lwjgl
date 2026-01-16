@@ -36,8 +36,8 @@ void main() {
                   [;; positions       ;; tex coords
                    0.5  0.5  0.0      1.0 1.0
                    0.5 -0.5  0.0      1.0 0.0
-                  -0.5 -0.5  0.0      0.0 0.0
-                  -0.5  0.5  0.0      0.0 1.0])
+                   -0.5 -0.5  0.0      0.0 0.0
+                   -0.5  0.5  0.0      0.0 1.0])
         indices (int-array [0 1 3 1 2 3])
         vao (GL30/glGenVertexArrays)
         vbo (GL15/glGenBuffers)

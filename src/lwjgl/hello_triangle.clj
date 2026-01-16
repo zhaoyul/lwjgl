@@ -27,8 +27,8 @@ void main() {
   []
   (let [vertices (float-array
                   [-0.5 -0.5 0.0
-                    0.5 -0.5 0.0
-                    0.0  0.5 0.0])
+                   0.5 -0.5 0.0
+                   0.0  0.5 0.0])
         vao (GL30/glGenVertexArrays)
         vbo (GL15/glGenBuffers)
         float-count (alength vertices)

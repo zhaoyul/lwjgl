@@ -36,8 +36,8 @@ void main() {
                   [;; positions       ;; tex coords
                    0.5  0.5  0.0      1.0 1.0
                    0.5 -0.5  0.0      1.0 0.0
-                  -0.5 -0.5  0.0      0.0 0.0
-                  -0.5  0.5  0.0      0.0 1.0])
+                   -0.5 -0.5  0.0      0.0 0.0
+                   -0.5  0.5  0.0      0.0 1.0])
         indices (int-array [0 1 3 1 2 3])
         vao (GL30/glGenVertexArrays)
         vbo (GL15/glGenBuffers)
@@ -69,9 +69,9 @@ void main() {
       (dotimes [x w]
         (let [checker (if (zero? (bit-and (+ (quot x 16) (quot y 16)) 1)) 255 80)
               idx (* 3 (+ x (* y w)))]
-          (.put buf idx (byte checker))
-          (.put buf (inc idx) (byte checker))
-          (.put buf (+ idx 2) (byte 220)))))
+          (.put buf idx (unchecked-byte checker))
+          (.put buf (inc idx) (unchecked-byte checker))
+          (.put buf (+ idx 2) (unchecked-byte 220)))))
     (.flip buf)
     (GL11/glBindTexture GL11/GL_TEXTURE_2D tex)
     (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_MIN_FILTER GL11/GL_LINEAR)

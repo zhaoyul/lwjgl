@@ -28,8 +28,8 @@ void main() {
   (let [vertices (float-array
                   [0.5  0.5  0.0
                    0.5 -0.5  0.0
-                  -0.5 -0.5  0.0
-                  -0.5  0.5  0.0])
+                   -0.5 -0.5  0.0
+                   -0.5  0.5  0.0])
         indices (int-array [0 1 3
                             1 2 3])
         vao (GL30/glGenVertexArrays)
