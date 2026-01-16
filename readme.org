@@ -17,6 +17,40 @@ Just poking the scene and watching it change in real time.
 - LearnOpenGL Chapter 1 (triangle exercise 2) example (two triangles, separate VAOs/VBOs): =clj -M:triangle-ex2=
 - LearnOpenGL Chapter 1 (triangle exercise 3) example (two fragment shaders: orange/yellow): =clj -M:triangle-ex3=
 
+* Chapter 1 migration TODO
+- [x] 1.1.hello_window
+- [x] 1.2.hello_window_clear
+- [x] 2.1.hello_triangle
+- [x] 2.2.hello_triangle_indexed
+- [x] 2.3.hello_triangle_exercise1
+- [x] 2.4.hello_triangle_exercise2
+- [x] 2.5.hello_triangle_exercise3
+- [ ] 3.1.shaders_uniform
+- [ ] 3.2.shaders_interpolation
+- [ ] 3.3.shaders_class
+- [ ] 3.4.shaders_exercise1
+- [ ] 3.5.shaders_exercise2
+- [ ] 3.6.shaders_exercise3
+- [ ] 4.1.textures
+- [ ] 4.2.textures_combined
+- [ ] 4.3.textures_exercise1
+- [ ] 4.4.textures_exercise2
+- [ ] 4.5.textures_exercise3
+- [ ] 4.6.textures_exercise4
+- [ ] 5.1.transformations
+- [ ] 5.2.transformations_exercise1
+- [ ] 5.2.transformations_exercise2
+- [ ] 6.1.coordinate_systems
+- [ ] 6.2.coordinate_systems_depth
+- [ ] 6.3.coordinate_systems_multiple
+- [ ] 6.4.coordinate_systems_exercise3
+- [ ] 7.1.camera_circle
+- [ ] 7.2.camera_keyboard_dt
+- [ ] 7.3.camera_mouse_zoom
+- [ ] 7.4.camera_class
+- [ ] 7.5.camera_exercise1
+- [ ] 7.6.camera_exercise2
+
 * Notes
 - The project is configured for macOS arm64 natives in =deps.edn=.
 - On Intel macOS, use =natives-macos= instead of =natives-macos-arm64= in the =$classifier= lib names.
