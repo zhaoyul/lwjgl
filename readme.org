@@ -119,25 +119,25 @@ Just poking the scene and watching it change in real time.
 - [x] 3.1.model_loading
 
 * Chapter 4 migration TODO (Advanced OpenGL)
-- [ ] 1.1.depth_testing
-- [ ] 1.2.depth_testing_view
-- [ ] 2.stencil_testing
-- [ ] 3.1.blending_discard
-- [ ] 3.2.blending_sort
-- [ ] 4.face_culling_exercise1
-- [ ] 5.1.framebuffers
-- [ ] 5.2.framebuffers_exercise1
-- [ ] 6.1.cubemaps_skybox
-- [ ] 6.2.cubemaps_environment_mapping
-- [ ] 8.advanced_glsl_ubo
-- [ ] 9.1.geometry_shader_houses
-- [ ] 9.2.geometry_shader_exploding
-- [ ] 9.3.geometry_shader_normals
-- [ ] 10.1.instancing_quads
-- [ ] 10.2.asteroids
-- [ ] 10.3.asteroids_instanced
-- [ ] 11.1.anti_aliasing_msaa
-- [ ] 11.2.anti_aliasing_offscreen
+- [x] 1.1.depth_testing
+- [x] 1.2.depth_testing_view
+- [x] 2.stencil_testing
+- [x] 3.1.blending_discard
+- [x] 3.2.blending_sort
+- [x] 4.face_culling_exercise1
+- [x] 5.1.framebuffers
+- [x] 5.2.framebuffers_exercise1
+- [x] 6.1.cubemaps_skybox
+- [x] 6.2.cubemaps_environment_mapping
+- [x] 8.advanced_glsl_ubo
+- [x] 9.1.geometry_shader_houses
+- [x] 9.2.geometry_shader_exploding
+- [x] 9.3.geometry_shader_normals
+- [x] 10.1.instancing_quads
+- [x] 10.2.asteroids
+- [x] 10.3.asteroids_instanced
+- [x] 11.1.anti_aliasing_msaa
+- [x] 11.2.anti_aliasing_offscreen
 
 * Chapter 5 migration TODO (Advanced Lighting)
 - [ ] 1.advanced_lighting
