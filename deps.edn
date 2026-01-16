@@ -23,6 +23,15 @@
            :triangle-indexed {:main-opts ["-m" "lwjgl.hello-triangle-indexed"]
                               :jvm-opts ["-XstartOnFirstThread"
                                          "--enable-native-access=ALL-UNNAMED"]}
+           :triangle-ex1 {:main-opts ["-m" "lwjgl.hello-triangle-exercise1"]
+                          :jvm-opts ["-XstartOnFirstThread"
+                                     "--enable-native-access=ALL-UNNAMED"]}
+           :triangle-ex2 {:main-opts ["-m" "lwjgl.hello-triangle-exercise2"]
+                          :jvm-opts ["-XstartOnFirstThread"
+                                     "--enable-native-access=ALL-UNNAMED"]}
+           :triangle-ex3 {:main-opts ["-m" "lwjgl.hello-triangle-exercise3"]
+                          :jvm-opts ["-XstartOnFirstThread"
+                                     "--enable-native-access=ALL-UNNAMED"]}
            :cider {:extra-deps {cider/cider-nrepl {:mvn/version "0.45.0"}}
                    :main-opts ["-m" "nrepl.cmdline"
                                "--middleware"
