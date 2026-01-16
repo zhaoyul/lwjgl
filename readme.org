@@ -43,6 +43,7 @@ Just poking the scene and watching it change in real time.
 - LearnOpenGL Chapter 1 (camera exercise 2) example (manual LookAt matrix): =clj -M:camera-exercise2=
 - LearnOpenGL Chapter 2 (colors) example (basic ambient + diffuse lighting): =clj -M:colors=
 - LearnOpenGL Chapter 2 (basic lighting diffuse) example (Lambert diffuse + ambient): =clj -M:basic-lighting-diffuse=
+- LearnOpenGL Chapter 2 (basic lighting specular) example (adds Phong specular): =clj -M:basic-lighting-specular=
 
 * Chapter 1 migration TODO
 - [x] 1.1.hello_window
@@ -81,7 +82,7 @@ Just poking the scene and watching it change in real time.
 * Chapter 2 migration TODO (Lighting)
 - [x] 1.colors
 - [x] 2.1.basic_lighting_diffuse
-- [ ] 2.2.basic_lighting_specular
+- [x] 2.2.basic_lighting_specular
 - [ ] 2.3.basic_lighting_exercise1
 - [ ] 2.4.basic_lighting_exercise2
 - [ ] 2.5.basic_lighting_exercise3
