@@ -23,17 +23,17 @@
 (defn- create-plane
   []
   (let [vertices (float-array
-                  [;; positions     ;; normals    ;; texcoords
-                   -5.0 0.0 -5.0    0.0 1.0 0.0    0.0 0.0
-                   5.0 0.0 -5.0     0.0 1.0 0.0    5.0 0.0
-                   5.0 0.0 5.0      0.0 1.0 0.0    5.0 5.0
-                   5.0 0.0 5.0      0.0 1.0 0.0    5.0 5.0
-                   -5.0 0.0 5.0     0.0 1.0 0.0    0.0 5.0
-                   -5.0 0.0 -5.0    0.0 1.0 0.0    0.0 0.0])
+                  [;; positions     ;; normals
+                   -5.0 0.0 -5.0    0.0 1.0 0.0
+                   5.0 0.0 -5.0     0.0 1.0 0.0
+                   5.0 0.0 5.0      0.0 1.0 0.0
+                   5.0 0.0 5.0      0.0 1.0 0.0
+                   -5.0 0.0 5.0     0.0 1.0 0.0
+                   -5.0 0.0 -5.0    0.0 1.0 0.0])
         vao (GL30/glGenVertexArrays)
         vbo (GL15/glGenBuffers)
         buf (BufferUtils/createFloatBuffer (alength vertices))
-        stride (* 8 Float/BYTES)]
+        stride (* 6 Float/BYTES)]
     (GL30/glBindVertexArray vao)
     (.put buf vertices)
     (.flip buf)
@@ -43,8 +43,6 @@
     (GL20/glEnableVertexAttribArray 0)
     (GL20/glVertexAttribPointer 1 3 GL11/GL_FLOAT false stride (* 3 Float/BYTES))
     (GL20/glEnableVertexAttribArray 1)
-    (GL20/glVertexAttribPointer 2 2 GL11/GL_FLOAT false stride (* 6 Float/BYTES))
-    (GL20/glEnableVertexAttribArray 2)
     (GL30/glBindVertexArray 0)
     {:vao vao :vbo vbo :count 6}))
 
@@ -136,6 +134,7 @@ uniform vec3 lightPos;
 uniform vec3 viewPos;
 uniform sampler2D shadowMap;
 uniform int usePCF;
+uniform float texelSize;
 
 float shadowCalculation(vec4 fragPosLightSpace, vec3 lightDir, vec3 normal) {
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
@@ -147,7 +146,6 @@ float shadowCalculation(vec4 fragPosLightSpace, vec3 lightDir, vec3 normal) {
         float closest = texture(shadowMap, projCoords.xy).r;
         shadow = projCoords.z - bias > closest ? 1.0 : 0.0;
     } else {
-        float texelSize = 1.0 / 1024.0;
         for (int x = -1; x <= 1; ++x) {
             for (int y = -1; y <= 1; ++y) {
                 float pcfDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r;
@@ -242,7 +240,9 @@ void main() {
 (defn- run-shadow
   [{:keys [mode]}]
   (let [{:keys [window] :as env} (setup-window (str "LearnOpenGL - " (name mode)))
-        cube (let [mesh (core/create-cube-mesh)] (assoc mesh :count 36))
+        cube (let [mesh (core/create-cube-mesh)
+                   count (/ (alength core/cube-vertices) 6)]
+               (assoc mesh :count count))
         plane (create-plane)
         quad (create-quad)
         depth-map (create-depth-map)
@@ -269,9 +269,12 @@ void main() {
             light-pos-loc (GL20/glGetUniformLocation scene-program "lightPos")
             view-pos-loc (GL20/glGetUniformLocation scene-program "viewPos")
             use-pcf-loc (GL20/glGetUniformLocation scene-program "usePCF")
+            texel-size-loc (GL20/glGetUniformLocation scene-program "texelSize")
             debug-depth-loc (GL20/glGetUniformLocation debug-program "depthMap")]
         (GL20/glUseProgram scene-program)
         (GL20/glUniform1i (GL20/glGetUniformLocation scene-program "shadowMap") 0)
+        (when (<= 0 texel-size-loc)
+          (GL20/glUniform1f texel-size-loc (float (/ 1.0 depth-width))))
         (GL20/glUseProgram debug-program)
         (GL20/glUniform1i debug-depth-loc 0)
         (loop []
