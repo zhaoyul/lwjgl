@@ -77,21 +77,24 @@
             :transformations-ex2 {:main-opts ["-m" "lwjgl.transformations-exercise2"]
                                   :jvm-opts ["-XstartOnFirstThread"
                                              "--enable-native-access=ALL-UNNAMED"]}
-            :coordinate-systems {:main-opts ["-m" "lwjgl.coordinate-systems"]
-                                 :jvm-opts ["-XstartOnFirstThread"
-                                            "--enable-native-access=ALL-UNNAMED"]}
-            :coordinate-systems-depth {:main-opts ["-m" "lwjgl.coordinate-systems-depth"]
-                                       :jvm-opts ["-XstartOnFirstThread"
-                                                  "--enable-native-access=ALL-UNNAMED"]}
-            :coordinate-systems-multiple {:main-opts ["-m" "lwjgl.coordinate-systems-multiple"]
-                                          :jvm-opts ["-XstartOnFirstThread"
-                                                     "--enable-native-access=ALL-UNNAMED"]}
-             :coordinate-systems-ex3 {:main-opts ["-m" "lwjgl.coordinate-systems-exercise3"]
-                                      :jvm-opts ["-XstartOnFirstThread"
-                                                 "--enable-native-access=ALL-UNNAMED"]}
-             :camera-circle {:main-opts ["-m" "lwjgl.camera" "circle"]
-                             :jvm-opts ["-XstartOnFirstThread"
-                                        "--enable-native-access=ALL-UNNAMED"]}
+              :coordinate-systems {:main-opts ["-m" "lwjgl.coordinate-systems"]
+                                   :jvm-opts ["-XstartOnFirstThread"
+                                              "--enable-native-access=ALL-UNNAMED"]}
+              :coordinate-systems-depth {:main-opts ["-m" "lwjgl.coordinate-systems-depth"]
+                                         :jvm-opts ["-XstartOnFirstThread"
+                                                    "--enable-native-access=ALL-UNNAMED"]}
+              :coordinate-systems-multiple {:main-opts ["-m" "lwjgl.coordinate-systems-multiple"]
+                                            :jvm-opts ["-XstartOnFirstThread"
+                                                       "--enable-native-access=ALL-UNNAMED"]}
+               :coordinate-systems-ex3 {:main-opts ["-m" "lwjgl.coordinate-systems-exercise3"]
+                                        :jvm-opts ["-XstartOnFirstThread"
+                                                   "--enable-native-access=ALL-UNNAMED"]}
+              :colors {:main-opts ["-m" "lwjgl.colors"]
+                       :jvm-opts ["-XstartOnFirstThread"
+                                  "--enable-native-access=ALL-UNNAMED"]}
+              :camera-circle {:main-opts ["-m" "lwjgl.camera" "circle"]
+                              :jvm-opts ["-XstartOnFirstThread"
+                                         "--enable-native-access=ALL-UNNAMED"]}
              :camera-keyboard-dt {:main-opts ["-m" "lwjgl.camera" "keyboard-dt"]
                                   :jvm-opts ["-XstartOnFirstThread"
                                              "--enable-native-access=ALL-UNNAMED"]}

@@ -41,6 +41,7 @@ Just poking the scene and watching it change in real time.
 - LearnOpenGL Chapter 1 (camera class) example (camera controls via reusable state): =clj -M:camera-class=
 - LearnOpenGL Chapter 1 (camera exercise 1) example (grounded FPS-style camera): =clj -M:camera-exercise1=
 - LearnOpenGL Chapter 1 (camera exercise 2) example (manual LookAt matrix): =clj -M:camera-exercise2=
+- LearnOpenGL Chapter 2 (colors) example (basic ambient + diffuse lighting): =clj -M:colors=
 
 * Chapter 1 migration TODO
 - [x] 1.1.hello_window
@@ -77,7 +78,7 @@ Just poking the scene and watching it change in real time.
 - [x] 7.6.camera_exercise2
 
 * Chapter 2 migration TODO (Lighting)
-- [ ] 1.colors
+- [x] 1.colors
 - [ ] 2.1.basic_lighting_diffuse
 - [ ] 2.2.basic_lighting_specular
 - [ ] 2.3.basic_lighting_exercise1
