@@ -140,23 +140,23 @@ Just poking the scene and watching it change in real time.
 - [x] 11.2.anti_aliasing_offscreen
 
 * Chapter 5 migration TODO (Advanced Lighting)
-- [ ] 1.advanced_lighting
-- [ ] 2.gamma_correction
-- [ ] 3.1.1.shadow_mapping_depth
-- [ ] 3.1.2.shadow_mapping_base
-- [ ] 3.1.3.shadow_mapping
-- [ ] 3.2.1.point_shadows
-- [ ] 3.2.2.point_shadows_soft
-- [ ] 3.3.csm
-- [ ] 4.normal_mapping
-- [ ] 5.1.parallax_mapping
-- [ ] 5.2.steep_parallax_mapping
-- [ ] 5.3.parallax_occlusion_mapping
-- [ ] 6.hdr
-- [ ] 7.bloom
-- [ ] 8.1.deferred_shading
-- [ ] 8.2.deferred_shading_volumes
-- [ ] 9.ssao
+- [x] 1.advanced_lighting
+- [x] 2.gamma_correction
+- [x] 3.1.1.shadow_mapping_depth
+- [x] 3.1.2.shadow_mapping_base
+- [x] 3.1.3.shadow_mapping
+- [x] 3.2.1.point_shadows
+- [x] 3.2.2.point_shadows_soft
+- [x] 3.3.csm
+- [x] 4.normal_mapping
+- [x] 5.1.parallax_mapping
+- [x] 5.2.steep_parallax_mapping
+- [x] 5.3.parallax_occlusion_mapping
+- [x] 6.hdr
+- [x] 7.bloom
+- [x] 8.1.deferred_shading
+- [x] 8.2.deferred_shading_volumes
+- [x] 9.ssao
 
 * Chapter 6 migration TODO (PBR)
 - [ ] 1.1.lighting
