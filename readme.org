@@ -47,6 +47,18 @@ Just poking the scene and watching it change in real time.
 - LearnOpenGL Chapter 2 (basic lighting exercise 1) example (animated light color): =clj -M:basic-lighting-ex1=
 - LearnOpenGL Chapter 2 (basic lighting exercise 2) example (animated light color + specular): =clj -M:basic-lighting-ex2=
 - LearnOpenGL Chapter 2 (basic lighting exercise 3) example (per-vertex/Gouraud shading): =clj -M:basic-lighting-ex3=
+- LearnOpenGL Chapter 2 (materials) example (material/lighting structs): =clj -M:materials=
+- LearnOpenGL Chapter 2 (materials exercise 1) example (changing light/material colors): =clj -M:materials-ex1=
+- LearnOpenGL Chapter 2 (lighting maps diffuse) example (textured diffuse lighting): =clj -M:lighting-maps-diffuse=
+- LearnOpenGL Chapter 2 (lighting maps specular) example (specular map highlights): =clj -M:lighting-maps-specular=
+- LearnOpenGL Chapter 2 (lighting maps exercise 2) example (rotating textured cube with specular map): =clj -M:lighting-maps-ex2=
+- LearnOpenGL Chapter 2 (lighting maps exercise 4) example (emission textured highlights): =clj -M:lighting-maps-ex4=
+- LearnOpenGL Chapter 2 (light casters directional) example (directional light): =clj -M:light-casters-directional=
+- LearnOpenGL Chapter 2 (light casters point) example (point light with attenuation): =clj -M:light-casters-point=
+- LearnOpenGL Chapter 2 (light casters spot) example (sharp spotlight): =clj -M:light-casters-spot=
+- LearnOpenGL Chapter 2 (light casters spot soft) example (soft-edged spotlight): =clj -M:light-casters-spot-soft=
+- LearnOpenGL Chapter 2 (multiple lights) example (directional + point + spotlight): =clj -M:multiple-lights=
+- LearnOpenGL Chapter 2 (multiple lights exercise 1) example (colored point lights): =clj -M:multiple-lights-ex1=
 - LearnOpenGL Chapter 3 (model loading) example (Assimp import, animated rotation): =clj -M:model-loading=
 
 * Chapter 1 migration TODO
@@ -90,18 +102,18 @@ Just poking the scene and watching it change in real time.
 - [x] 2.3.basic_lighting_exercise1
 - [x] 2.4.basic_lighting_exercise2
 - [x] 2.5.basic_lighting_exercise3
-- [ ] 3.1.materials
-- [ ] 3.2.materials_exercise1
-- [ ] 4.1.lighting_maps_diffuse_map
-- [ ] 4.2.lighting_maps_specular_map
-- [ ] 4.3.lighting_maps_exercise2
-- [ ] 4.4.lighting_maps_exercise4
-- [ ] 5.1.light_casters_directional
-- [ ] 5.2.light_casters_point
-- [ ] 5.3.light_casters_spot
-- [ ] 5.4.light_casters_spot_soft
-- [ ] 6.multiple_lights
-- [ ] 6.multiple_lights_exercise1
+- [x] 3.1.materials
+- [x] 3.2.materials_exercise1
+- [x] 4.1.lighting_maps_diffuse_map
+- [x] 4.2.lighting_maps_specular_map
+- [x] 4.3.lighting_maps_exercise2
+- [x] 4.4.lighting_maps_exercise4
+- [x] 5.1.light_casters_directional
+- [x] 5.2.light_casters_point
+- [x] 5.3.light_casters_spot
+- [x] 5.4.light_casters_spot_soft
+- [x] 6.multiple_lights
+- [x] 6.multiple_lights_exercise1
 
 * Chapter 3 migration TODO (Model Loading)
 - [x] 3.1.model_loading
