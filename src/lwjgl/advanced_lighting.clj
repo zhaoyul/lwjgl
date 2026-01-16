@@ -11,8 +11,8 @@
 (def ^:const height 600)
 (def ^:const depth-width 1024)
 (def ^:const depth-height 1024)
-(def ^:const cube-floats-per-vertex 6)
-(def ^:const texel-base 1.0)
+(def ^:const cube-vertex-stride 6) ;; position (3) + normal (3)
+(def ^:const depth-texel-base 1.0)
 
 (defn- upload-mat!
   [^Matrix4f m ^java.nio.FloatBuffer buf loc]
@@ -243,8 +243,8 @@ void main() {
   [{:keys [mode]}]
   (let [{:keys [window] :as env} (setup-window (str "LearnOpenGL - " (name mode)))
         cube (let [mesh (core/create-cube-mesh)
-                   count (quot (alength core/cube-vertices) cube-floats-per-vertex)]
-               (assoc mesh :count count))
+                   count (quot (alength core/cube-vertices) cube-vertex-stride)]
+                (assoc mesh :count count))
         plane (create-plane)
         quad (create-quad)
         depth-map (create-depth-map)
@@ -276,7 +276,8 @@ void main() {
         (GL20/glUseProgram scene-program)
         (GL20/glUniform1i (GL20/glGetUniformLocation scene-program "shadowMap") 0)
         (when (<= 0 texel-size-loc)
-          (GL20/glUniform1f texel-size-loc (float (/ texel-base depth-width))))
+          ;; PCF kernel offset = 1 / depth texture width
+          (GL20/glUniform1f texel-size-loc (float (/ depth-texel-base depth-width))))
         (GL20/glUseProgram debug-program)
         (GL20/glUniform1i debug-depth-loc 0)
         (loop []
