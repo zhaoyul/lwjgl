@@ -31,6 +31,10 @@ Just poking the scene and watching it change in real time.
 - LearnOpenGL Chapter 1 (transformations) example (translate/rotate textured quad): =clj -M:transformations=
 - LearnOpenGL Chapter 1 (transformations exercise 1) example (two quads with differing transforms): =clj -M:transformations-ex1=
 - LearnOpenGL Chapter 1 (transformations exercise 2) example (animated rotation + scaling): =clj -M:transformations-ex2=
+- LearnOpenGL Chapter 1 (coordinate systems) example (single rotating cube with perspective): =clj -M:coordinate-systems=
+- LearnOpenGL Chapter 1 (coordinate systems depth) example (two cubes showing depth test): =clj -M:coordinate-systems-depth=
+- LearnOpenGL Chapter 1 (coordinate systems multiple) example (multiple cubes with transforms): =clj -M:coordinate-systems-multiple=
+- LearnOpenGL Chapter 1 (coordinate systems exercise 3) example (orbital camera around cubes): =clj -M:coordinate-systems-ex3=
 
 * Chapter 1 migration TODO
 - [x] 1.1.hello_window
@@ -55,10 +59,10 @@ Just poking the scene and watching it change in real time.
 - [x] 5.1.transformations
 - [x] 5.2.transformations_exercise1
 - [x] 5.3.transformations_exercise2
-- [ ] 6.1.coordinate_systems
-- [ ] 6.2.coordinate_systems_depth
-- [ ] 6.3.coordinate_systems_multiple
-- [ ] 6.4.coordinate_systems_exercise3
+- [x] 6.1.coordinate_systems
+- [x] 6.2.coordinate_systems_depth
+- [x] 6.3.coordinate_systems_multiple
+- [x] 6.4.coordinate_systems_exercise3
 - [ ] 7.1.camera_circle
 - [ ] 7.2.camera_keyboard_dt
 - [ ] 7.3.camera_mouse_zoom
