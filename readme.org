@@ -24,6 +24,10 @@ Just poking the scene and watching it change in real time.
 - LearnOpenGL Chapter 1 (shaders exercise 3) example (custom attribute layout/name): =clj -M:shaders-ex3=
 - LearnOpenGL Chapter 1 (textures) example (single procedural texture on quad): =clj -M:textures=
 - LearnOpenGL Chapter 1 (textures combined) example (two procedural textures mixed): =clj -M:textures-combined=
+- LearnOpenGL Chapter 1 (textures exercise 1) example (flip second texture in mix): =clj -M:textures-ex1=
+- LearnOpenGL Chapter 1 (textures exercise 2) example (adjust mix factor with arrow keys): =clj -M:textures-ex2=
+- LearnOpenGL Chapter 1 (textures exercise 3) example (rotate texture coordinates 90°): =clj -M:textures-ex3=
+- LearnOpenGL Chapter 1 (textures exercise 4) example (clamp-to-border sampling): =clj -M:textures-ex4=
 
 * Chapter 1 migration TODO
 - [x] 1.1.hello_window
@@ -41,10 +45,10 @@ Just poking the scene and watching it change in real time.
 - [x] 3.6.shaders_exercise3
 - [x] 4.1.textures
 - [x] 4.2.textures_combined
-- [ ] 4.3.textures_exercise1
-- [ ] 4.4.textures_exercise2
-- [ ] 4.5.textures_exercise3
-- [ ] 4.6.textures_exercise4
+- [x] 4.3.textures_exercise1
+- [x] 4.4.textures_exercise2
+- [x] 4.5.textures_exercise3
+- [x] 4.6.textures_exercise4
 - [ ] 5.1.transformations
 - [ ] 5.2.transformations_exercise1
 - [ ] 5.3.transformations_exercise2
