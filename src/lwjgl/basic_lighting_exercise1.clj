@@ -142,9 +142,7 @@ void main() {
               (let [t (float (GLFW/glfwGetTime))
                     light-color (Vector3f. (float (Math/sin (* 2.0 t)))
                                            (float (Math/sin (* 0.7 t)))
-                                           (float (Math/sin (* 1.3 t))))
-                    diffuse-color (doto (Vector3f. light-color) (.mul 0.5))
-                    ambient-color (doto (Vector3f. diffuse-color) (.mul 0.2))]
+                                           (float (Math/sin (* 1.3 t))))]
 
                 (GL11/glClearColor 0.1 0.1 0.12 1.0)
                 (GL11/glClear (bit-or GL11/GL_COLOR_BUFFER_BIT GL11/GL_DEPTH_BUFFER_BIT))
@@ -157,8 +155,7 @@ void main() {
                 (when (<= 0 view-pos-loc)
                   (GL20/glUniform3f view-pos-loc 0.0 0.0 3.0))
                 (when (<= 0 light-color-loc)
-                  (GL20/glUniform3f light-color-loc (.x diffuse-color) (.y diffuse-color) (.z diffuse-color)))
-                ;; Ambient strength baked into shader; use scaled color as ambient base
+                  (GL20/glUniform3f light-color-loc (.x light-color) (.y light-color) (.z light-color)))
                 (when (<= 0 object-color-loc)
                   (GL20/glUniform3f object-color-loc 1.0 0.5 0.31))
                 (GL30/glBindVertexArray vao)
