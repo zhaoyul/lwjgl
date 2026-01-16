@@ -101,6 +101,9 @@
               :basic-lighting-ex1 {:main-opts ["-m" "lwjgl.basic-lighting-exercise1"]
                                    :jvm-opts ["-XstartOnFirstThread"
                                               "--enable-native-access=ALL-UNNAMED"]}
+              :basic-lighting-ex2 {:main-opts ["-m" "lwjgl.basic-lighting-exercise2"]
+                                   :jvm-opts ["-XstartOnFirstThread"
+                                              "--enable-native-access=ALL-UNNAMED"]}
               :camera-circle {:main-opts ["-m" "lwjgl.camera" "circle"]
                               :jvm-opts ["-XstartOnFirstThread"
                                          "--enable-native-access=ALL-UNNAMED"]}
