@@ -99,7 +99,7 @@ Just poking the scene and watching it change in real time.
 * Chapter 3 migration TODO (Model Loading)
 - [ ] 3.1.model_loading
 
-* Later chapters TODO (Advanced OpenGL, PBR, In Practice)
+* Chapter 4 migration TODO (Advanced OpenGL)
 - [ ] 1.1.depth_testing
 - [ ] 1.2.depth_testing_view
 - [ ] 2.stencil_testing
@@ -119,8 +119,43 @@ Just poking the scene and watching it change in real time.
 - [ ] 10.3.asteroids_instanced
 - [ ] 11.1.anti_aliasing_msaa
 - [ ] 11.2.anti_aliasing_offscreen
-- [ ] PBR (theory, lighting, IBL)
-- [ ] In Practice (debugging, text rendering, shadows, SSAO)
+
+* Chapter 5 migration TODO (Advanced Lighting)
+- [ ] 1.advanced_lighting
+- [ ] 2.gamma_correction
+- [ ] 3.1.1.shadow_mapping_depth
+- [ ] 3.1.2.shadow_mapping_base
+- [ ] 3.1.3.shadow_mapping
+- [ ] 3.2.1.point_shadows
+- [ ] 3.2.2.point_shadows_soft
+- [ ] 3.3.csm
+- [ ] 4.normal_mapping
+- [ ] 5.1.parallax_mapping
+- [ ] 5.2.steep_parallax_mapping
+- [ ] 5.3.parallax_occlusion_mapping
+- [ ] 6.hdr
+- [ ] 7.bloom
+- [ ] 8.1.deferred_shading
+- [ ] 8.2.deferred_shading_volumes
+- [ ] 9.ssao
+
+* Chapter 6 migration TODO (PBR)
+- [ ] 1.1.lighting
+- [ ] 1.2.lighting_textured
+- [ ] 2.1.1.ibl_irradiance_conversion
+- [ ] 2.1.2.ibl_irradiance
+- [ ] 2.2.1.ibl_specular
+- [ ] 2.2.2.ibl_specular_textured
+
+* Chapter 7 migration TODO (In Practice)
+- [ ] 1.debugging
+- [ ] 2.text_rendering
+- [ ] 3.2d_game/0.full_source
+
+* Chapter 8 migration TODO (Guest)
+- [ ] 2020
+- [ ] 2021
+- [ ] 2022
 
 * Notes
 - The project is configured for macOS arm64 natives in =deps.edn=.
