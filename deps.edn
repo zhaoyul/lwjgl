@@ -35,10 +35,10 @@
            :shaders-uniform {:main-opts ["-m" "lwjgl.shaders-uniform"]
                              :jvm-opts ["-XstartOnFirstThread"
                                         "--enable-native-access=ALL-UNNAMED"]}
-            :cider {:extra-deps {cider/cider-nrepl {:mvn/version "0.45.0"}}
-                    :main-opts ["-m" "nrepl.cmdline"
-                                "--middleware"
+           :cider {:extra-deps {cider/cider-nrepl {:mvn/version "0.45.0"}}
+                   :main-opts ["-m" "nrepl.cmdline"
+                               "--middleware"
                                "[cider.nrepl/cider-middleware]"]
                    :jvm-opts ["-XstartOnFirstThread"
                               "--enable-native-access=ALL-UNNAMED"]}
-           :cider-deps {:extra-deps {cider/cider-nrepl {:mvn/version "0.45.0"}}}}}
+            :cider-deps {:extra-deps {cider/cider-nrepl {:mvn/version "0.45.0"}}}}}
