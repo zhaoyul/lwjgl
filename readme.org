@@ -22,6 +22,8 @@ Just poking the scene and watching it change in real time.
 - LearnOpenGL Chapter 1 (shaders exercise 1) example (invert Y via vertex shader): =clj -M:shaders-ex1=
 - LearnOpenGL Chapter 1 (shaders exercise 2) example (constant yellow fragment color): =clj -M:shaders-ex2=
 - LearnOpenGL Chapter 1 (shaders exercise 3) example (custom attribute layout/name): =clj -M:shaders-ex3=
+- LearnOpenGL Chapter 1 (textures) example (single procedural texture on quad): =clj -M:textures=
+- LearnOpenGL Chapter 1 (textures combined) example (two procedural textures mixed): =clj -M:textures-combined=
 
 * Chapter 1 migration TODO
 - [x] 1.1.hello_window
@@ -37,8 +39,8 @@ Just poking the scene and watching it change in real time.
 - [x] 3.4.shaders_exercise1
 - [x] 3.5.shaders_exercise2
 - [x] 3.6.shaders_exercise3
-- [ ] 4.1.textures
-- [ ] 4.2.textures_combined
+- [x] 4.1.textures
+- [x] 4.2.textures_combined
 - [ ] 4.3.textures_exercise1
 - [ ] 4.4.textures_exercise2
 - [ ] 4.5.textures_exercise3
