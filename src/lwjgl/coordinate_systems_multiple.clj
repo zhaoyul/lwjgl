@@ -133,6 +133,8 @@ void main() {
    (Vector3f. 1.5 0.2 -1.5)
    (Vector3f. -1.3 1.0 -1.5)])
 
+(def ^:const base-rotation-step 0.2)
+
 (defn run-example!
   []
   (let [width 800
@@ -181,7 +183,7 @@ void main() {
               (doseq [[idx pos] (map-indexed vector cube-positions)]
                 (.identity model)
                 (.translate model pos)
-                (.rotate model (+ (float (* 0.2 idx)) (float (GLFW/glfwGetTime))) 0.5 1.0 0.0)
+                (.rotate model (+ (float (* base-rotation-step idx)) (float (GLFW/glfwGetTime))) 0.5 1.0 0.0)
                 (upload-mat! model mat-buf model-loc)
                 (GL11/glDrawArrays GL11/GL_TRIANGLES 0 36))
               (GLFW/glfwSwapBuffers window)
