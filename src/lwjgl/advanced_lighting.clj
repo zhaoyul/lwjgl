@@ -14,6 +14,7 @@
 (def ^:const position-components 3)
 (def ^:const normal-components 3)
 (def ^:const cube-vertex-stride (+ position-components normal-components))
+(def ^:const quad-vertex-stride 4) ;; position (2) + texcoord (2)
 (def ^:const pcf-texel-offset 1.0)
 (def ^:const shadow-bias-scale 0.002)
 (def ^:const shadow-bias-min 0.0005)
@@ -39,7 +40,7 @@
         vao (GL30/glGenVertexArrays)
         vbo (GL15/glGenBuffers)
         buf (BufferUtils/createFloatBuffer (alength vertices))
-        stride (* 6 Float/BYTES)]
+        stride (* cube-vertex-stride Float/BYTES)]
     (GL30/glBindVertexArray vao)
     (.put buf vertices)
     (.flip buf)
@@ -65,7 +66,7 @@
         vao (GL30/glGenVertexArrays)
         vbo (GL15/glGenBuffers)
         buf (BufferUtils/createFloatBuffer (alength vertices))
-        stride (* 4 Float/BYTES)]
+        stride (* quad-vertex-stride Float/BYTES)]
     (GL30/glBindVertexArray vao)
     (.put buf vertices)
     (.flip buf)
