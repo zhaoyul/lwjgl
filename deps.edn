@@ -217,15 +217,18 @@
             :asteroids-instanced {:main-opts ["-m" "lwjgl.advanced-opengl" "asteroids-instanced"]
                                   :jvm-opts ["-XstartOnFirstThread"
                                              "--enable-native-access=ALL-UNNAMED"]}
-            :anti-aliasing-msaa {:main-opts ["-m" "lwjgl.advanced-opengl" "anti-aliasing-msaa"]
+             :anti-aliasing-msaa {:main-opts ["-m" "lwjgl.advanced-opengl" "anti-aliasing-msaa"]
+                                  :jvm-opts ["-XstartOnFirstThread"
+                                             "--enable-native-access=ALL-UNNAMED"]}
+             :anti-aliasing-offscreen {:main-opts ["-m" "lwjgl.advanced-opengl" "anti-aliasing-offscreen"]
+                                       :jvm-opts ["-XstartOnFirstThread"
+                                                  "--enable-native-access=ALL-UNNAMED"]}
+             :advanced-lighting {:main-opts ["-m" "lwjgl.advanced-lighting"]
                                  :jvm-opts ["-XstartOnFirstThread"
                                             "--enable-native-access=ALL-UNNAMED"]}
-            :anti-aliasing-offscreen {:main-opts ["-m" "lwjgl.advanced-opengl" "anti-aliasing-offscreen"]
-                                      :jvm-opts ["-XstartOnFirstThread"
-                                                 "--enable-native-access=ALL-UNNAMED"]}
-            :cider {:extra-deps {cider/cider-nrepl {:mvn/version "0.45.0"}}
-                    :main-opts ["-m" "nrepl.cmdline"
-                                "--middleware"
+             :cider {:extra-deps {cider/cider-nrepl {:mvn/version "0.45.0"}}
+                     :main-opts ["-m" "nrepl.cmdline"
+                                 "--middleware"
                                "[cider.nrepl/cider-middleware]"]
                    :jvm-opts ["-XstartOnFirstThread"
                               "--enable-native-access=ALL-UNNAMED"]}
