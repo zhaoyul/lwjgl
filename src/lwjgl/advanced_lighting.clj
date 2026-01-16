@@ -11,8 +11,12 @@
 (def ^:const height 600)
 (def ^:const depth-width 1024)
 (def ^:const depth-height 1024)
-(def ^:const cube-vertex-stride 6) ;; position (3) + normal (3)
-(def ^:const depth-texel-base 1.0)
+(def ^:const position-components 3)
+(def ^:const normal-components 3)
+(def ^:const cube-vertex-stride (+ position-components normal-components))
+(def ^:const pcf-texel-offset 1.0)
+(def ^:const shadow-bias-scale 0.002)
+(def ^:const shadow-bias-min 0.0005)
 
 (defn- upload-mat!
   [^Matrix4f m ^java.nio.FloatBuffer buf loc]
@@ -127,7 +131,7 @@ void main() {
 }")
 
 (def ^:private scene-fs
-  "#version 330 core
+  (format "#version 330 core
 in vec3 FragPos;
 in vec3 Normal;
 in vec4 FragPosLightSpace;
@@ -142,7 +146,7 @@ float shadowCalculation(vec4 fragPosLightSpace, vec3 lightDir, vec3 normal) {
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
     projCoords = projCoords * 0.5 + 0.5;
     if (projCoords.z > 1.0) return 0.0;
-    float bias = max(0.002 * (1.0 - dot(normal, lightDir)), 0.0005);
+    float bias = max(%f * (1.0 - dot(normal, lightDir)), %f);
     float shadow = 0.0;
     if (usePCF == 0) {
         float closest = texture(shadowMap, projCoords.xy).r;
@@ -174,7 +178,8 @@ void main() {
     float shadow = shadowCalculation(FragPosLightSpace, lightDir, norm);
     vec3 lighting = (ambient + (1.0 - shadow) * (diffuse + specular)) * color;
     FragColor = vec4(lighting, 1.0);
-}")
+}"
+          shadow-bias-scale shadow-bias-min))
 
 (def ^:private debug-depth-fs
   "#version 330 core
@@ -277,7 +282,7 @@ void main() {
         (GL20/glUniform1i (GL20/glGetUniformLocation scene-program "shadowMap") 0)
         (when (<= 0 texel-size-loc)
           ;; PCF kernel offset = 1 / depth texture width
-          (GL20/glUniform1f texel-size-loc (float (/ depth-texel-base depth-width))))
+          (GL20/glUniform1f texel-size-loc (float (/ pcf-texel-offset depth-width))))
         (GL20/glUseProgram debug-program)
         (GL20/glUniform1i debug-depth-loc 0)
         (loop []
@@ -352,7 +357,7 @@ void main() {
        :shadow-mapping-depth (run-shadow {:mode :shadow-mapping-depth})
        :shadow-mapping-base (run-shadow {:mode :shadow-mapping-base})
        :shadow-mapping (run-shadow {:mode :shadow-mapping})
-       ;; fall back to PCF shadow mapping for other advanced lighting items for now
+       ;; TODO: dedicated implementations for remaining advanced lighting scenarios; temporary PCF fallback
        (run-shadow {:mode :shadow-mapping})))))
 
 (defn -main
