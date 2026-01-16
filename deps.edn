@@ -68,6 +68,15 @@
             :textures-ex4 {:main-opts ["-m" "lwjgl.textures-exercise4"]
                            :jvm-opts ["-XstartOnFirstThread"
                                       "--enable-native-access=ALL-UNNAMED"]}
+            :transformations {:main-opts ["-m" "lwjgl.transformations"]
+                              :jvm-opts ["-XstartOnFirstThread"
+                                         "--enable-native-access=ALL-UNNAMED"]}
+            :transformations-ex1 {:main-opts ["-m" "lwjgl.transformations-exercise1"]
+                                  :jvm-opts ["-XstartOnFirstThread"
+                                             "--enable-native-access=ALL-UNNAMED"]}
+            :transformations-ex2 {:main-opts ["-m" "lwjgl.transformations-exercise2"]
+                                  :jvm-opts ["-XstartOnFirstThread"
+                                             "--enable-native-access=ALL-UNNAMED"]}
             :cider {:extra-deps {cider/cider-nrepl {:mvn/version "0.45.0"}}
                     :main-opts ["-m" "nrepl.cmdline"
                                 "--middleware"
