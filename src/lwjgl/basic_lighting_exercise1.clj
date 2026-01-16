@@ -156,8 +156,6 @@ void main() {
                   (GL20/glUniform3f view-pos-loc 0.0 0.0 3.0))
                 (when (<= 0 light-color-loc)
                   (GL20/glUniform3f light-color-loc (.x light-color) (.y light-color) (.z light-color)))
-                (when (<= 0 object-color-loc)
-                  (GL20/glUniform3f object-color-loc 1.0 0.5 0.31))
                 (GL30/glBindVertexArray vao)
                 (GL11/glDrawArrays GL11/GL_TRIANGLES 0 36)
 
