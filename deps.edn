@@ -56,6 +56,18 @@
             :textures-combined {:main-opts ["-m" "lwjgl.textures-combined"]
                                 :jvm-opts ["-XstartOnFirstThread"
                                            "--enable-native-access=ALL-UNNAMED"]}
+            :textures-ex1 {:main-opts ["-m" "lwjgl.textures-exercise1"]
+                           :jvm-opts ["-XstartOnFirstThread"
+                                      "--enable-native-access=ALL-UNNAMED"]}
+            :textures-ex2 {:main-opts ["-m" "lwjgl.textures-exercise2"]
+                           :jvm-opts ["-XstartOnFirstThread"
+                                      "--enable-native-access=ALL-UNNAMED"]}
+            :textures-ex3 {:main-opts ["-m" "lwjgl.textures-exercise3"]
+                           :jvm-opts ["-XstartOnFirstThread"
+                                      "--enable-native-access=ALL-UNNAMED"]}
+            :textures-ex4 {:main-opts ["-m" "lwjgl.textures-exercise4"]
+                           :jvm-opts ["-XstartOnFirstThread"
+                                      "--enable-native-access=ALL-UNNAMED"]}
             :cider {:extra-deps {cider/cider-nrepl {:mvn/version "0.45.0"}}
                     :main-opts ["-m" "nrepl.cmdline"
                                 "--middleware"
