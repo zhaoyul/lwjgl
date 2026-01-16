@@ -46,6 +46,7 @@ Just poking the scene and watching it change in real time.
 - LearnOpenGL Chapter 2 (basic lighting specular) example (adds Phong specular): =clj -M:basic-lighting-specular=
 - LearnOpenGL Chapter 2 (basic lighting exercise 1) example (animated light color): =clj -M:basic-lighting-ex1=
 - LearnOpenGL Chapter 2 (basic lighting exercise 2) example (animated light color + specular): =clj -M:basic-lighting-ex2=
+- LearnOpenGL Chapter 2 (basic lighting exercise 3) example (per-vertex/Gouraud shading): =clj -M:basic-lighting-ex3=
 
 * Chapter 1 migration TODO
 - [x] 1.1.hello_window
@@ -87,7 +88,7 @@ Just poking the scene and watching it change in real time.
 - [x] 2.2.basic_lighting_specular
 - [x] 2.3.basic_lighting_exercise1
 - [x] 2.4.basic_lighting_exercise2
-- [ ] 2.5.basic_lighting_exercise3
+- [x] 2.5.basic_lighting_exercise3
 - [ ] 3.1.materials
 - [ ] 3.2.materials_exercise1
 - [ ] 4.1.lighting_maps_diffuse_map
