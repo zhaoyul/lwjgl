@@ -11,6 +11,7 @@
 (def ^:const height 600)
 (def ^:const depth-width 1024)
 (def ^:const depth-height 1024)
+(def ^:const cube-floats-per-vertex 6)
 
 (defn- upload-mat!
   [^Matrix4f m ^java.nio.FloatBuffer buf loc]
@@ -235,13 +236,13 @@ void main() {
                                  (float (nth pos 2))))
     (.scale model (float scale))
     (upload-mat! model mat-buf model-loc)
-    (GL11/glDrawArrays GL11/GL_TRIANGLES 0 36)))
+    (GL11/glDrawArrays GL11/GL_TRIANGLES 0 (:count cube))))
 
 (defn- run-shadow
   [{:keys [mode]}]
   (let [{:keys [window] :as env} (setup-window (str "LearnOpenGL - " (name mode)))
         cube (let [mesh (core/create-cube-mesh)
-                   count (/ (alength core/cube-vertices) 6)]
+                   count (quot (alength core/cube-vertices) cube-floats-per-vertex)]
                (assoc mesh :count count))
         plane (create-plane)
         quad (create-quad)
