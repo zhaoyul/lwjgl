@@ -154,21 +154,78 @@
            :camera-keyboard-dt {:main-opts ["-m" "lwjgl.camera" "keyboard-dt"]
                                 :jvm-opts ["-XstartOnFirstThread"
                                            "--enable-native-access=ALL-UNNAMED"]}
-           :camera-mouse-zoom {:main-opts ["-m" "lwjgl.camera" "mouse-zoom"]
-                               :jvm-opts ["-XstartOnFirstThread"
-                                          "--enable-native-access=ALL-UNNAMED"]}
+             :camera-mouse-zoom {:main-opts ["-m" "lwjgl.camera" "mouse-zoom"]
+                                 :jvm-opts ["-XstartOnFirstThread"
+                                            "--enable-native-access=ALL-UNNAMED"]}
            :camera-class {:main-opts ["-m" "lwjgl.camera" "class"]
                           :jvm-opts ["-XstartOnFirstThread"
                                      "--enable-native-access=ALL-UNNAMED"]}
            :camera-exercise1 {:main-opts ["-m" "lwjgl.camera" "exercise1"]
                               :jvm-opts ["-XstartOnFirstThread"
                                          "--enable-native-access=ALL-UNNAMED"]}
-           :camera-exercise2 {:main-opts ["-m" "lwjgl.camera" "exercise2"]
+            :camera-exercise2 {:main-opts ["-m" "lwjgl.camera" "exercise2"]
+                               :jvm-opts ["-XstartOnFirstThread"
+                                          "--enable-native-access=ALL-UNNAMED"]}
+            :depth-testing {:main-opts ["-m" "lwjgl.advanced-opengl" "depth-testing"]
+                            :jvm-opts ["-XstartOnFirstThread"
+                                       "--enable-native-access=ALL-UNNAMED"]}
+            :depth-testing-view {:main-opts ["-m" "lwjgl.advanced-opengl" "depth-testing-view"]
+                                 :jvm-opts ["-XstartOnFirstThread"
+                                            "--enable-native-access=ALL-UNNAMED"]}
+            :stencil-testing {:main-opts ["-m" "lwjgl.advanced-opengl" "stencil-testing"]
                               :jvm-opts ["-XstartOnFirstThread"
                                          "--enable-native-access=ALL-UNNAMED"]}
-           :cider {:extra-deps {cider/cider-nrepl {:mvn/version "0.45.0"}}
-                   :main-opts ["-m" "nrepl.cmdline"
-                               "--middleware"
+            :blending-discard {:main-opts ["-m" "lwjgl.advanced-opengl" "blending-discard"]
+                               :jvm-opts ["-XstartOnFirstThread"
+                                          "--enable-native-access=ALL-UNNAMED"]}
+            :blending-sort {:main-opts ["-m" "lwjgl.advanced-opengl" "blending-sort"]
+                            :jvm-opts ["-XstartOnFirstThread"
+                                       "--enable-native-access=ALL-UNNAMED"]}
+            :face-culling-exercise1 {:main-opts ["-m" "lwjgl.advanced-opengl" "face-culling-exercise1"]
+                                     :jvm-opts ["-XstartOnFirstThread"
+                                                "--enable-native-access=ALL-UNNAMED"]}
+            :framebuffers {:main-opts ["-m" "lwjgl.advanced-opengl" "framebuffers"]
+                           :jvm-opts ["-XstartOnFirstThread"
+                                      "--enable-native-access=ALL-UNNAMED"]}
+            :framebuffers-exercise1 {:main-opts ["-m" "lwjgl.advanced-opengl" "framebuffers-exercise1"]
+                                     :jvm-opts ["-XstartOnFirstThread"
+                                                "--enable-native-access=ALL-UNNAMED"]}
+            :cubemaps-skybox {:main-opts ["-m" "lwjgl.advanced-opengl" "cubemaps-skybox"]
+                              :jvm-opts ["-XstartOnFirstThread"
+                                         "--enable-native-access=ALL-UNNAMED"]}
+            :cubemaps-environment-mapping {:main-opts ["-m" "lwjgl.advanced-opengl" "cubemaps-environment-mapping"]
+                                           :jvm-opts ["-XstartOnFirstThread"
+                                                      "--enable-native-access=ALL-UNNAMED"]}
+            :advanced-glsl-ubo {:main-opts ["-m" "lwjgl.advanced-opengl" "advanced-glsl-ubo"]
+                                 :jvm-opts ["-XstartOnFirstThread"
+                                            "--enable-native-access=ALL-UNNAMED"]}
+            :geometry-shader-houses {:main-opts ["-m" "lwjgl.advanced-opengl" "geometry-shader-houses"]
+                                     :jvm-opts ["-XstartOnFirstThread"
+                                                "--enable-native-access=ALL-UNNAMED"]}
+            :geometry-shader-exploding {:main-opts ["-m" "lwjgl.advanced-opengl" "geometry-shader-exploding"]
+                                        :jvm-opts ["-XstartOnFirstThread"
+                                                   "--enable-native-access=ALL-UNNAMED"]}
+            :geometry-shader-normals {:main-opts ["-m" "lwjgl.advanced-opengl" "geometry-shader-normals"]
+                                      :jvm-opts ["-XstartOnFirstThread"
+                                                 "--enable-native-access=ALL-UNNAMED"]}
+            :instancing-quads {:main-opts ["-m" "lwjgl.advanced-opengl" "instancing-quads"]
+                               :jvm-opts ["-XstartOnFirstThread"
+                                          "--enable-native-access=ALL-UNNAMED"]}
+            :asteroids {:main-opts ["-m" "lwjgl.advanced-opengl" "asteroids"]
+                        :jvm-opts ["-XstartOnFirstThread"
+                                   "--enable-native-access=ALL-UNNAMED"]}
+            :asteroids-instanced {:main-opts ["-m" "lwjgl.advanced-opengl" "asteroids-instanced"]
+                                  :jvm-opts ["-XstartOnFirstThread"
+                                             "--enable-native-access=ALL-UNNAMED"]}
+            :anti-aliasing-msaa {:main-opts ["-m" "lwjgl.advanced-opengl" "anti-aliasing-msaa"]
+                                 :jvm-opts ["-XstartOnFirstThread"
+                                            "--enable-native-access=ALL-UNNAMED"]}
+            :anti-aliasing-offscreen {:main-opts ["-m" "lwjgl.advanced-opengl" "anti-aliasing-offscreen"]
+                                      :jvm-opts ["-XstartOnFirstThread"
+                                                 "--enable-native-access=ALL-UNNAMED"]}
+            :cider {:extra-deps {cider/cider-nrepl {:mvn/version "0.45.0"}}
+                    :main-opts ["-m" "nrepl.cmdline"
+                                "--middleware"
                                "[cider.nrepl/cider-middleware]"]
                    :jvm-opts ["-XstartOnFirstThread"
                               "--enable-native-access=ALL-UNNAMED"]}
