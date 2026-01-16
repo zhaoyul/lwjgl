@@ -100,18 +100,54 @@
            :basic-lighting-specular {:main-opts ["-m" "lwjgl.basic-lighting-specular"]
                                      :jvm-opts ["-XstartOnFirstThread"
                                                 "--enable-native-access=ALL-UNNAMED"]}
-           :basic-lighting-ex1 {:main-opts ["-m" "lwjgl.basic-lighting-exercise1"]
+            :basic-lighting-ex1 {:main-opts ["-m" "lwjgl.basic-lighting-exercise1"]
+                                 :jvm-opts ["-XstartOnFirstThread"
+                                            "--enable-native-access=ALL-UNNAMED"]}
+            :basic-lighting-ex2 {:main-opts ["-m" "lwjgl.basic-lighting-exercise2"]
+                                 :jvm-opts ["-XstartOnFirstThread"
+                                            "--enable-native-access=ALL-UNNAMED"]}
+            :basic-lighting-ex3 {:main-opts ["-m" "lwjgl.basic-lighting-exercise3"]
+                                 :jvm-opts ["-XstartOnFirstThread"
+                                            "--enable-native-access=ALL-UNNAMED"]}
+            :materials {:main-opts ["-m" "lwjgl.materials"]
+                        :jvm-opts ["-XstartOnFirstThread"
+                                   "--enable-native-access=ALL-UNNAMED"]}
+            :materials-ex1 {:main-opts ["-m" "lwjgl.materials" "exercise1"]
+                            :jvm-opts ["-XstartOnFirstThread"
+                                       "--enable-native-access=ALL-UNNAMED"]}
+            :lighting-maps-diffuse {:main-opts ["-m" "lwjgl.lighting-maps" "diffuse-map"]
+                                    :jvm-opts ["-XstartOnFirstThread"
+                                               "--enable-native-access=ALL-UNNAMED"]}
+            :lighting-maps-specular {:main-opts ["-m" "lwjgl.lighting-maps" "specular-map"]
+                                     :jvm-opts ["-XstartOnFirstThread"
+                                                "--enable-native-access=ALL-UNNAMED"]}
+            :lighting-maps-ex2 {:main-opts ["-m" "lwjgl.lighting-maps" "exercise2"]
                                 :jvm-opts ["-XstartOnFirstThread"
                                            "--enable-native-access=ALL-UNNAMED"]}
-           :basic-lighting-ex2 {:main-opts ["-m" "lwjgl.basic-lighting-exercise2"]
+            :lighting-maps-ex4 {:main-opts ["-m" "lwjgl.lighting-maps" "exercise4"]
                                 :jvm-opts ["-XstartOnFirstThread"
                                            "--enable-native-access=ALL-UNNAMED"]}
-           :basic-lighting-ex3 {:main-opts ["-m" "lwjgl.basic-lighting-exercise3"]
-                                :jvm-opts ["-XstartOnFirstThread"
-                                           "--enable-native-access=ALL-UNNAMED"]}
-           :model-loading {:main-opts ["-m" "lwjgl.model-loading"]
-                           :jvm-opts ["-XstartOnFirstThread"
-                                      "--enable-native-access=ALL-UNNAMED"]}
+            :light-casters-directional {:main-opts ["-m" "lwjgl.light-casters" "directional"]
+                                        :jvm-opts ["-XstartOnFirstThread"
+                                                   "--enable-native-access=ALL-UNNAMED"]}
+            :light-casters-point {:main-opts ["-m" "lwjgl.light-casters" "point"]
+                                  :jvm-opts ["-XstartOnFirstThread"
+                                             "--enable-native-access=ALL-UNNAMED"]}
+            :light-casters-spot {:main-opts ["-m" "lwjgl.light-casters" "spot"]
+                                 :jvm-opts ["-XstartOnFirstThread"
+                                            "--enable-native-access=ALL-UNNAMED"]}
+            :light-casters-spot-soft {:main-opts ["-m" "lwjgl.light-casters" "spot-soft"]
+                                      :jvm-opts ["-XstartOnFirstThread"
+                                                 "--enable-native-access=ALL-UNNAMED"]}
+            :multiple-lights {:main-opts ["-m" "lwjgl.multiple-lights"]
+                              :jvm-opts ["-XstartOnFirstThread"
+                                         "--enable-native-access=ALL-UNNAMED"]}
+            :multiple-lights-ex1 {:main-opts ["-m" "lwjgl.multiple-lights" "exercise1"]
+                                  :jvm-opts ["-XstartOnFirstThread"
+                                             "--enable-native-access=ALL-UNNAMED"]}
+            :model-loading {:main-opts ["-m" "lwjgl.model-loading"]
+                            :jvm-opts ["-XstartOnFirstThread"
+                                       "--enable-native-access=ALL-UNNAMED"]}
            :camera-circle {:main-opts ["-m" "lwjgl.camera" "circle"]
                            :jvm-opts ["-XstartOnFirstThread"
                                       "--enable-native-access=ALL-UNNAMED"]}
