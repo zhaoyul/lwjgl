@@ -12,6 +12,7 @@
 (def ^:const depth-width 1024)
 (def ^:const depth-height 1024)
 (def ^:const cube-floats-per-vertex 6)
+(def ^:const texel-base 1.0)
 
 (defn- upload-mat!
   [^Matrix4f m ^java.nio.FloatBuffer buf loc]
@@ -275,7 +276,7 @@ void main() {
         (GL20/glUseProgram scene-program)
         (GL20/glUniform1i (GL20/glGetUniformLocation scene-program "shadowMap") 0)
         (when (<= 0 texel-size-loc)
-          (GL20/glUniform1f texel-size-loc (float (/ 1.0 depth-width))))
+          (GL20/glUniform1f texel-size-loc (float (/ texel-base depth-width))))
         (GL20/glUseProgram debug-program)
         (GL20/glUniform1i debug-depth-loc 0)
         (loop []
