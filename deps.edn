@@ -86,12 +86,30 @@
             :coordinate-systems-multiple {:main-opts ["-m" "lwjgl.coordinate-systems-multiple"]
                                           :jvm-opts ["-XstartOnFirstThread"
                                                      "--enable-native-access=ALL-UNNAMED"]}
-            :coordinate-systems-ex3 {:main-opts ["-m" "lwjgl.coordinate-systems-exercise3"]
-                                     :jvm-opts ["-XstartOnFirstThread"
-                                                "--enable-native-access=ALL-UNNAMED"]}
-            :cider {:extra-deps {cider/cider-nrepl {:mvn/version "0.45.0"}}
-                    :main-opts ["-m" "nrepl.cmdline"
-                                "--middleware"
+             :coordinate-systems-ex3 {:main-opts ["-m" "lwjgl.coordinate-systems-exercise3"]
+                                      :jvm-opts ["-XstartOnFirstThread"
+                                                 "--enable-native-access=ALL-UNNAMED"]}
+             :camera-circle {:main-opts ["-m" "lwjgl.camera" "circle"]
+                             :jvm-opts ["-XstartOnFirstThread"
+                                        "--enable-native-access=ALL-UNNAMED"]}
+             :camera-keyboard-dt {:main-opts ["-m" "lwjgl.camera" "keyboard-dt"]
+                                  :jvm-opts ["-XstartOnFirstThread"
+                                             "--enable-native-access=ALL-UNNAMED"]}
+             :camera-mouse-zoom {:main-opts ["-m" "lwjgl.camera" "mouse-zoom"]
+                                 :jvm-opts ["-XstartOnFirstThread"
+                                            "--enable-native-access=ALL-UNNAMED"]}
+             :camera-class {:main-opts ["-m" "lwjgl.camera" "class"]
+                            :jvm-opts ["-XstartOnFirstThread"
+                                       "--enable-native-access=ALL-UNNAMED"]}
+             :camera-exercise1 {:main-opts ["-m" "lwjgl.camera" "exercise1"]
+                                :jvm-opts ["-XstartOnFirstThread"
+                                           "--enable-native-access=ALL-UNNAMED"]}
+             :camera-exercise2 {:main-opts ["-m" "lwjgl.camera" "exercise2"]
+                                :jvm-opts ["-XstartOnFirstThread"
+                                           "--enable-native-access=ALL-UNNAMED"]}
+             :cider {:extra-deps {cider/cider-nrepl {:mvn/version "0.45.0"}}
+                     :main-opts ["-m" "nrepl.cmdline"
+                                 "--middleware"
                                "[cider.nrepl/cider-middleware]"]
                    :jvm-opts ["-XstartOnFirstThread"
                               "--enable-native-access=ALL-UNNAMED"]}

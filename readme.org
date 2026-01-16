@@ -35,6 +35,12 @@ Just poking the scene and watching it change in real time.
 - LearnOpenGL Chapter 1 (coordinate systems depth) example (two cubes showing depth test): =clj -M:coordinate-systems-depth=
 - LearnOpenGL Chapter 1 (coordinate systems multiple) example (multiple cubes with transforms): =clj -M:coordinate-systems-multiple=
 - LearnOpenGL Chapter 1 (coordinate systems exercise 3) example (orbital camera around cubes): =clj -M:coordinate-systems-ex3=
+- LearnOpenGL Chapter 1 (camera circle) example (orbiting camera view): =clj -M:camera-circle=
+- LearnOpenGL Chapter 1 (camera keyboard dt) example (WASD camera movement with delta time): =clj -M:camera-keyboard-dt=
+- LearnOpenGL Chapter 1 (camera mouse zoom) example (mouse look + scroll zoom): =clj -M:camera-mouse-zoom=
+- LearnOpenGL Chapter 1 (camera class) example (camera controls via reusable state): =clj -M:camera-class=
+- LearnOpenGL Chapter 1 (camera exercise 1) example (grounded FPS-style camera): =clj -M:camera-exercise1=
+- LearnOpenGL Chapter 1 (camera exercise 2) example (manual LookAt matrix): =clj -M:camera-exercise2=
 
 * Chapter 1 migration TODO
 - [x] 1.1.hello_window
@@ -63,12 +69,12 @@ Just poking the scene and watching it change in real time.
 - [x] 6.2.coordinate_systems_depth
 - [x] 6.3.coordinate_systems_multiple
 - [x] 6.4.coordinate_systems_exercise3
-- [ ] 7.1.camera_circle
-- [ ] 7.2.camera_keyboard_dt
-- [ ] 7.3.camera_mouse_zoom
-- [ ] 7.4.camera_class
-- [ ] 7.5.camera_exercise1
-- [ ] 7.6.camera_exercise2
+- [x] 7.1.camera_circle
+- [x] 7.2.camera_keyboard_dt
+- [x] 7.3.camera_mouse_zoom
+- [x] 7.4.camera_class
+- [x] 7.5.camera_exercise1
+- [x] 7.6.camera_exercise2
 
 * Notes
 - The project is configured for macOS arm64 natives in =deps.edn=.
