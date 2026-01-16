@@ -95,6 +95,8 @@ void main() {
   []
   (let [width 800
         height 600
+        base-scale 0.5
+        scale-amp 0.5
         error-callback (core/init-glfw!)
         window (core/create-window width height "LearnOpenGL - Transformations Exercise 2 (LWJGL)")]
     (try
@@ -124,7 +126,7 @@ void main() {
           (loop []
             (when-not (GLFW/glfwWindowShouldClose window)
               (let [time (float (GLFW/glfwGetTime))
-                    scale (float (+ 0.5 (* 0.5 (Math/sin time))))
+                    scale (float (+ base-scale (* scale-amp (Math/sin time))))
                     transform (doto (Matrix4f.)
                                 (.translate -0.3 0.3 0.0)
                                 (.rotate time 0.0 0.0 1.0)

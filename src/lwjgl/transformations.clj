@@ -81,6 +81,14 @@ void main() {
     (GL11/glTexImage2D GL11/GL_TEXTURE_2D 0 GL11/GL_RGB w h 0 GL11/GL_RGB GL11/GL_UNSIGNED_BYTE buf)
     tex))
 
+(defn- upload-transform!
+  [^Matrix4f m ^java.nio.FloatBuffer buf loc]
+  (.clear buf)
+  (.get m buf)
+  (.flip buf)
+  (when (<= 0 loc)
+    (GL20/glUniformMatrix4fv loc false buf)))
+
 (defn run-example!
   []
   (let [width 800
@@ -118,11 +126,7 @@ void main() {
                                 (.translate 0.5 -0.5 0.0)
                                 (.rotate t 0.0 0.0 1.0)
                                 (.scale (float 0.8)))]
-                (.clear buf)
-                (.get transform buf)
-                (.flip buf)
-                (when (<= 0 transform-loc)
-                  (GL20/glUniformMatrix4fv transform-loc false buf)))
+                (upload-transform! transform buf transform-loc))
               (GL11/glClearColor 0.2 0.3 0.3 1.0)
               (GL11/glClear GL11/GL_COLOR_BUFFER_BIT)
               (GL13/glActiveTexture GL13/GL_TEXTURE0)
