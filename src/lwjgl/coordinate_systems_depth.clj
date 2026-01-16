@@ -121,7 +121,7 @@ void main() {
   (when (<= 0 loc)
     (GL20/glUniformMatrix4fv loc false buf)))
 
-(def ^:const rotation-offset 0.5)
+(def ^:const base-rotation-step 0.5)
 
 (def cube-positions
   [(Vector3f. 0.0 0.0 0.0)
@@ -175,7 +175,7 @@ void main() {
               (doseq [[idx pos] (map-indexed vector cube-positions)]
                 (.identity model)
                 (.translate model pos)
-                (.rotate model (+ (* rotation-offset (float idx)) (float (GLFW/glfwGetTime))) 0.5 1.0 0.0)
+                (.rotate model (+ (* base-rotation-step (float idx)) (float (GLFW/glfwGetTime))) 0.5 1.0 0.0)
                 (upload-mat! model mat-buf model-loc)
                 (GL11/glDrawArrays GL11/GL_TRIANGLES 0 36))
               (GLFW/glfwSwapBuffers window)

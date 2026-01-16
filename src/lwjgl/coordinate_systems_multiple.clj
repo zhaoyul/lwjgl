@@ -183,7 +183,8 @@ void main() {
               (doseq [[idx pos] (map-indexed vector cube-positions)]
                 (.identity model)
                 (.translate model pos)
-                (.rotate model (+ (float (* base-rotation-step idx)) (float (GLFW/glfwGetTime))) 0.5 1.0 0.0)
+                (let [angle (float (+ (* base-rotation-step idx) (GLFW/glfwGetTime)))]
+                  (.rotate model angle 0.5 1.0 0.0))
                 (upload-mat! model mat-buf model-loc)
                 (GL11/glDrawArrays GL11/GL_TRIANGLES 0 36))
               (GLFW/glfwSwapBuffers window)
