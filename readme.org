@@ -13,6 +13,9 @@ Just poking the scene and watching it change in real time.
 - LearnOpenGL Chapter 1 (hello window clear) example (dynamic clear color): =clj -M:hello-window-clear=
 - LearnOpenGL Chapter 1 (hello triangle) example (basic OpenGL triangle render): =clj -M:chapter1=
 - LearnOpenGL Chapter 1 (indexed triangle) example (EBO + two triangles quad): =clj -M:triangle-indexed=
+- LearnOpenGL Chapter 1 (triangle exercise 1) example (two triangles, single VAO/VBO): =clj -M:triangle-ex1=
+- LearnOpenGL Chapter 1 (triangle exercise 2) example (two triangles, separate VAOs/VBOs): =clj -M:triangle-ex2=
+- LearnOpenGL Chapter 1 (triangle exercise 3) example (two fragment shaders: orange/yellow): =clj -M:triangle-ex3=
 
 * Notes
 - The project is configured for macOS arm64 natives in =deps.edn=.
