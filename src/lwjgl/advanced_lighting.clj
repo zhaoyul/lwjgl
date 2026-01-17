@@ -134,13 +134,18 @@ uniform float bloomThreshold;
 uniform float bloomStrength;
 uniform int useNormalPerturb;
 uniform float normalScale;
-uniform int parallaxMode; //0 none,1 basic,2 steep,3 occlusion
+/* parallaxMode: 0 none, 1 basic, 2 steep, 3 occlusion */
+uniform int parallaxMode;
 uniform float heightScale;
 uniform int useSSAO;
 uniform float aoStrength;
 uniform int usePointLight;
 uniform int useCSM;
-uniform int deferredMode; //0 none,1 basic,2 volumes
+/* deferredMode: 0 none, 1 basic, 2 volumes */
+uniform int deferredMode;
+uniform float csmRange;
+uniform float aoBias;
+uniform float gammaValue;
 
 vec3 perturbNormal(vec3 n) {
     if (useNormalPerturb == 0) return normalize(n);
@@ -188,7 +193,7 @@ vec3 computeLight(vec3 norm) {
     }
     if (useCSM != 0) {
         float slice = abs(FragPos.z);
-        float fade = clamp(1.0 - slice / 20.0, 0.2, 1.0);
+        float fade = clamp(1.0 - slice / csmRange, 0.2, 1.0);
         lightColor *= fade;
     }
     vec3 ambient = 0.18 * lightColor;
@@ -203,7 +208,7 @@ void main() {
     vec3 color = lighting * baseColor;
     color = applyDeferred(color, norm);
     if (useSSAO != 0) {
-        float occl = 1.0 - aoStrength * (1.0 - clamp(norm.y * 0.5 + 0.5, 0.0, 1.0));
+        float occl = 1.0 - aoStrength * (1.0 - clamp(norm.y * aoBias + aoBias, 0.0, 1.0));
         color *= occl;
     }
     if (useBloom != 0) {
@@ -214,7 +219,7 @@ void main() {
         color = vec3(1.0) - exp(-color * exposure);
     }
     if (useGamma != 0) {
-        color = pow(color, vec3(1.0 / 2.2));
+        color = pow(color, vec3(1.0 / gammaValue));
     }
     FragColor = vec4(color, 1.0);
 }")
@@ -364,6 +369,7 @@ void main() {
         light-pos (Vector3f. 2.0 3.5 2.0)
         cfg (merge {:useBlinn 1
                     :useGamma 0
+                    :gammaValue 2.2
                     :useHDR 0
                     :exposure 1.0
                     :useBloom 0
@@ -375,8 +381,10 @@ void main() {
                     :heightScale 0.0
                     :useSSAO 0
                     :aoStrength 0.3
+                    :aoBias 0.5
                     :usePointLight 0
                     :useCSM 0
+                    :csmRange 20.0
                     :deferredMode 0
                     :clear [0.07 0.07 0.1 1.0]}
                    config)]
@@ -401,14 +409,18 @@ void main() {
             height-scale-loc (GL20/glGetUniformLocation program "heightScale")
             use-ssao-loc (GL20/glGetUniformLocation program "useSSAO")
             ao-strength-loc (GL20/glGetUniformLocation program "aoStrength")
+            ao-bias-loc (GL20/glGetUniformLocation program "aoBias")
             use-point-loc (GL20/glGetUniformLocation program "usePointLight")
             use-csm-loc (GL20/glGetUniformLocation program "useCSM")
-            deferred-mode-loc (GL20/glGetUniformLocation program "deferredMode")]
+            csm-range-loc (GL20/glGetUniformLocation program "csmRange")
+            deferred-mode-loc (GL20/glGetUniformLocation program "deferredMode")
+            gamma-value-loc (GL20/glGetUniformLocation program "gammaValue")]
         (GL20/glUseProgram program)
         (GL20/glUniform3f light-pos-loc (.x light-pos) (.y light-pos) (.z light-pos))
         (GL20/glUniform3f view-pos-loc 0.0 3.0 6.0)
         (GL20/glUniform1i use-blinn-loc (int (:useBlinn cfg)))
         (GL20/glUniform1i use-gamma-loc (int (:useGamma cfg)))
+        (GL20/glUniform1f gamma-value-loc (float (:gammaValue cfg)))
         (GL20/glUniform1i use-hdr-loc (int (:useHDR cfg)))
         (GL20/glUniform1f exposure-loc (float (:exposure cfg)))
         (GL20/glUniform1i use-bloom-loc (int (:useBloom cfg)))
@@ -420,8 +432,10 @@ void main() {
         (GL20/glUniform1f height-scale-loc (float (:heightScale cfg)))
         (GL20/glUniform1i use-ssao-loc (int (:useSSAO cfg)))
         (GL20/glUniform1f ao-strength-loc (float (:aoStrength cfg)))
+        (GL20/glUniform1f ao-bias-loc (float (:aoBias cfg)))
         (GL20/glUniform1i use-point-loc (int (:usePointLight cfg)))
         (GL20/glUniform1i use-csm-loc (int (:useCSM cfg)))
+        (GL20/glUniform1f csm-range-loc (float (:csmRange cfg)))
         (GL20/glUniform1i deferred-mode-loc (int (:deferredMode cfg)))
         (loop []
           (when-not (GLFW/glfwWindowShouldClose window)
