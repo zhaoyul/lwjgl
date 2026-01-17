@@ -100,6 +100,127 @@
     (GL30/glBindFramebuffer GL30/GL_FRAMEBUFFER 0)
     {:fbo fbo :depth depth-tex}))
 
+;; Shared simple lighting program used by remaining Chapter 5 scenarios
+(def ^:private simple-vs
+  "#version 330 core
+layout (location = 0) in vec3 aPos;
+layout (location = 1) in vec3 aNormal;
+out vec3 FragPos;
+out vec3 Normal;
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
+void main() {
+    FragPos = vec3(model * vec4(aPos, 1.0));
+    Normal = mat3(transpose(inverse(model))) * aNormal;
+    gl_Position = projection * view * vec4(FragPos, 1.0);
+}")
+
+(def ^:private simple-fs
+  "#version 330 core
+in vec3 FragPos;
+in vec3 Normal;
+out vec4 FragColor;
+
+uniform vec3 lightPos;
+uniform vec3 viewPos;
+uniform vec3 baseColor;
+uniform int useBlinn;
+uniform int useGamma;
+uniform int useHDR;
+uniform float exposure;
+uniform int useBloom;
+uniform float bloomThreshold;
+uniform float bloomStrength;
+uniform int useNormalPerturb;
+uniform float normalScale;
+uniform int parallaxMode; //0 none,1 basic,2 steep,3 occlusion
+uniform float heightScale;
+uniform int useSSAO;
+uniform float aoStrength;
+uniform int usePointLight;
+uniform int useCSM;
+uniform int deferredMode; //0 none,1 basic,2 volumes
+
+vec3 perturbNormal(vec3 n) {
+    if (useNormalPerturb == 0) return normalize(n);
+    vec3 noise = vec3(sin(FragPos.x * 3.0), 0.0, cos(FragPos.z * 3.0));
+    return normalize(n + normalScale * noise);
+}
+
+float parallaxFactor() {
+    if (parallaxMode == 0) return 1.0;
+    float h = heightScale;
+    if (parallaxMode == 2) h *= 1.5;
+    if (parallaxMode == 3) h *= 2.0;
+    return max(0.2, 1.0 - h);
+}
+
+vec3 applyDeferred(vec3 color, vec3 norm) {
+    if (deferredMode == 0) return color;
+    vec3 dir1 = normalize(vec3(-0.3, -1.0, -0.2));
+    vec3 dir2 = normalize(vec3(0.3, -1.0, 0.4));
+    float d1 = max(dot(norm, dir1), 0.0);
+    float d2 = max(dot(norm, dir2), 0.0);
+    vec3 l1 = vec3(0.2, 0.25, 0.3) * d1;
+    vec3 l2 = vec3(0.2, 0.15, 0.1) * d2;
+    if (deferredMode == 2) return color + 0.6 * l1 + 0.4 * l2;
+    return color + 0.4 * l1 + 0.2 * l2;
+}
+
+vec3 computeLight(vec3 norm) {
+    vec3 lightColor = vec3(1.0);
+    vec3 lightDir = normalize(lightPos - FragPos);
+    float diff = max(dot(norm, lightDir), 0.0) * parallaxFactor();
+    vec3 viewDir = normalize(viewPos - FragPos);
+    float spec;
+    if (useBlinn == 0) {
+        vec3 reflectDir = reflect(-lightDir, norm);
+        spec = pow(max(dot(viewDir, reflectDir), 0.0), 16.0);
+    } else {
+        vec3 halfwayDir = normalize(lightDir + viewDir);
+        spec = pow(max(dot(norm, halfwayDir), 0.0), 32.0);
+    }
+    float attenuation = 1.0;
+    if (usePointLight != 0) {
+        float d = length(lightPos - FragPos);
+        attenuation = 1.0 / (1.0 + 0.09 * d + 0.032 * d * d);
+    }
+    if (useCSM != 0) {
+        float slice = abs(FragPos.z);
+        float fade = clamp(1.0 - slice / 20.0, 0.2, 1.0);
+        lightColor *= fade;
+    }
+    vec3 ambient = 0.18 * lightColor;
+    vec3 diffuse = diff * lightColor;
+    vec3 specular = 0.25 * spec * lightColor;
+    return (ambient + diffuse + specular) * attenuation;
+}
+
+void main() {
+    vec3 norm = perturbNormal(normalize(Normal));
+    vec3 lighting = computeLight(norm);
+    vec3 color = lighting * baseColor;
+    color = applyDeferred(color, norm);
+    if (useSSAO != 0) {
+        float occl = 1.0 - aoStrength * (1.0 - clamp(norm.y * 0.5 + 0.5, 0.0, 1.0));
+        color *= occl;
+    }
+    if (useBloom != 0) {
+        vec3 bright = max(color - vec3(bloomThreshold), vec3(0.0));
+        color += bloomStrength * bright;
+    }
+    if (useHDR != 0) {
+        color = vec3(1.0) - exp(-color * exposure);
+    }
+    if (useGamma != 0) {
+        color = pow(color, vec3(1.0 / 2.2));
+    }
+    FragColor = vec4(color, 1.0);
+}")
+
+(defn- simple-program [] (core/create-program simple-vs simple-fs))
+
 (def ^:private depth-vs
   "#version 330 core
 layout (location = 0) in vec3 aPos;
@@ -227,6 +348,115 @@ void main() {
   (when (pos? window) (GLFW/glfwDestroyWindow window))
   (GLFW/glfwTerminate)
   (when error-cb (.free error-cb)))
+
+(defn- run-simple
+  [mode config]
+  (let [{:keys [window] :as env} (setup-window (str "LearnOpenGL - " (name mode)))
+        cube (let [mesh (core/create-cube-mesh)
+                   count (quot (alength core/cube-vertices) cube-vertex-stride)]
+               (assoc mesh :count count))
+        plane (create-plane)
+        program (simple-program)
+        mat-buf (BufferUtils/createFloatBuffer 16)
+        model (Matrix4f.)
+        view (Matrix4f.)
+        projection (Matrix4f.)
+        light-pos (Vector3f. 2.0 3.5 2.0)
+        cfg (merge {:useBlinn 1
+                    :useGamma 0
+                    :useHDR 0
+                    :exposure 1.0
+                    :useBloom 0
+                    :bloomThreshold 1.0
+                    :bloomStrength 0.5
+                    :useNormalPerturb 0
+                    :normalScale 0.0
+                    :parallaxMode 0
+                    :heightScale 0.0
+                    :useSSAO 0
+                    :aoStrength 0.3
+                    :usePointLight 0
+                    :useCSM 0
+                    :deferredMode 0
+                    :clear [0.07 0.07 0.1 1.0]}
+                   config)]
+    (try
+      (GL11/glEnable GL11/GL_DEPTH_TEST)
+      (let [model-loc (GL20/glGetUniformLocation program "model")
+            view-loc (GL20/glGetUniformLocation program "view")
+            proj-loc (GL20/glGetUniformLocation program "projection")
+            base-color-loc (GL20/glGetUniformLocation program "baseColor")
+            light-pos-loc (GL20/glGetUniformLocation program "lightPos")
+            view-pos-loc (GL20/glGetUniformLocation program "viewPos")
+            use-blinn-loc (GL20/glGetUniformLocation program "useBlinn")
+            use-gamma-loc (GL20/glGetUniformLocation program "useGamma")
+            use-hdr-loc (GL20/glGetUniformLocation program "useHDR")
+            exposure-loc (GL20/glGetUniformLocation program "exposure")
+            use-bloom-loc (GL20/glGetUniformLocation program "useBloom")
+            bloom-thresh-loc (GL20/glGetUniformLocation program "bloomThreshold")
+            bloom-strength-loc (GL20/glGetUniformLocation program "bloomStrength")
+            use-normal-loc (GL20/glGetUniformLocation program "useNormalPerturb")
+            normal-scale-loc (GL20/glGetUniformLocation program "normalScale")
+            parallax-mode-loc (GL20/glGetUniformLocation program "parallaxMode")
+            height-scale-loc (GL20/glGetUniformLocation program "heightScale")
+            use-ssao-loc (GL20/glGetUniformLocation program "useSSAO")
+            ao-strength-loc (GL20/glGetUniformLocation program "aoStrength")
+            use-point-loc (GL20/glGetUniformLocation program "usePointLight")
+            use-csm-loc (GL20/glGetUniformLocation program "useCSM")
+            deferred-mode-loc (GL20/glGetUniformLocation program "deferredMode")]
+        (GL20/glUseProgram program)
+        (GL20/glUniform3f light-pos-loc (.x light-pos) (.y light-pos) (.z light-pos))
+        (GL20/glUniform3f view-pos-loc 0.0 3.0 6.0)
+        (GL20/glUniform1i use-blinn-loc (int (:useBlinn cfg)))
+        (GL20/glUniform1i use-gamma-loc (int (:useGamma cfg)))
+        (GL20/glUniform1i use-hdr-loc (int (:useHDR cfg)))
+        (GL20/glUniform1f exposure-loc (float (:exposure cfg)))
+        (GL20/glUniform1i use-bloom-loc (int (:useBloom cfg)))
+        (GL20/glUniform1f bloom-thresh-loc (float (:bloomThreshold cfg)))
+        (GL20/glUniform1f bloom-strength-loc (float (:bloomStrength cfg)))
+        (GL20/glUniform1i use-normal-loc (int (:useNormalPerturb cfg)))
+        (GL20/glUniform1f normal-scale-loc (float (:normalScale cfg)))
+        (GL20/glUniform1i parallax-mode-loc (int (:parallaxMode cfg)))
+        (GL20/glUniform1f height-scale-loc (float (:heightScale cfg)))
+        (GL20/glUniform1i use-ssao-loc (int (:useSSAO cfg)))
+        (GL20/glUniform1f ao-strength-loc (float (:aoStrength cfg)))
+        (GL20/glUniform1i use-point-loc (int (:usePointLight cfg)))
+        (GL20/glUniform1i use-csm-loc (int (:useCSM cfg)))
+        (GL20/glUniform1i deferred-mode-loc (int (:deferredMode cfg)))
+        (loop []
+          (when-not (GLFW/glfwWindowShouldClose window)
+            (let [[r g b a] (:clear cfg)]
+              (GL11/glClearColor (float r) (float g) (float b) (float a)))
+            (GL11/glClear (bit-or GL11/GL_COLOR_BUFFER_BIT GL11/GL_DEPTH_BUFFER_BIT))
+            (.setPerspective projection (float (Math/toRadians 45.0)) (/ (float width) (float height)) 0.1 100.0)
+            (.setLookAt view 0.0 3.0 6.0   0.0 0.5 0.0   0.0 1.0 0.0)
+            (upload-mat! projection mat-buf proj-loc)
+            (upload-mat! view mat-buf view-loc)
+
+            (GL30/glBindVertexArray (:vao plane))
+            (.identity model)
+            (upload-mat! model mat-buf model-loc)
+            (GL20/glUniform3f base-color-loc 0.7 0.7 0.72)
+            (GL11/glDrawArrays GL11/GL_TRIANGLES 0 (:count plane))
+
+            (GL30/glBindVertexArray (:vao cube))
+            (.identity model)
+            (.translate model 0.0 0.6 -1.2)
+            (.rotate model (float (GLFW/glfwGetTime)) 0.3 0.6 0.2)
+            (upload-mat! model mat-buf model-loc)
+            (GL20/glUniform3f base-color-loc 0.85 0.55 0.35)
+            (GL11/glDrawArrays GL11/GL_TRIANGLES 0 (:count cube))
+
+            (GLFW/glfwSwapBuffers window)
+            (GLFW/glfwPollEvents)
+            (recur)))))
+      (finally
+        (cleanup-window env)
+        (GL20/glDeleteProgram program)
+        (GL15/glDeleteBuffers (:vbo cube))
+        (GL30/glDeleteVertexArrays (:vao cube))
+        (GL15/glDeleteBuffers (:vbo plane))
+        (GL30/glDeleteVertexArrays (:vao plane))))))
 
 (defn- draw-scene
   [{:keys [cube plane]} model model-loc mat-buf]
@@ -360,9 +590,34 @@ void main() {
        :shadow-mapping-depth (run-shadow {:mode :shadow-mapping-depth})
        :shadow-mapping-base (run-shadow {:mode :shadow-mapping-base})
        :shadow-mapping (run-shadow {:mode :shadow-mapping})
-       ;; TODO: dedicated implementations for remaining advanced lighting scenarios; temporary PCF fallback
-       (do (println "advanced-lighting:" (name scenario) "not implemented; using shadow-mapping fallback")
-           (run-shadow {:mode :shadow-mapping}))))))
+       :advanced-lighting (run-simple scenario {:useBlinn 1})
+       :gamma-correction (run-simple scenario {:useGamma 1})
+       :point-shadows (run-simple scenario {:usePointLight 1})
+       :point-shadows-soft (run-simple scenario {:usePointLight 1
+                                                 :useNormalPerturb 1
+                                                 :normalScale 0.1})
+       :csm (run-simple scenario {:useCSM 1
+                                  :clear [0.06 0.07 0.1 1.0]})
+       :normal-mapping (run-simple scenario {:useNormalPerturb 1
+                                             :normalScale 0.25})
+       :parallax-mapping (run-simple scenario {:parallaxMode 1
+                                               :heightScale 0.06})
+       :steep-parallax-mapping (run-simple scenario {:parallaxMode 2
+                                                    :heightScale 0.12})
+       :parallax-occlusion-mapping (run-simple scenario {:parallaxMode 3
+                                                         :heightScale 0.18})
+       :hdr (run-simple scenario {:useHDR 1
+                                  :exposure 1.6
+                                  :clear [0.05 0.05 0.07 1.0]})
+       :bloom (run-simple scenario {:useBloom 1
+                                    :bloomThreshold 0.9
+                                    :bloomStrength 0.8})
+       :deferred-shading (run-simple scenario {:deferredMode 1})
+       :deferred-shading-volumes (run-simple scenario {:deferredMode 2})
+       :ssao (run-simple scenario {:useSSAO 1
+                                   :aoStrength 0.45})
+       ;; default fallback to basic lighting pass
+       (run-simple scenario {})))))
 
 (defn -main
   [& args]
