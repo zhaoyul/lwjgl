@@ -193,6 +193,7 @@ vec3 computeLight(vec3 norm) {
     }
     if (useCSM != 0) {
         float slice = abs(FragPos.z);
+        /* simplified cascade fade based on view-space Z distance */
         float fade = clamp(1.0 - slice / csmRange, 0.2, 1.0);
         lightColor *= fade;
     }
@@ -208,6 +209,7 @@ void main() {
     vec3 color = lighting * baseColor;
     color = applyDeferred(color, norm);
     if (useSSAO != 0) {
+        /* simplified SSAO approximation driven by normal-y */
         float occl = 1.0 - aoStrength * (1.0 - clamp(norm.y * aoBias + aoBias, 0.0, 1.0));
         color *= occl;
     }
@@ -358,6 +360,7 @@ void main() {
   [mode config]
   (let [{:keys [window] :as env} (setup-window (str "LearnOpenGL - " (name mode)))
         cube (let [mesh (core/create-cube-mesh)
+                   ;; assumes cube-vertices layout matches cube-vertex-stride (pos+normal)
                    count (quot (alength core/cube-vertices) cube-vertex-stride)]
                (assoc mesh :count count))
         plane (create-plane)
