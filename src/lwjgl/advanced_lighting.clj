@@ -193,7 +193,7 @@ vec3 computeLight(vec3 norm) {
     }
     if (useCSM != 0) {
         float slice = abs(FragPos.z);
-        /* simplified cascade fade based on view-space Z distance */
+        /* simplified cascade fade based on world-space Z distance */
         float fade = clamp(1.0 - slice / csmRange, 0.2, 1.0);
         lightColor *= fade;
     }
@@ -210,7 +210,7 @@ void main() {
     color = applyDeferred(color, norm);
     if (useSSAO != 0) {
         /* simplified SSAO approximation driven by normal-y */
-        float occl = 1.0 - aoStrength * (1.0 - clamp(norm.y * aoBias + aoBias, 0.0, 1.0));
+        float occl = 1.0 - aoStrength * (1.0 - clamp(aoBias * (norm.y + 1.0), 0.0, 1.0));
         color *= occl;
     }
     if (useBloom != 0) {
@@ -360,7 +360,7 @@ void main() {
   [mode config]
   (let [{:keys [window] :as env} (setup-window (str "LearnOpenGL - " (name mode)))
         cube (let [mesh (core/create-cube-mesh)
-                   ;; assumes cube-vertices layout matches cube-vertex-stride (pos+normal)
+                   ;; cube-vertices in core.clj are pos(3)+normal(3) => stride 6
                    count (quot (alength core/cube-vertices) cube-vertex-stride)]
                (assoc mesh :count count))
         plane (create-plane)
@@ -440,12 +440,12 @@ void main() {
         (GL20/glUniform1i use-csm-loc (int (:useCSM cfg)))
         (GL20/glUniform1f csm-range-loc (float (:csmRange cfg)))
         (GL20/glUniform1i deferred-mode-loc (int (:deferredMode cfg)))
+        (.setPerspective projection (float (Math/toRadians 45.0)) (/ (float width) (float height)) 0.1 100.0)
         (loop []
           (when-not (GLFW/glfwWindowShouldClose window)
             (let [[r g b a] (:clear cfg)]
-              (GL11/glClearColor (float r) (float g) (float b) (float a)))
+            (GL11/glClearColor (float r) (float g) (float b) (float a)))
             (GL11/glClear (bit-or GL11/GL_COLOR_BUFFER_BIT GL11/GL_DEPTH_BUFFER_BIT))
-            (.setPerspective projection (float (Math/toRadians 45.0)) (/ (float width) (float height)) 0.1 100.0)
             (.setLookAt view 0.0 3.0 6.0   0.0 0.5 0.0   0.0 1.0 0.0)
             (upload-mat! projection mat-buf proj-loc)
             (upload-mat! view mat-buf view-loc)
@@ -535,6 +535,7 @@ void main() {
           (GL20/glUniform1f texel-size-loc (float (/ pcf-texel-offset depth-width))))
         (GL20/glUseProgram debug-program)
         (GL20/glUniform1i debug-depth-loc 0)
+        (.setPerspective projection (float (Math/toRadians 45.0)) (/ (float width) (float height)) 0.1 100.0)
         (loop []
           (when-not (GLFW/glfwWindowShouldClose window)
             ;; light matrices
@@ -561,7 +562,6 @@ void main() {
             (GL11/glViewport 0 0 width height)
             (GL11/glClearColor 0.1 0.1 0.12 1.0)
             (GL11/glClear (bit-or GL11/GL_COLOR_BUFFER_BIT GL11/GL_DEPTH_BUFFER_BIT))
-            (.setPerspective projection (float (Math/toRadians 45.0)) (/ (float width) (float height)) 0.1 100.0)
             (.setLookAt view 0.0 3.0 6.0   0.0 0.0 0.0   0.0 1.0 0.0)
             (upload-mat! projection mat-buf proj-loc)
             (upload-mat! view mat-buf view-loc)
