@@ -13,219 +13,219 @@
  :aliases {:run {:main-opts ["-m" "lwjgl.core"]
                  :jvm-opts ["-XstartOnFirstThread"
                             "--enable-native-access=ALL-UNNAMED"]}
-           :hello-window {:main-opts ["-m" "lwjgl.hello-window"]
-                          :jvm-opts ["-XstartOnFirstThread"
-                                     "--enable-native-access=ALL-UNNAMED"]}
-           :hello-window-clear {:main-opts ["-m" "lwjgl.hello-window-clear"]
+           :hello-window {:main-opts ["-m" "lwjgl.chapter1.hello-window"]
+                           :jvm-opts ["-XstartOnFirstThread"
+                                      "--enable-native-access=ALL-UNNAMED"]}
+           :hello-window-clear {:main-opts ["-m" "lwjgl.chapter1.hello-window-clear"]
                                 :jvm-opts ["-XstartOnFirstThread"
                                            "--enable-native-access=ALL-UNNAMED"]}
-           :chapter1 {:main-opts ["-m" "lwjgl.hello-triangle"]
-                      :jvm-opts ["-XstartOnFirstThread"
-                                 "--enable-native-access=ALL-UNNAMED"]}
-           :triangle-indexed {:main-opts ["-m" "lwjgl.hello-triangle-indexed"]
+           :chapter1 {:main-opts ["-m" "lwjgl.chapter1.hello-triangle"]
+                       :jvm-opts ["-XstartOnFirstThread"
+                                  "--enable-native-access=ALL-UNNAMED"]}
+           :triangle-indexed {:main-opts ["-m" "lwjgl.chapter1.hello-triangle-indexed"]
+                               :jvm-opts ["-XstartOnFirstThread"
+                                          "--enable-native-access=ALL-UNNAMED"]}
+           :triangle-ex1 {:main-opts ["-m" "lwjgl.chapter1.hello-triangle-exercise1"]
+                           :jvm-opts ["-XstartOnFirstThread"
+                                      "--enable-native-access=ALL-UNNAMED"]}
+           :triangle-ex2 {:main-opts ["-m" "lwjgl.chapter1.hello-triangle-exercise2"]
+                           :jvm-opts ["-XstartOnFirstThread"
+                                      "--enable-native-access=ALL-UNNAMED"]}
+           :triangle-ex3 {:main-opts ["-m" "lwjgl.chapter1.hello-triangle-exercise3"]
+                           :jvm-opts ["-XstartOnFirstThread"
+                                      "--enable-native-access=ALL-UNNAMED"]}
+           :shaders-uniform {:main-opts ["-m" "lwjgl.chapter1.shaders-uniform"]
                               :jvm-opts ["-XstartOnFirstThread"
                                          "--enable-native-access=ALL-UNNAMED"]}
-           :triangle-ex1 {:main-opts ["-m" "lwjgl.hello-triangle-exercise1"]
-                          :jvm-opts ["-XstartOnFirstThread"
-                                     "--enable-native-access=ALL-UNNAMED"]}
-           :triangle-ex2 {:main-opts ["-m" "lwjgl.hello-triangle-exercise2"]
-                          :jvm-opts ["-XstartOnFirstThread"
-                                     "--enable-native-access=ALL-UNNAMED"]}
-           :triangle-ex3 {:main-opts ["-m" "lwjgl.hello-triangle-exercise3"]
-                          :jvm-opts ["-XstartOnFirstThread"
-                                     "--enable-native-access=ALL-UNNAMED"]}
-           :shaders-uniform {:main-opts ["-m" "lwjgl.shaders-uniform"]
-                             :jvm-opts ["-XstartOnFirstThread"
-                                        "--enable-native-access=ALL-UNNAMED"]}
-           :shaders-interpolation {:main-opts ["-m" "lwjgl.shaders-interpolation"]
+           :shaders-interpolation {:main-opts ["-m" "lwjgl.chapter1.shaders-interpolation"]
                                    :jvm-opts ["-XstartOnFirstThread"
                                               "--enable-native-access=ALL-UNNAMED"]}
-           :shaders-class {:main-opts ["-m" "lwjgl.shaders-class"]
-                           :jvm-opts ["-XstartOnFirstThread"
-                                      "--enable-native-access=ALL-UNNAMED"]}
-           :shaders-ex1 {:main-opts ["-m" "lwjgl.shaders-exercise1"]
-                         :jvm-opts ["-XstartOnFirstThread"
-                                    "--enable-native-access=ALL-UNNAMED"]}
-           :shaders-ex2 {:main-opts ["-m" "lwjgl.shaders-exercise2"]
-                         :jvm-opts ["-XstartOnFirstThread"
-                                    "--enable-native-access=ALL-UNNAMED"]}
-           :shaders-ex3 {:main-opts ["-m" "lwjgl.shaders-exercise3"]
-                         :jvm-opts ["-XstartOnFirstThread"
-                                    "--enable-native-access=ALL-UNNAMED"]}
-           :textures {:main-opts ["-m" "lwjgl.textures"]
-                      :jvm-opts ["-XstartOnFirstThread"
-                                 "--enable-native-access=ALL-UNNAMED"]}
-           :textures-combined {:main-opts ["-m" "lwjgl.textures-combined"]
-                               :jvm-opts ["-XstartOnFirstThread"
-                                          "--enable-native-access=ALL-UNNAMED"]}
-           :textures-ex1 {:main-opts ["-m" "lwjgl.textures-exercise1"]
+           :shaders-class {:main-opts ["-m" "lwjgl.chapter1.shaders-class"]
+                            :jvm-opts ["-XstartOnFirstThread"
+                                       "--enable-native-access=ALL-UNNAMED"]}
+           :shaders-ex1 {:main-opts ["-m" "lwjgl.chapter1.shaders-exercise1"]
                           :jvm-opts ["-XstartOnFirstThread"
                                      "--enable-native-access=ALL-UNNAMED"]}
-           :textures-ex2 {:main-opts ["-m" "lwjgl.textures-exercise2"]
+           :shaders-ex2 {:main-opts ["-m" "lwjgl.chapter1.shaders-exercise2"]
                           :jvm-opts ["-XstartOnFirstThread"
                                      "--enable-native-access=ALL-UNNAMED"]}
-           :textures-ex3 {:main-opts ["-m" "lwjgl.textures-exercise3"]
+           :shaders-ex3 {:main-opts ["-m" "lwjgl.chapter1.shaders-exercise3"]
                           :jvm-opts ["-XstartOnFirstThread"
                                      "--enable-native-access=ALL-UNNAMED"]}
-           :textures-ex4 {:main-opts ["-m" "lwjgl.textures-exercise4"]
+           :textures {:main-opts ["-m" "lwjgl.chapter1.textures"]
+                       :jvm-opts ["-XstartOnFirstThread"
+                                  "--enable-native-access=ALL-UNNAMED"]}
+           :textures-combined {:main-opts ["-m" "lwjgl.chapter1.textures-combined"]
+                                :jvm-opts ["-XstartOnFirstThread"
+                                           "--enable-native-access=ALL-UNNAMED"]}
+           :textures-ex1 {:main-opts ["-m" "lwjgl.chapter1.textures-exercise1"]
                           :jvm-opts ["-XstartOnFirstThread"
                                      "--enable-native-access=ALL-UNNAMED"]}
-           :transformations {:main-opts ["-m" "lwjgl.transformations"]
+           :textures-ex2 {:main-opts ["-m" "lwjgl.chapter1.textures-exercise2"]
+                          :jvm-opts ["-XstartOnFirstThread"
+                                     "--enable-native-access=ALL-UNNAMED"]}
+           :textures-ex3 {:main-opts ["-m" "lwjgl.chapter1.textures-exercise3"]
+                          :jvm-opts ["-XstartOnFirstThread"
+                                     "--enable-native-access=ALL-UNNAMED"]}
+           :textures-ex4 {:main-opts ["-m" "lwjgl.chapter1.textures-exercise4"]
+                          :jvm-opts ["-XstartOnFirstThread"
+                                     "--enable-native-access=ALL-UNNAMED"]}
+           :transformations {:main-opts ["-m" "lwjgl.chapter1.transformations"]
                              :jvm-opts ["-XstartOnFirstThread"
                                         "--enable-native-access=ALL-UNNAMED"]}
-           :transformations-ex1 {:main-opts ["-m" "lwjgl.transformations-exercise1"]
-                                 :jvm-opts ["-XstartOnFirstThread"
-                                            "--enable-native-access=ALL-UNNAMED"]}
-           :transformations-ex2 {:main-opts ["-m" "lwjgl.transformations-exercise2"]
-                                 :jvm-opts ["-XstartOnFirstThread"
-                                            "--enable-native-access=ALL-UNNAMED"]}
-           :coordinate-systems {:main-opts ["-m" "lwjgl.coordinate-systems"]
-                                :jvm-opts ["-XstartOnFirstThread"
-                                           "--enable-native-access=ALL-UNNAMED"]}
-           :coordinate-systems-depth {:main-opts ["-m" "lwjgl.coordinate-systems-depth"]
-                                      :jvm-opts ["-XstartOnFirstThread"
-                                                 "--enable-native-access=ALL-UNNAMED"]}
-           :coordinate-systems-multiple {:main-opts ["-m" "lwjgl.coordinate-systems-multiple"]
-                                         :jvm-opts ["-XstartOnFirstThread"
-                                                    "--enable-native-access=ALL-UNNAMED"]}
-           :coordinate-systems-ex3 {:main-opts ["-m" "lwjgl.coordinate-systems-exercise3"]
-                                    :jvm-opts ["-XstartOnFirstThread"
-                                               "--enable-native-access=ALL-UNNAMED"]}
-           :colors {:main-opts ["-m" "lwjgl.colors"]
-                    :jvm-opts ["-XstartOnFirstThread"
-                               "--enable-native-access=ALL-UNNAMED"]}
-           :basic-lighting-diffuse {:main-opts ["-m" "lwjgl.basic-lighting-diffuse"]
-                                    :jvm-opts ["-XstartOnFirstThread"
-                                               "--enable-native-access=ALL-UNNAMED"]}
-           :basic-lighting-specular {:main-opts ["-m" "lwjgl.basic-lighting-specular"]
-                                     :jvm-opts ["-XstartOnFirstThread"
-                                                "--enable-native-access=ALL-UNNAMED"]}
-            :basic-lighting-ex1 {:main-opts ["-m" "lwjgl.basic-lighting-exercise1"]
-                                 :jvm-opts ["-XstartOnFirstThread"
-                                            "--enable-native-access=ALL-UNNAMED"]}
-            :basic-lighting-ex2 {:main-opts ["-m" "lwjgl.basic-lighting-exercise2"]
-                                 :jvm-opts ["-XstartOnFirstThread"
-                                            "--enable-native-access=ALL-UNNAMED"]}
-            :basic-lighting-ex3 {:main-opts ["-m" "lwjgl.basic-lighting-exercise3"]
-                                 :jvm-opts ["-XstartOnFirstThread"
-                                            "--enable-native-access=ALL-UNNAMED"]}
-            :materials {:main-opts ["-m" "lwjgl.materials"]
-                        :jvm-opts ["-XstartOnFirstThread"
-                                   "--enable-native-access=ALL-UNNAMED"]}
-            :materials-ex1 {:main-opts ["-m" "lwjgl.materials" "exercise1"]
-                            :jvm-opts ["-XstartOnFirstThread"
-                                       "--enable-native-access=ALL-UNNAMED"]}
-            :lighting-maps-diffuse {:main-opts ["-m" "lwjgl.lighting-maps" "diffuse-map"]
-                                    :jvm-opts ["-XstartOnFirstThread"
-                                               "--enable-native-access=ALL-UNNAMED"]}
-            :lighting-maps-specular {:main-opts ["-m" "lwjgl.lighting-maps" "specular-map"]
-                                     :jvm-opts ["-XstartOnFirstThread"
-                                                "--enable-native-access=ALL-UNNAMED"]}
-            :lighting-maps-ex2 {:main-opts ["-m" "lwjgl.lighting-maps" "exercise2"]
-                                :jvm-opts ["-XstartOnFirstThread"
-                                           "--enable-native-access=ALL-UNNAMED"]}
-            :lighting-maps-ex4 {:main-opts ["-m" "lwjgl.lighting-maps" "exercise4"]
-                                :jvm-opts ["-XstartOnFirstThread"
-                                           "--enable-native-access=ALL-UNNAMED"]}
-            :light-casters-directional {:main-opts ["-m" "lwjgl.light-casters" "directional"]
-                                        :jvm-opts ["-XstartOnFirstThread"
-                                                   "--enable-native-access=ALL-UNNAMED"]}
-            :light-casters-point {:main-opts ["-m" "lwjgl.light-casters" "point"]
+           :transformations-ex1 {:main-opts ["-m" "lwjgl.chapter1.transformations-exercise1"]
                                   :jvm-opts ["-XstartOnFirstThread"
                                              "--enable-native-access=ALL-UNNAMED"]}
-            :light-casters-spot {:main-opts ["-m" "lwjgl.light-casters" "spot"]
-                                 :jvm-opts ["-XstartOnFirstThread"
-                                            "--enable-native-access=ALL-UNNAMED"]}
-            :light-casters-spot-soft {:main-opts ["-m" "lwjgl.light-casters" "spot-soft"]
-                                      :jvm-opts ["-XstartOnFirstThread"
-                                                 "--enable-native-access=ALL-UNNAMED"]}
-            :multiple-lights {:main-opts ["-m" "lwjgl.multiple-lights"]
-                              :jvm-opts ["-XstartOnFirstThread"
-                                         "--enable-native-access=ALL-UNNAMED"]}
-            :multiple-lights-ex1 {:main-opts ["-m" "lwjgl.multiple-lights" "exercise1"]
+           :transformations-ex2 {:main-opts ["-m" "lwjgl.chapter1.transformations-exercise2"]
                                   :jvm-opts ["-XstartOnFirstThread"
                                              "--enable-native-access=ALL-UNNAMED"]}
-            :model-loading {:main-opts ["-m" "lwjgl.model-loading"]
-                            :jvm-opts ["-XstartOnFirstThread"
-                                       "--enable-native-access=ALL-UNNAMED"]}
-           :camera-circle {:main-opts ["-m" "lwjgl.camera" "circle"]
-                           :jvm-opts ["-XstartOnFirstThread"
-                                      "--enable-native-access=ALL-UNNAMED"]}
-           :camera-keyboard-dt {:main-opts ["-m" "lwjgl.camera" "keyboard-dt"]
-                                :jvm-opts ["-XstartOnFirstThread"
-                                           "--enable-native-access=ALL-UNNAMED"]}
-             :camera-mouse-zoom {:main-opts ["-m" "lwjgl.camera" "mouse-zoom"]
+           :coordinate-systems {:main-opts ["-m" "lwjgl.chapter1.coordinate-systems"]
                                  :jvm-opts ["-XstartOnFirstThread"
                                             "--enable-native-access=ALL-UNNAMED"]}
-           :camera-class {:main-opts ["-m" "lwjgl.camera" "class"]
-                          :jvm-opts ["-XstartOnFirstThread"
-                                     "--enable-native-access=ALL-UNNAMED"]}
-           :camera-exercise1 {:main-opts ["-m" "lwjgl.camera" "exercise1"]
-                              :jvm-opts ["-XstartOnFirstThread"
-                                         "--enable-native-access=ALL-UNNAMED"]}
-            :camera-exercise2 {:main-opts ["-m" "lwjgl.camera" "exercise2"]
-                               :jvm-opts ["-XstartOnFirstThread"
-                                          "--enable-native-access=ALL-UNNAMED"]}
-            :depth-testing {:main-opts ["-m" "lwjgl.advanced-opengl" "depth-testing"]
-                            :jvm-opts ["-XstartOnFirstThread"
-                                       "--enable-native-access=ALL-UNNAMED"]}
-            :depth-testing-view {:main-opts ["-m" "lwjgl.advanced-opengl" "depth-testing-view"]
-                                 :jvm-opts ["-XstartOnFirstThread"
-                                            "--enable-native-access=ALL-UNNAMED"]}
-            :stencil-testing {:main-opts ["-m" "lwjgl.advanced-opengl" "stencil-testing"]
-                              :jvm-opts ["-XstartOnFirstThread"
-                                         "--enable-native-access=ALL-UNNAMED"]}
-            :blending-discard {:main-opts ["-m" "lwjgl.advanced-opengl" "blending-discard"]
-                               :jvm-opts ["-XstartOnFirstThread"
-                                          "--enable-native-access=ALL-UNNAMED"]}
-            :blending-sort {:main-opts ["-m" "lwjgl.advanced-opengl" "blending-sort"]
-                            :jvm-opts ["-XstartOnFirstThread"
-                                       "--enable-native-access=ALL-UNNAMED"]}
-            :face-culling-exercise1 {:main-opts ["-m" "lwjgl.advanced-opengl" "face-culling-exercise1"]
-                                     :jvm-opts ["-XstartOnFirstThread"
-                                                "--enable-native-access=ALL-UNNAMED"]}
-            :framebuffers {:main-opts ["-m" "lwjgl.advanced-opengl" "framebuffers"]
-                           :jvm-opts ["-XstartOnFirstThread"
-                                      "--enable-native-access=ALL-UNNAMED"]}
-            :framebuffers-exercise1 {:main-opts ["-m" "lwjgl.advanced-opengl" "framebuffers-exercise1"]
-                                     :jvm-opts ["-XstartOnFirstThread"
-                                                "--enable-native-access=ALL-UNNAMED"]}
-            :cubemaps-skybox {:main-opts ["-m" "lwjgl.advanced-opengl" "cubemaps-skybox"]
-                              :jvm-opts ["-XstartOnFirstThread"
-                                         "--enable-native-access=ALL-UNNAMED"]}
-            :cubemaps-environment-mapping {:main-opts ["-m" "lwjgl.advanced-opengl" "cubemaps-environment-mapping"]
-                                           :jvm-opts ["-XstartOnFirstThread"
-                                                      "--enable-native-access=ALL-UNNAMED"]}
-            :advanced-glsl-ubo {:main-opts ["-m" "lwjgl.advanced-opengl" "advanced-glsl-ubo"]
-                                 :jvm-opts ["-XstartOnFirstThread"
-                                            "--enable-native-access=ALL-UNNAMED"]}
-            :geometry-shader-houses {:main-opts ["-m" "lwjgl.advanced-opengl" "geometry-shader-houses"]
-                                     :jvm-opts ["-XstartOnFirstThread"
-                                                "--enable-native-access=ALL-UNNAMED"]}
-            :geometry-shader-exploding {:main-opts ["-m" "lwjgl.advanced-opengl" "geometry-shader-exploding"]
-                                        :jvm-opts ["-XstartOnFirstThread"
-                                                   "--enable-native-access=ALL-UNNAMED"]}
-            :geometry-shader-normals {:main-opts ["-m" "lwjgl.advanced-opengl" "geometry-shader-normals"]
-                                      :jvm-opts ["-XstartOnFirstThread"
-                                                 "--enable-native-access=ALL-UNNAMED"]}
-            :instancing-quads {:main-opts ["-m" "lwjgl.advanced-opengl" "instancing-quads"]
-                               :jvm-opts ["-XstartOnFirstThread"
-                                          "--enable-native-access=ALL-UNNAMED"]}
-            :asteroids {:main-opts ["-m" "lwjgl.advanced-opengl" "asteroids"]
-                        :jvm-opts ["-XstartOnFirstThread"
-                                   "--enable-native-access=ALL-UNNAMED"]}
-            :asteroids-instanced {:main-opts ["-m" "lwjgl.advanced-opengl" "asteroids-instanced"]
-                                  :jvm-opts ["-XstartOnFirstThread"
-                                             "--enable-native-access=ALL-UNNAMED"]}
-             :anti-aliasing-msaa {:main-opts ["-m" "lwjgl.advanced-opengl" "anti-aliasing-msaa"]
-                                  :jvm-opts ["-XstartOnFirstThread"
-                                             "--enable-native-access=ALL-UNNAMED"]}
-             :anti-aliasing-offscreen {:main-opts ["-m" "lwjgl.advanced-opengl" "anti-aliasing-offscreen"]
+           :coordinate-systems-depth {:main-opts ["-m" "lwjgl.chapter1.coordinate-systems-depth"]
                                        :jvm-opts ["-XstartOnFirstThread"
                                                   "--enable-native-access=ALL-UNNAMED"]}
-             :advanced-lighting {:main-opts ["-m" "lwjgl.advanced-lighting"]
+           :coordinate-systems-multiple {:main-opts ["-m" "lwjgl.chapter1.coordinate-systems-multiple"]
+                                         :jvm-opts ["-XstartOnFirstThread"
+                                                    "--enable-native-access=ALL-UNNAMED"]}
+           :coordinate-systems-ex3 {:main-opts ["-m" "lwjgl.chapter1.coordinate-systems-exercise3"]
+                                     :jvm-opts ["-XstartOnFirstThread"
+                                                "--enable-native-access=ALL-UNNAMED"]}
+           :colors {:main-opts ["-m" "lwjgl.chapter2.colors"]
+                     :jvm-opts ["-XstartOnFirstThread"
+                                "--enable-native-access=ALL-UNNAMED"]}
+           :basic-lighting-diffuse {:main-opts ["-m" "lwjgl.chapter2.basic-lighting-diffuse"]
+                                     :jvm-opts ["-XstartOnFirstThread"
+                                                "--enable-native-access=ALL-UNNAMED"]}
+           :basic-lighting-specular {:main-opts ["-m" "lwjgl.chapter2.basic-lighting-specular"]
+                                      :jvm-opts ["-XstartOnFirstThread"
+                                                 "--enable-native-access=ALL-UNNAMED"]}
+            :basic-lighting-ex1 {:main-opts ["-m" "lwjgl.chapter2.basic-lighting-exercise1"]
+                                  :jvm-opts ["-XstartOnFirstThread"
+                                             "--enable-native-access=ALL-UNNAMED"]}
+            :basic-lighting-ex2 {:main-opts ["-m" "lwjgl.chapter2.basic-lighting-exercise2"]
+                                  :jvm-opts ["-XstartOnFirstThread"
+                                             "--enable-native-access=ALL-UNNAMED"]}
+            :basic-lighting-ex3 {:main-opts ["-m" "lwjgl.chapter2.basic-lighting-exercise3"]
+                                  :jvm-opts ["-XstartOnFirstThread"
+                                             "--enable-native-access=ALL-UNNAMED"]}
+            :materials {:main-opts ["-m" "lwjgl.chapter2.materials"]
+                         :jvm-opts ["-XstartOnFirstThread"
+                                    "--enable-native-access=ALL-UNNAMED"]}
+            :materials-ex1 {:main-opts ["-m" "lwjgl.chapter2.materials" "exercise1"]
+                             :jvm-opts ["-XstartOnFirstThread"
+                                        "--enable-native-access=ALL-UNNAMED"]}
+            :lighting-maps-diffuse {:main-opts ["-m" "lwjgl.chapter2.lighting-maps" "diffuse-map"]
+                                    :jvm-opts ["-XstartOnFirstThread"
+                                               "--enable-native-access=ALL-UNNAMED"]}
+            :lighting-maps-specular {:main-opts ["-m" "lwjgl.chapter2.lighting-maps" "specular-map"]
+                                      :jvm-opts ["-XstartOnFirstThread"
+                                                 "--enable-native-access=ALL-UNNAMED"]}
+            :lighting-maps-ex2 {:main-opts ["-m" "lwjgl.chapter2.lighting-maps" "exercise2"]
                                  :jvm-opts ["-XstartOnFirstThread"
                                             "--enable-native-access=ALL-UNNAMED"]}
+            :lighting-maps-ex4 {:main-opts ["-m" "lwjgl.chapter2.lighting-maps" "exercise4"]
+                                 :jvm-opts ["-XstartOnFirstThread"
+                                            "--enable-native-access=ALL-UNNAMED"]}
+            :light-casters-directional {:main-opts ["-m" "lwjgl.chapter2.light-casters" "directional"]
+                                         :jvm-opts ["-XstartOnFirstThread"
+                                                    "--enable-native-access=ALL-UNNAMED"]}
+            :light-casters-point {:main-opts ["-m" "lwjgl.chapter2.light-casters" "point"]
+                                   :jvm-opts ["-XstartOnFirstThread"
+                                              "--enable-native-access=ALL-UNNAMED"]}
+            :light-casters-spot {:main-opts ["-m" "lwjgl.chapter2.light-casters" "spot"]
+                                  :jvm-opts ["-XstartOnFirstThread"
+                                             "--enable-native-access=ALL-UNNAMED"]}
+            :light-casters-spot-soft {:main-opts ["-m" "lwjgl.chapter2.light-casters" "spot-soft"]
+                                      :jvm-opts ["-XstartOnFirstThread"
+                                                 "--enable-native-access=ALL-UNNAMED"]}
+            :multiple-lights {:main-opts ["-m" "lwjgl.chapter2.multiple-lights"]
+                               :jvm-opts ["-XstartOnFirstThread"
+                                          "--enable-native-access=ALL-UNNAMED"]}
+            :multiple-lights-ex1 {:main-opts ["-m" "lwjgl.chapter2.multiple-lights" "exercise1"]
+                                   :jvm-opts ["-XstartOnFirstThread"
+                                              "--enable-native-access=ALL-UNNAMED"]}
+            :model-loading {:main-opts ["-m" "lwjgl.chapter3.model-loading"]
+                             :jvm-opts ["-XstartOnFirstThread"
+                                        "--enable-native-access=ALL-UNNAMED"]}
+           :camera-circle {:main-opts ["-m" "lwjgl.chapter1.camera" "circle"]
+                            :jvm-opts ["-XstartOnFirstThread"
+                                       "--enable-native-access=ALL-UNNAMED"]}
+           :camera-keyboard-dt {:main-opts ["-m" "lwjgl.chapter1.camera" "keyboard-dt"]
+                                 :jvm-opts ["-XstartOnFirstThread"
+                                            "--enable-native-access=ALL-UNNAMED"]}
+             :camera-mouse-zoom {:main-opts ["-m" "lwjgl.chapter1.camera" "mouse-zoom"]
+                                  :jvm-opts ["-XstartOnFirstThread"
+                                             "--enable-native-access=ALL-UNNAMED"]}
+           :camera-class {:main-opts ["-m" "lwjgl.chapter1.camera" "class"]
+                           :jvm-opts ["-XstartOnFirstThread"
+                                      "--enable-native-access=ALL-UNNAMED"]}
+           :camera-exercise1 {:main-opts ["-m" "lwjgl.chapter1.camera" "exercise1"]
+                               :jvm-opts ["-XstartOnFirstThread"
+                                          "--enable-native-access=ALL-UNNAMED"]}
+            :camera-exercise2 {:main-opts ["-m" "lwjgl.chapter1.camera" "exercise2"]
+                                :jvm-opts ["-XstartOnFirstThread"
+                                           "--enable-native-access=ALL-UNNAMED"]}
+            :depth-testing {:main-opts ["-m" "lwjgl.chapter4.advanced-opengl" "depth-testing"]
+                            :jvm-opts ["-XstartOnFirstThread"
+                                       "--enable-native-access=ALL-UNNAMED"]}
+            :depth-testing-view {:main-opts ["-m" "lwjgl.chapter4.advanced-opengl" "depth-testing-view"]
+                                  :jvm-opts ["-XstartOnFirstThread"
+                                             "--enable-native-access=ALL-UNNAMED"]}
+            :stencil-testing {:main-opts ["-m" "lwjgl.chapter4.advanced-opengl" "stencil-testing"]
+                              :jvm-opts ["-XstartOnFirstThread"
+                                         "--enable-native-access=ALL-UNNAMED"]}
+            :blending-discard {:main-opts ["-m" "lwjgl.chapter4.advanced-opengl" "blending-discard"]
+                                :jvm-opts ["-XstartOnFirstThread"
+                                           "--enable-native-access=ALL-UNNAMED"]}
+            :blending-sort {:main-opts ["-m" "lwjgl.chapter4.advanced-opengl" "blending-sort"]
+                            :jvm-opts ["-XstartOnFirstThread"
+                                       "--enable-native-access=ALL-UNNAMED"]}
+            :face-culling-exercise1 {:main-opts ["-m" "lwjgl.chapter4.advanced-opengl" "face-culling-exercise1"]
+                                      :jvm-opts ["-XstartOnFirstThread"
+                                                 "--enable-native-access=ALL-UNNAMED"]}
+            :framebuffers {:main-opts ["-m" "lwjgl.chapter4.advanced-opengl" "framebuffers"]
+                            :jvm-opts ["-XstartOnFirstThread"
+                                       "--enable-native-access=ALL-UNNAMED"]}
+            :framebuffers-exercise1 {:main-opts ["-m" "lwjgl.chapter4.advanced-opengl" "framebuffers-exercise1"]
+                                      :jvm-opts ["-XstartOnFirstThread"
+                                                 "--enable-native-access=ALL-UNNAMED"]}
+            :cubemaps-skybox {:main-opts ["-m" "lwjgl.chapter4.advanced-opengl" "cubemaps-skybox"]
+                              :jvm-opts ["-XstartOnFirstThread"
+                                         "--enable-native-access=ALL-UNNAMED"]}
+            :cubemaps-environment-mapping {:main-opts ["-m" "lwjgl.chapter4.advanced-opengl" "cubemaps-environment-mapping"]
+                                           :jvm-opts ["-XstartOnFirstThread"
+                                                      "--enable-native-access=ALL-UNNAMED"]}
+            :advanced-glsl-ubo {:main-opts ["-m" "lwjgl.chapter4.advanced-opengl" "advanced-glsl-ubo"]
+                                  :jvm-opts ["-XstartOnFirstThread"
+                                             "--enable-native-access=ALL-UNNAMED"]}
+            :geometry-shader-houses {:main-opts ["-m" "lwjgl.chapter4.advanced-opengl" "geometry-shader-houses"]
+                                      :jvm-opts ["-XstartOnFirstThread"
+                                                 "--enable-native-access=ALL-UNNAMED"]}
+            :geometry-shader-exploding {:main-opts ["-m" "lwjgl.chapter4.advanced-opengl" "geometry-shader-exploding"]
+                                        :jvm-opts ["-XstartOnFirstThread"
+                                                   "--enable-native-access=ALL-UNNAMED"]}
+            :geometry-shader-normals {:main-opts ["-m" "lwjgl.chapter4.advanced-opengl" "geometry-shader-normals"]
+                                      :jvm-opts ["-XstartOnFirstThread"
+                                                 "--enable-native-access=ALL-UNNAMED"]}
+            :instancing-quads {:main-opts ["-m" "lwjgl.chapter4.advanced-opengl" "instancing-quads"]
+                                :jvm-opts ["-XstartOnFirstThread"
+                                           "--enable-native-access=ALL-UNNAMED"]}
+            :asteroids {:main-opts ["-m" "lwjgl.chapter4.advanced-opengl" "asteroids"]
+                        :jvm-opts ["-XstartOnFirstThread"
+                                   "--enable-native-access=ALL-UNNAMED"]}
+            :asteroids-instanced {:main-opts ["-m" "lwjgl.chapter4.advanced-opengl" "asteroids-instanced"]
+                                  :jvm-opts ["-XstartOnFirstThread"
+                                             "--enable-native-access=ALL-UNNAMED"]}
+             :anti-aliasing-msaa {:main-opts ["-m" "lwjgl.chapter4.advanced-opengl" "anti-aliasing-msaa"]
+                                   :jvm-opts ["-XstartOnFirstThread"
+                                              "--enable-native-access=ALL-UNNAMED"]}
+             :anti-aliasing-offscreen {:main-opts ["-m" "lwjgl.chapter4.advanced-opengl" "anti-aliasing-offscreen"]
+                                       :jvm-opts ["-XstartOnFirstThread"
+                                                  "--enable-native-access=ALL-UNNAMED"]}
+             :advanced-lighting {:main-opts ["-m" "lwjgl.chapter5.advanced-lighting"]
+                                  :jvm-opts ["-XstartOnFirstThread"
+                                             "--enable-native-access=ALL-UNNAMED"]}
              :cider {:extra-deps {cider/cider-nrepl {:mvn/version "0.45.0"}}
                      :main-opts ["-m" "nrepl.cmdline"
                                  "--middleware"
