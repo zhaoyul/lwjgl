@@ -184,7 +184,7 @@
 
               (GLFW/glfwSwapBuffers window)
               (GLFW/glfwPollEvents)
-              (recur))))
+              (recur)))
           (finally
             (delete-if-positive program #(GL20/glDeleteProgram %))
             (delete-if-positive lamp-program #(GL20/glDeleteProgram %))

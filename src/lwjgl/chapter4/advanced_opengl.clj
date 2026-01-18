@@ -258,10 +258,10 @@ void main() {
 (defn- points-mesh
   []
   (let [vertices (float-array
-                  [ -1.0 0.0 -1.0
-                    -0.2 0.0 0.5
-                    0.4 0.0 -0.2
-                    0.9 0.0 0.7])
+                  [-1.0 0.0 -1.0
+                   -0.2 0.0 0.5
+                   0.4 0.0 -0.2
+                   0.9 0.0 0.7])
         vao (GL30/glGenVertexArrays)
         vbo (GL15/glGenBuffers)
         buf (BufferUtils/createFloatBuffer (alength vertices))]
@@ -278,10 +278,10 @@ void main() {
 (defn- instanced-quad-mesh
   []
   (let [quad (float-array
-              [ -0.5 -0.5 0.0 0.0
-                0.5 -0.5 1.0 0.0
-                0.5  0.5 1.0 1.0
-                -0.5  0.5 0.0 1.0])
+              [-0.5 -0.5 0.0 0.0
+               0.5 -0.5 1.0 0.0
+               0.5  0.5 1.0 1.0
+               -0.5  0.5 0.0 1.0])
         indices (int-array [0 1 2 2 3 0])
         vao (GL30/glGenVertexArrays)
         vbo (GL15/glGenBuffers)
@@ -332,10 +332,11 @@ void main() {
   []
   (let [fbo (GL30/glGenFramebuffers)
         tex (GL11/glGenTextures)
-        rbo (GL30/glGenRenderbuffers)]
+        rbo (GL30/glGenRenderbuffers)
+        ^java.nio.ByteBuffer data nil]
     (GL30/glBindFramebuffer GL30/GL_FRAMEBUFFER fbo)
     (GL11/glBindTexture GL11/GL_TEXTURE_2D tex)
-    (GL11/glTexImage2D GL11/GL_TEXTURE_2D 0 GL11/GL_RGB width height 0 GL11/GL_RGB GL11/GL_UNSIGNED_BYTE nil)
+    (GL11/glTexImage2D GL11/GL_TEXTURE_2D 0 GL11/GL_RGB width height 0 GL11/GL_RGB GL11/GL_UNSIGNED_BYTE data)
     (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_MIN_FILTER GL11/GL_LINEAR)
     (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_MAG_FILTER GL11/GL_LINEAR)
     (GL30/glFramebufferTexture2D GL30/GL_FRAMEBUFFER GL30/GL_COLOR_ATTACHMENT0 GL11/GL_TEXTURE_2D tex 0)
@@ -430,9 +431,9 @@ void main() {
                   (when (<= 0 color-loc)
                     (apply GL20/glUniform3f color-loc color))
                   (GL11/glDrawArrays GL11/GL_TRIANGLES 0 (:count cube))))
-                (GLFW/glfwSwapBuffers window)
-                (GLFW/glfwPollEvents)
-                (recur)))
+              (GLFW/glfwSwapBuffers window)
+              (GLFW/glfwPollEvents)
+              (recur))
             (GL20/glDeleteProgram program))
 
           :stencil-testing
@@ -776,8 +777,7 @@ void main() {
     gl_Position = base + vec4( s,  s, 0.0, 0.0); EmitVertex();
     gl_Position = base + vec4(0.0,  s*1.6, 0.0, 0.0); EmitVertex();
     EndPrimitive();
-}")
-                ]
+}")]
             (loop []
               (when-not (GLFW/glfwWindowShouldClose window)
                 (GL11/glClearColor 0.07 0.07 0.08 1.0)

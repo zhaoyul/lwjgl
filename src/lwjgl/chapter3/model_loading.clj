@@ -3,7 +3,7 @@
   (:require [clojure.java.io :as io]
             [lwjgl.core :as core])
   (:import (org.lwjgl BufferUtils)
-           (org.lwjgl.assimp Assimp AIMesh AIVector3D)
+           (org.lwjgl.assimp Assimp AIMesh AIVector3D AIVector3D$Buffer)
            (org.lwjgl.glfw GLFW GLFWFramebufferSizeCallbackI GLFWKeyCallbackI)
            (org.lwjgl.opengl GL GL11 GL15 GL20 GL30)
            (org.joml Matrix4f Vector3f)))
@@ -130,9 +130,9 @@ void main() {
             (GL30/glBindVertexArray 0)
             {:vao vao
              :vbo vbo
-             :vertex-count (* face-count 3)}))
-        (finally
-          (Assimp/aiReleaseImport scene))))))
+             :vertex-count (* face-count 3)})))
+      (finally
+        (Assimp/aiReleaseImport scene)))))
 
 (defn run-example!
   []

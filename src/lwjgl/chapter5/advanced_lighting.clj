@@ -82,11 +82,12 @@
 (defn- create-depth-map
   []
   (let [fbo (GL30/glGenFramebuffers)
-        depth-tex (GL11/glGenTextures)]
+        depth-tex (GL11/glGenTextures)
+        ^java.nio.ByteBuffer data nil]
     (GL11/glBindTexture GL11/GL_TEXTURE_2D depth-tex)
     (GL11/glTexImage2D GL11/GL_TEXTURE_2D 0 GL14/GL_DEPTH_COMPONENT
                        depth-width depth-height 0 GL11/GL_DEPTH_COMPONENT GL11/GL_FLOAT
-                       nil)
+                       data)
     (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_MIN_FILTER GL11/GL_NEAREST)
     (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_MAG_FILTER GL11/GL_NEAREST)
     (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_WRAP_S GL13/GL_CLAMP_TO_BORDER)
@@ -444,7 +445,7 @@ void main() {
         (loop []
           (when-not (GLFW/glfwWindowShouldClose window)
             (let [[r g b a] (:clear cfg)]
-            (GL11/glClearColor (float r) (float g) (float b) (float a)))
+              (GL11/glClearColor (float r) (float g) (float b) (float a)))
             (GL11/glClear (bit-or GL11/GL_COLOR_BUFFER_BIT GL11/GL_DEPTH_BUFFER_BIT))
             (.setLookAt view 0.0 3.0 6.0   0.0 0.5 0.0   0.0 1.0 0.0)
             (upload-mat! projection mat-buf proj-loc)
@@ -466,7 +467,7 @@ void main() {
 
             (GLFW/glfwSwapBuffers window)
             (GLFW/glfwPollEvents)
-            (recur)))))
+            (recur))))
       (finally
         (cleanup-window env)
         (GL20/glDeleteProgram program)
@@ -584,7 +585,7 @@ void main() {
 
             (GLFW/glfwSwapBuffers window)
             (GLFW/glfwPollEvents)
-            (recur)))))
+            (recur))))
       (finally
         (cleanup-window env)
         (GL20/glDeleteProgram depth-program)
@@ -619,8 +620,8 @@ void main() {
                                              :normalScale 0.25})
        :parallax-mapping (run-simple scenario {:parallaxMode 1
                                                :heightScale 0.06})
-       :steep-parallax-mapping (run-simple scenario {:parallaxMode 2
-                                                    :heightScale 0.12})
+       :steep-parallax-mapping (run-simple scenario {:parallaxMode 2}
+                                           :heightScale 0.12)
        :parallax-occlusion-mapping (run-simple scenario {:parallaxMode 3
                                                          :heightScale 0.18})
        :hdr (run-simple scenario {:useHDR 1
