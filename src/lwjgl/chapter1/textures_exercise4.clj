@@ -87,7 +87,7 @@ void main() {
         buf (BufferUtils/createByteBuffer (* w h 3))
         border-color (float-array [1.0 1.0 0.0 1.0])]
     (dotimes [i (* w h 3)]
-      (.put buf i (byte 200)))
+      (.put buf i (unchecked-byte 200)))
     (.flip buf)
     (GL11/glBindTexture GL11/GL_TEXTURE_2D tex)
     (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_MIN_FILTER GL11/GL_LINEAR)
