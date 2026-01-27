@@ -509,6 +509,9 @@ void main() {
                  -0.3 -0.3 0.0 0.0 0.0
                  -0.3 0.3 0.0 0.0 1.0])
    (int-array [0 1 3 1 2 3]))
+
+  (swap! axis-style assoc :arrow-radius 10.0)
+  (reset! clear-color [0.1 0.5 0.5 0.9])
   ,)
 
 ;; REPL examples (run while the window is open):
