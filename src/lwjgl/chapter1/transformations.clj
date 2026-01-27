@@ -72,7 +72,7 @@ void main() {
           (.put buf idx (unchecked-byte checker))
           (.put buf (inc idx) (unchecked-byte checker))
           (.put buf (+ idx 2) (unchecked-byte 220)))))
-    (.flip buf)
+    (.rewind buf)
     (GL11/glBindTexture GL11/GL_TEXTURE_2D tex)
     (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_MIN_FILTER GL11/GL_LINEAR)
     (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_MAG_FILTER GL11/GL_LINEAR)
@@ -85,7 +85,7 @@ void main() {
   [^Matrix4f m ^java.nio.FloatBuffer buf loc]
   (.clear buf)
   (.get m buf)
-  (.flip buf)
+  (.rewind buf)
   (when (<= 0 loc)
     (GL20/glUniformMatrix4fv loc false buf)))
 
@@ -118,14 +118,16 @@ void main() {
                           (= action GLFW/GLFW_PRESS))
                  (GLFW/glfwSetWindowShouldClose win true)))))
           (GL20/glUseProgram program)
-          (when (<= 0 tex-loc) (GL20/glUniform1i tex-loc 0))
+          (when (<= 0 tex-loc)
+            (GL20/glUniform1i tex-loc 0))
           (loop []
             (when-not (GLFW/glfwWindowShouldClose window)
-              (let [t (float (GLFW/glfwGetTime))
+              (let [time (float (GLFW/glfwGetTime))
                     transform (doto (Matrix4f.)
+                                (.identity)
                                 (.translate 0.5 -0.5 0.0)
-                                (.rotate t 0.0 0.0 1.0)
-                                (.scale (float 0.8)))]
+                                (.rotate time 0.0 0.0 1.0))]
+                (GL20/glUseProgram program)
                 (upload-transform! transform buf transform-loc))
               (GL11/glClearColor 0.2 0.3 0.3 1.0)
               (GL11/glClear GL11/GL_COLOR_BUFFER_BIT)
@@ -141,7 +143,8 @@ void main() {
             (delete-if-positive vbo #(GL15/glDeleteBuffers %))
             (delete-if-positive ebo #(GL15/glDeleteBuffers %))
             (delete-if-positive vao #(GL30/glDeleteVertexArrays %))
-            (delete-if-positive tex #(GL11/glDeleteTextures %)))))
+            (delete-if-positive tex #(GL11/glDeleteTextures %))
+            )))
       (finally
         (when (pos? window) (GLFW/glfwDestroyWindow window))
         (GLFW/glfwTerminate)

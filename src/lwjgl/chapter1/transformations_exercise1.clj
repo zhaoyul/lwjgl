@@ -69,10 +69,10 @@ void main() {
       (dotimes [x w]
         (let [checker (if (zero? (bit-and (+ (quot x 16) (quot y 16)) 1)) 255 70)
               idx (* 3 (+ x (* y w)))]
-          (.put buf idx (byte checker))
-          (.put buf (inc idx) (byte checker))
-          (.put buf (+ idx 2) (byte 180)))))
-    (.flip buf)
+          (.put buf idx (unchecked-byte checker))
+          (.put buf (inc idx) (unchecked-byte checker))
+          (.put buf (+ idx 2) (unchecked-byte 180)))))
+    (.rewind buf)
     (GL11/glBindTexture GL11/GL_TEXTURE_2D tex)
     (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_MIN_FILTER GL11/GL_LINEAR)
     (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_MAG_FILTER GL11/GL_LINEAR)
@@ -85,7 +85,7 @@ void main() {
   [^Matrix4f m ^java.nio.FloatBuffer buf loc]
   (.clear buf)
   (.get m buf)
-  (.flip buf)
+  (.rewind buf)
   (when (<= 0 loc)
     (GL20/glUniformMatrix4fv loc false buf)))
 
@@ -123,10 +123,12 @@ void main() {
             (when-not (GLFW/glfwWindowShouldClose window)
               (let [time (float (GLFW/glfwGetTime))
                     first (doto (Matrix4f.)
+                            (.identity)
                             (.translate -0.5 0.5 0.0)
                             (.rotate time 0.0 0.0 1.0)
                             (.scale (float (+ 0.5 (* 0.5 (Math/abs (Math/sin time)))))))
                     second (doto (Matrix4f.)
+                             (.identity)
                              (.translate 0.5 -0.5 0.0)
                              (.rotate (* -1.0 time) 0.0 0.0 1.0)
                              (.scale 0.5))]

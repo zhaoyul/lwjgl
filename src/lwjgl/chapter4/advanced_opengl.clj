@@ -12,7 +12,7 @@
   [^Matrix4f m ^java.nio.FloatBuffer buf loc]
   (.clear buf)
   (.get m buf)
-  (.flip buf)
+  (.rewind buf)
   (when (<= 0 loc)
     (GL20/glUniformMatrix4fv loc false buf)))
 
@@ -117,9 +117,9 @@
     (GL11/glBindTexture GL13/GL_TEXTURE_CUBE_MAP tex)
     (doseq [[idx [r g b]] (map-indexed vector face-colors)]
       (.clear buf)
-      (.put buf (byte r))
-      (.put buf (byte g))
-      (.put buf (byte b))
+      (.put buf (unchecked-byte r))
+      (.put buf (unchecked-byte g))
+      (.put buf (unchecked-byte b))
       (.flip buf)
       (GL11/glTexImage2D (+ GL13/GL_TEXTURE_CUBE_MAP_POSITIVE_X idx)
                          0 GL11/GL_RGB 1 1 0 GL11/GL_RGB GL11/GL_UNSIGNED_BYTE buf))

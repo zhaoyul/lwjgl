@@ -69,10 +69,10 @@ void main() {
               g (if (< y (/ h 2)) 255 40)
               b 120
               idx (* 3 (+ x (* y w)))]
-          (.put buf idx (byte r))
-          (.put buf (inc idx) (byte g))
-          (.put buf (+ idx 2) (byte b)))))
-    (.flip buf)
+          (.put buf idx (unchecked-byte r))
+          (.put buf (inc idx) (unchecked-byte g))
+          (.put buf (+ idx 2) (unchecked-byte b)))))
+    (.rewind buf)
     (GL11/glBindTexture GL11/GL_TEXTURE_2D tex)
     (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_MIN_FILTER GL11/GL_LINEAR)
     (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_MAG_FILTER GL11/GL_LINEAR)
@@ -88,7 +88,7 @@ void main() {
         border-color (float-array [1.0 1.0 0.0 1.0])]
     (dotimes [i (* w h 3)]
       (.put buf i (unchecked-byte 200)))
-    (.flip buf)
+    (.rewind buf)
     (GL11/glBindTexture GL11/GL_TEXTURE_2D tex)
     (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_MIN_FILTER GL11/GL_LINEAR)
     (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_MAG_FILTER GL11/GL_LINEAR)

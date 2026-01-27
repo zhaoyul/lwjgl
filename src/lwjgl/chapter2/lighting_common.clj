@@ -202,7 +202,7 @@ void main() {
   [^Matrix4f m ^java.nio.FloatBuffer buf loc]
   (.clear buf)
   (.get m buf)
-  (.flip buf)
+  (.rewind buf)
   (when (<= 0 loc)
     (GL20/glUniformMatrix4fv loc false buf)))
 
@@ -214,10 +214,10 @@ void main() {
       (dotimes [x w]
         (let [checker (zero? (bit-and (+ (quot x 16) (quot y 16)) 1))
               idx (* 3 (+ x (* y w)))]
-          (.put buf idx (byte (if checker r0 r1)))
-          (.put buf (inc idx) (byte (if checker g0 g1)))
-          (.put buf (+ idx 2) (byte (if checker b0 b1))))))
-    (.flip buf)
+          (.put buf idx (unchecked-byte (if checker r0 r1)))
+          (.put buf (inc idx) (unchecked-byte (if checker g0 g1)))
+          (.put buf (+ idx 2) (unchecked-byte (if checker b0 b1))))))
+    (.rewind buf)
     (GL11/glBindTexture GL11/GL_TEXTURE_2D tex)
     (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_MIN_FILTER GL11/GL_LINEAR)
     (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_MAG_FILTER GL11/GL_LINEAR)
@@ -241,10 +241,10 @@ void main() {
               inside? (< dist radius)
               value (int (if inside? highlight base))
               idx (* 3 (+ x (* y w)))]
-          (.put buf idx (byte value))
-          (.put buf (inc idx) (byte value))
-          (.put buf (+ idx 2) (byte value)))))
-    (.flip buf)
+          (.put buf idx (unchecked-byte value))
+          (.put buf (inc idx) (unchecked-byte value))
+          (.put buf (+ idx 2) (unchecked-byte value)))))
+    (.rewind buf)
     (GL11/glBindTexture GL11/GL_TEXTURE_2D tex)
     (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_MIN_FILTER GL11/GL_LINEAR)
     (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_MAG_FILTER GL11/GL_LINEAR)
@@ -261,10 +261,10 @@ void main() {
       (dotimes [x w]
         (let [pulse (if (zero? (bit-and (+ (quot x 8) (quot y 8)) 1)) 255 40)
               idx (* 3 (+ x (* y w)))]
-          (.put buf idx (byte pulse))
-          (.put buf (inc idx) (byte 80))
-          (.put buf (+ idx 2) (byte 120)))))
-    (.flip buf)
+          (.put buf idx (unchecked-byte pulse))
+          (.put buf (inc idx) (unchecked-byte 80))
+          (.put buf (+ idx 2) (unchecked-byte 120)))))
+    (.rewind buf)
     (GL11/glBindTexture GL11/GL_TEXTURE_2D tex)
     (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_MIN_FILTER GL11/GL_LINEAR)
     (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_MAG_FILTER GL11/GL_LINEAR)
