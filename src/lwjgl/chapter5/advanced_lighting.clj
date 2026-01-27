@@ -517,7 +517,7 @@ void main() {
         light-view (Matrix4f.)]
     (try
       (GL11/glEnable GL11/GL_DEPTH_TEST)
-      (GL11/glViewport 0 0 width height)
+      (core/init-viewport! window width height)
       (let [model-loc-depth (GL20/glGetUniformLocation depth-program "model")
             light-depth-loc (GL20/glGetUniformLocation depth-program "lightSpaceMatrix")
             model-loc (GL20/glGetUniformLocation scene-program "model")
@@ -560,7 +560,7 @@ void main() {
 
             ;; second pass: scene render
             (GL20/glUseProgram scene-program)
-            (GL11/glViewport 0 0 width height)
+            (core/init-viewport! window width height)
             (GL11/glClearColor 0.1 0.1 0.12 1.0)
             (GL11/glClear (bit-or GL11/GL_COLOR_BUFFER_BIT GL11/GL_DEPTH_BUFFER_BIT))
             (.setLookAt view 0.0 3.0 6.0   0.0 0.0 0.0   0.0 1.0 0.0)

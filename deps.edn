@@ -28,11 +28,17 @@
                           :jvm-opts ["-XstartOnFirstThread"
                                      "--enable-native-access=ALL-UNNAMED"]}
            :triangle-ex2 {:main-opts ["-m" "lwjgl.chapter1.hello-triangle-exercise2"]
-                          :jvm-opts ["-XstartOnFirstThread"
-                                     "--enable-native-access=ALL-UNNAMED"]}
+                           :jvm-opts ["-XstartOnFirstThread"
+                                      "--enable-native-access=ALL-UNNAMED"]}
            :triangle-ex3 {:main-opts ["-m" "lwjgl.chapter1.hello-triangle-exercise3"]
-                          :jvm-opts ["-XstartOnFirstThread"
-                                     "--enable-native-access=ALL-UNNAMED"]}
+                           :jvm-opts ["-XstartOnFirstThread"
+                                      "--enable-native-access=ALL-UNNAMED"]}
+           :triangle-input {:main-opts ["-m" "lwjgl.chapter1.triangle-input"]
+                            :jvm-opts ["-XstartOnFirstThread"
+                                       "--enable-native-access=ALL-UNNAMED"]}
+           :triangle-rainbow {:main-opts ["-m" "lwjgl.chapter1.triangle-rainbow"]
+                              :jvm-opts ["-XstartOnFirstThread"
+                                         "--enable-native-access=ALL-UNNAMED"]}
            :shaders-uniform {:main-opts ["-m" "lwjgl.chapter1.shaders-uniform"]
                              :jvm-opts ["-XstartOnFirstThread"
                                         "--enable-native-access=ALL-UNNAMED"]}
@@ -163,8 +169,17 @@
                               :jvm-opts ["-XstartOnFirstThread"
                                          "--enable-native-access=ALL-UNNAMED"]}
            :camera-exercise2 {:main-opts ["-m" "lwjgl.chapter1.camera" "exercise2"]
-                              :jvm-opts ["-XstartOnFirstThread"
-                                         "--enable-native-access=ALL-UNNAMED"]}
+                                :jvm-opts ["-XstartOnFirstThread"
+                                           "--enable-native-access=ALL-UNNAMED"]}
+           :tetrahedron-input {:main-opts ["-m" "lwjgl.chapter1.tetrahedron-input"]
+                               :jvm-opts ["-XstartOnFirstThread"
+                                          "--enable-native-access=ALL-UNNAMED"]}
+           :tetrahedron-translucent {:main-opts ["-m" "lwjgl.chapter1.tetrahedron-translucent"]
+                                     :jvm-opts ["-XstartOnFirstThread"
+                                                "--enable-native-access=ALL-UNNAMED"]}
+           :cube-input {:main-opts ["-m" "lwjgl.chapter1.cube-input"]
+                        :jvm-opts ["-XstartOnFirstThread"
+                                   "--enable-native-access=ALL-UNNAMED"]}
            :depth-testing {:main-opts ["-m" "lwjgl.chapter4.advanced-opengl" "depth-testing"]
                            :jvm-opts ["-XstartOnFirstThread"
                                       "--enable-native-access=ALL-UNNAMED"]}

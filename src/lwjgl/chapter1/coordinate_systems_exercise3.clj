@@ -156,7 +156,7 @@ void main() {
             view (Matrix4f.)
             projection (doto (Matrix4f.) (.perspective (float (Math/toRadians 45.0)) (/ width (float height)) 0.1 100.0))]
         (try
-          (GL11/glViewport 0 0 width height)
+          (core/init-viewport! window width height)
           (GLFW/glfwSetFramebufferSizeCallback
            window
            (reify GLFWFramebufferSizeCallbackI

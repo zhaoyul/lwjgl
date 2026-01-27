@@ -397,7 +397,7 @@ void main() {
             points (points-mesh)
             mat-buf (BufferUtils/createFloatBuffer 16)
             projection (basic-projection)]
-        (GL11/glViewport 0 0 width height)
+        (core/init-viewport! window width height)
         (case scenario
           (:depth-testing :depth-testing-view)
           (let [program (simple-program)

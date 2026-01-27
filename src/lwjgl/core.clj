@@ -654,8 +654,10 @@
     (GLFW/glfwGetFramebufferSize window w h)
     (let [fw (.get w 0)
           fh (.get h 0)]
-      (reset! width fw)
-      (reset! height fh)
+      (when (instance? clojure.lang.IAtom width)
+        (reset! width fw))
+      (when (instance? clojure.lang.IAtom height)
+        (reset! height fh))
       (GL11/glViewport 0 0 fw fh))))
 
 (defn create-window

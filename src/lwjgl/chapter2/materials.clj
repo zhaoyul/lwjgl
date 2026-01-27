@@ -20,7 +20,7 @@
 
 (defn- configure-window!
   [window width height]
-  (GL11/glViewport 0 0 width height)
+  (core/init-viewport! window width height)
   (GLFW/glfwSetFramebufferSizeCallback
    window
    (reify GLFWFramebufferSizeCallbackI

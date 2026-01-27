@@ -74,7 +74,7 @@ void main() {
       (let [program (core/create-program vertex-shader-source fragment-shader-source)
             {:keys [vao1 vao2 vbo1 vbo2]} (create-two-vaos)]
         (try
-          (GL11/glViewport 0 0 width height)
+          (core/init-viewport! window width height)
           (GLFW/glfwSetFramebufferSizeCallback
            window
            (reify GLFWFramebufferSizeCallbackI

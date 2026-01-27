@@ -114,7 +114,7 @@ void main() {
             mix-loc (GL20/glGetUniformLocation program "mixValue")
             mix-value (atom 0.2)]
         (try
-          (GL11/glViewport 0 0 width height)
+          (core/init-viewport! window width height)
           (GLFW/glfwSetFramebufferSizeCallback
            window
            (reify GLFWFramebufferSizeCallbackI

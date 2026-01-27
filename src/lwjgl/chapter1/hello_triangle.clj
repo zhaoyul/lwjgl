@@ -52,7 +52,7 @@ void main() {
       (let [program (core/create-program vertex-shader-source fragment-shader-source)
             {:keys [vao vbo]} (create-triangle-vao)]
         (try
-          (GL11/glViewport 0 0 800 600)
+          (core/init-viewport! window 800 600)
           (GLFW/glfwSetFramebufferSizeCallback
            window
            (reify GLFWFramebufferSizeCallbackI

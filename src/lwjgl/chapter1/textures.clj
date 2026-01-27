@@ -92,7 +92,7 @@ void main() {
             texture (create-procedural-texture 256 256)
             sampler-loc (GL20/glGetUniformLocation program "texture1")]
         (try
-          (GL11/glViewport 0 0 width height)
+          (core/init-viewport! window width height)
           (GLFW/glfwSetFramebufferSizeCallback
            window
            (reify GLFWFramebufferSizeCallbackI

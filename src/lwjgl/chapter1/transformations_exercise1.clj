@@ -104,7 +104,7 @@ void main() {
             tex-loc (GL20/glGetUniformLocation program "texture1")
             buf (BufferUtils/createFloatBuffer 16)]
         (try
-          (GL11/glViewport 0 0 width height)
+          (core/init-viewport! window width height)
           (GLFW/glfwSetFramebufferSizeCallback
            window
            (reify GLFWFramebufferSizeCallbackI

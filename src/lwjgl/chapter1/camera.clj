@@ -254,7 +254,7 @@ void main() {
             target (Vector3f.)
             last-time (atom (GLFW/glfwGetTime))]
         (try
-          (GL11/glViewport 0 0 @width @height)
+          (core/init-viewport! window width height)
           (GLFW/glfwSetFramebufferSizeCallback
            window
            (reify GLFWFramebufferSizeCallbackI

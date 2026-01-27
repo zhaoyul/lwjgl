@@ -16,6 +16,8 @@ Just poking the scene and watching it change in real time.
 - LearnOpenGL Chapter 1 (triangle exercise 1) example (two triangles, single VAO/VBO): =clj -M:triangle-ex1=
 - LearnOpenGL Chapter 1 (triangle exercise 2) example (two triangles, separate VAOs/VBOs): =clj -M:triangle-ex2=
 - LearnOpenGL Chapter 1 (triangle exercise 3) example (two fragment shaders: orange/yellow): =clj -M:triangle-ex3=
+- LearnOpenGL Chapter 1 (triangle input) example (WASD move, Q/E rotate, mouse drag to reposition): =clj -M:triangle-input=
+- LearnOpenGL Chapter 1 (triangle rainbow) example (rainbow shader, mouse X shifts hue, Z/X mix factor): =clj -M:triangle-rainbow=
 - LearnOpenGL Chapter 1 (shaders uniform) example (animated uniform color): =clj -M:shaders-uniform=
 - LearnOpenGL Chapter 1 (shaders interpolation) example (vertex color interpolation): =clj -M:shaders-interpolation=
 - LearnOpenGL Chapter 1 (shaders class) example (load shaders from resources): =clj -M:shaders-class=
@@ -41,6 +43,9 @@ Just poking the scene and watching it change in real time.
 - LearnOpenGL Chapter 1 (camera class) example (camera controls via reusable state): =clj -M:camera-class=
 - LearnOpenGL Chapter 1 (camera exercise 1) example (grounded FPS-style camera): =clj -M:camera-exercise1=
 - LearnOpenGL Chapter 1 (camera exercise 2) example (manual LookAt matrix): =clj -M:camera-exercise2=
+- LearnOpenGL Chapter 1 (tetrahedron input) example (WASD/QE rotate, mouse drag rotate): =clj -M:tetrahedron-input=
+- LearnOpenGL Chapter 1 (tetrahedron translucent) example (WASD/QE rotate, Z/X scale, C/V alpha, scroll scale): =clj -M:tetrahedron-translucent=
+- LearnOpenGL Chapter 1 (cube input) example (WASD/QE rotate, Z/X scale, scroll scale): =clj -M:cube-input=
 - LearnOpenGL Chapter 2 (colors) example (basic ambient + diffuse lighting): =clj -M:colors=
 - LearnOpenGL Chapter 2 (basic lighting diffuse) example (Lambert diffuse + ambient): =clj -M:basic-lighting-diffuse=
 - LearnOpenGL Chapter 2 (basic lighting specular) example (adds Phong specular): =clj -M:basic-lighting-specular=

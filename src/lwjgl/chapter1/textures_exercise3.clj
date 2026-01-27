@@ -105,7 +105,7 @@ void main() {
             tex1 (create-texture 256 256 gradient)
             tex1-loc (GL20/glGetUniformLocation program "texture1")]
         (try
-          (GL11/glViewport 0 0 width height)
+          (core/init-viewport! window width height)
           (GLFW/glfwSetFramebufferSizeCallback
            window
            (reify GLFWFramebufferSizeCallbackI

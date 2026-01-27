@@ -56,7 +56,7 @@ void main() {
             {:keys [vao vbo]} (create-triangle-vao)
             color-loc (GL20/glGetUniformLocation program "ourColor")]
         (try
-          (GL11/glViewport 0 0 width height)
+          (core/init-viewport! window width height)
           (GLFW/glfwSetFramebufferSizeCallback
            window
            (reify GLFWFramebufferSizeCallbackI
