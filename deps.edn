@@ -3,14 +3,22 @@
         org.lwjgl/lwjgl-glfw {:mvn/version "3.3.6"}
         org.lwjgl/lwjgl-opengl {:mvn/version "3.3.6"}
         org.lwjgl/lwjgl-assimp {:mvn/version "3.3.6"}
-        org.lwjgl/lwjgl$natives-macos-arm64 {:mvn/version "3.3.6"}
-        org.lwjgl/lwjgl-glfw$natives-macos-arm64 {:mvn/version "3.3.6"}
-        org.lwjgl/lwjgl-opengl$natives-macos-arm64 {:mvn/version "3.3.6"}
-        org.lwjgl/lwjgl-assimp$natives-macos-arm64 {:mvn/version "3.3.6"}
         org.clojure/core.async {:mvn/version "1.6.681"}
         org.joml/joml {:mvn/version "1.10.8"}
         nrepl/nrepl {:mvn/version "1.1.0"}}
- :aliases {:run {:main-opts ["-m" "lwjgl.core"]
+ :aliases {;; Architecture-specific natives (pick one based on your Mac)
+           ;; Intel Macs: add -M:natives-intel
+           ;; Apple Silicon (M1/M2/M3): add -M:natives-arm
+           :natives-intel {:extra-deps {org.lwjgl/lwjgl$natives-macos {:mvn/version "3.3.6"}
+                                        org.lwjgl/lwjgl-glfw$natives-macos {:mvn/version "3.3.6"}
+                                        org.lwjgl/lwjgl-opengl$natives-macos {:mvn/version "3.3.6"}
+                                        org.lwjgl/lwjgl-assimp$natives-macos {:mvn/version "3.3.6"}}}
+           :natives-arm {:extra-deps {org.lwjgl/lwjgl$natives-macos-arm64 {:mvn/version "3.3.6"}
+                                      org.lwjgl/lwjgl-glfw$natives-macos-arm64 {:mvn/version "3.3.6"}
+                                      org.lwjgl/lwjgl-opengl$natives-macos-arm64 {:mvn/version "3.3.6"}
+                                      org.lwjgl/lwjgl-assimp$natives-macos-arm64 {:mvn/version "3.3.6"}}}
+
+           :run {:main-opts ["-m" "lwjgl.core"]
                  :jvm-opts ["-XstartOnFirstThread"
                             "--enable-native-access=ALL-UNNAMED"]}
            :hello-window {:main-opts ["-m" "lwjgl.chapter1.hello-window"]
@@ -29,11 +37,11 @@
                           :jvm-opts ["-XstartOnFirstThread"
                                      "--enable-native-access=ALL-UNNAMED"]}
            :triangle-ex2 {:main-opts ["-m" "lwjgl.chapter1.hello-triangle-exercise2"]
-                           :jvm-opts ["-XstartOnFirstThread"
-                                      "--enable-native-access=ALL-UNNAMED"]}
+                          :jvm-opts ["-XstartOnFirstThread"
+                                     "--enable-native-access=ALL-UNNAMED"]}
            :triangle-ex3 {:main-opts ["-m" "lwjgl.chapter1.hello-triangle-exercise3"]
-                           :jvm-opts ["-XstartOnFirstThread"
-                                      "--enable-native-access=ALL-UNNAMED"]}
+                          :jvm-opts ["-XstartOnFirstThread"
+                                     "--enable-native-access=ALL-UNNAMED"]}
            :triangle-input {:main-opts ["-m" "lwjgl.chapter1.triangle-input"]
                             :jvm-opts ["-XstartOnFirstThread"
                                        "--enable-native-access=ALL-UNNAMED"]}
@@ -77,12 +85,6 @@
                           :jvm-opts ["-XstartOnFirstThread"
                                      "--enable-native-access=ALL-UNNAMED"]}
            :transformations {:main-opts ["-m" "lwjgl.chapter1.transformations"]
-                             :jvm-opts ["-XstartOnFirstThread"
-                                        "--enable-native-access=ALL-UNNAMED"]}
-           :hotreload {:main-opts ["-m" "lwjgl.experiment.hotreload"]
-                       :jvm-opts ["-XstartOnFirstThread"
-                                  "--enable-native-access=ALL-UNNAMED"]}
-           :hotreload-nrepl {:main-opts ["-e" "(do (require 'lwjgl.core) (lwjgl.core/start-nrepl!) (require 'lwjgl.experiment.hotreload) (lwjgl.experiment.hotreload/run-example!))"]
                              :jvm-opts ["-XstartOnFirstThread"
                                         "--enable-native-access=ALL-UNNAMED"]}
            :transformations-ex1 {:main-opts ["-m" "lwjgl.chapter1.transformations-exercise1"]
@@ -176,8 +178,8 @@
                               :jvm-opts ["-XstartOnFirstThread"
                                          "--enable-native-access=ALL-UNNAMED"]}
            :camera-exercise2 {:main-opts ["-m" "lwjgl.chapter1.camera" "exercise2"]
-                                :jvm-opts ["-XstartOnFirstThread"
-                                           "--enable-native-access=ALL-UNNAMED"]}
+                              :jvm-opts ["-XstartOnFirstThread"
+                                         "--enable-native-access=ALL-UNNAMED"]}
            :tetrahedron-input {:main-opts ["-m" "lwjgl.chapter1.tetrahedron-input"]
                                :jvm-opts ["-XstartOnFirstThread"
                                           "--enable-native-access=ALL-UNNAMED"]}
@@ -253,4 +255,15 @@
                                "[cider.nrepl/cider-middleware]"]
                    :jvm-opts ["-XstartOnFirstThread"
                               "--enable-native-access=ALL-UNNAMED"]}
-           :cider-deps {:extra-deps {cider/cider-nrepl {:mvn/version "0.45.0"}}}}}
+           :cider-deps {:extra-deps {cider/cider-nrepl {:mvn/version "0.45.0"}}}
+           :dev {:extra-deps {cider/cider-nrepl {:mvn/version "0.45.0"}}
+                 :main-opts ["-m" "lwjgl.experiment.hotreload" "--nrepl"]
+                 :jvm-opts ["-XstartOnFirstThread"
+                            "--enable-native-access=ALL-UNNAMED"]}
+           ;; Hot reload examples - use with :natives-intel or :natives-arm
+           :hotreload {:main-opts ["-m" "lwjgl.experiment.hotreload" "--nrepl"]
+                       :jvm-opts ["-XstartOnFirstThread"
+                                  "--enable-native-access=ALL-UNNAMED"]}
+           :hotreload-nrepl {:main-opts ["-m" "lwjgl.experiment.hotreload" "--nrepl"]
+                             :jvm-opts ["-XstartOnFirstThread"
+                                        "--enable-native-access=ALL-UNNAMED"]}}}
