@@ -197,6 +197,11 @@
   [nx ny nz bounds-lo bounds-hi]
   (kgeom/grid-points nx ny nz bounds-lo bounds-hi))
 
+(defn sphere-point-cloud
+  "生成球面点云."
+  [count radius]
+  (kgeom/sphere-point-cloud count radius))
+
 (defn tetrahedron-mesh
   "生成四面体网格."
   [diameter]

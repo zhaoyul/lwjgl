@@ -12,7 +12,8 @@
             [lwjgl.experiment.kons9.spring :as kspring])
   (:import (org.lwjgl BufferUtils)
            (org.lwjgl.glfw GLFW GLFWCursorPosCallbackI GLFWFramebufferSizeCallbackI
-                           GLFWKeyCallbackI GLFWMouseButtonCallbackI GLFWWindowSizeCallbackI)
+                           GLFWKeyCallbackI GLFWMouseButtonCallbackI GLFWScrollCallbackI
+                           GLFWWindowSizeCallbackI)
            (org.lwjgl.opengl GL GL11 GL13 GL15 GL20 GL30 GL32)
            (org.joml Matrix4f)))
 
@@ -39,7 +40,7 @@
          :scene {:key :baseline :state nil :since 0.0}
          :timeline {:enabled? false :items [] :index 0 :elapsed 0.0}
          :transition {:active? false :alpha 0.0 :duration 0.6}
-         :camera {:yaw 0.0 :pitch 0.0}
+         :camera {:yaw 0.0 :pitch 0.0 :distance 3.0}
          :input {:fb-width 800 :fb-height 600
                  :win-width 800 :win-height 600
                  :dragging? false :last-x 0.0 :last-y 0.0}
@@ -64,6 +65,10 @@
          :rot [0.0 0.0 0.0]
          :scale [0.8 0.8 0.8]
          :color [0.2 0.6 0.9]}))
+(defonce wireframe-overlay
+  (atom {:enabled? false
+         :line-width 1.2
+         :color [0.08 0.08 0.1]}))
 
 (defonce state
   (atom {:program 0
@@ -1087,7 +1092,7 @@ void main() {
                 sprite-program sprite-vao
                 mesh-vao mesh-index-count
                 spring-vao spring-count]} (:resources ctx)
-        {:keys [yaw pitch]} (:camera ctx)
+        {:keys [yaw pitch distance]} (:camera ctx)
         {:keys [fb-width fb-height]} (:input ctx)
         [r g b a] @clear-color]
     (GL11/glEnable GL11/GL_DEPTH_TEST)
@@ -1102,7 +1107,7 @@ void main() {
                        (.perspective (float (Math/toRadians 45.0)) aspect 0.1 100.0))
           view (doto (Matrix4f.)
                  (.identity)
-                 (.translate 0.0 0.0 -3.0)
+                 (.translate 0.0 0.0 (float (- (double (or distance 3.0)))))
                  (.rotateX (float pitch))
                  (.rotateY (float yaw)))
           mat-buf (BufferUtils/createFloatBuffer 16)
@@ -1216,7 +1221,22 @@ void main() {
           (when (<= 0 cube-color-loc)
             (GL20/glUniform3f cube-color-loc (float (nth color 0)) (float (nth color 1)) (float (nth color 2))))
           (GL30/glBindVertexArray mesh-vao)
-          (GL11/glDrawElements GL11/GL_TRIANGLES mesh-index-count GL11/GL_UNSIGNED_INT 0)))
+          (GL11/glDrawElements GL11/GL_TRIANGLES mesh-index-count GL11/GL_UNSIGNED_INT 0)
+          (when (:enabled? @wireframe-overlay)
+            (let [{:keys [line-width color]} @wireframe-overlay
+                  [wr wg wb] color]
+              (GL11/glEnable GL11/GL_POLYGON_OFFSET_LINE)
+              (GL11/glPolygonOffset -1.0 -1.0)
+              (GL11/glPolygonMode GL11/GL_FRONT_AND_BACK GL11/GL_LINE)
+              (GL11/glLineWidth (float line-width))
+              (when (<= 0 cube-model-loc)
+                (upload-mat! model mat-buf cube-model-loc))
+              (when (<= 0 cube-color-loc)
+                (GL20/glUniform3f cube-color-loc (float wr) (float wg) (float wb)))
+              (GL11/glDrawElements GL11/GL_TRIANGLES mesh-index-count GL11/GL_UNSIGNED_INT 0)
+              (GL11/glPolygonMode GL11/GL_FRONT_AND_BACK GL11/GL_FILL)
+              (GL11/glDisable GL11/GL_POLYGON_OFFSET_LINE)
+              (GL11/glLineWidth 1.0)))))
 
       ;; 绘制原始四边形(在立方体后方, 作为参考)
       (let [mvp (doto (Matrix4f.)
@@ -1329,6 +1349,12 @@ void main() {
   "处理器函数签名: (fn [window key action])"
   [f]
   (kinput/set-key-handler! f))
+
+(defn set-camera-distance!
+  "设置相机距离(缩放)."
+  [distance]
+  (swap! app assoc-in [:camera :distance] (double distance))
+  :ok)
 
 (defn set-axis-style!
   "更新坐标轴样式. 支持的键: :line-width, :length, :arrow-length, :arrow-radius.
@@ -1466,6 +1492,13 @@ void main() {
   (swap! mesh-style merge
          (select-keys {:pos pos :rot rot :scale scale :color color}
                       [:pos :rot :scale :color])))
+
+(defn set-wireframe-overlay!
+  "设置网格线框覆盖层。支持的键：:enabled?、:line-width、:color。"
+  [style]
+  (swap! wireframe-overlay merge
+         (select-keys style [:enabled? :line-width :color]))
+  :ok)
 
 (defn- upload-spring-lines!
   [line-data]
@@ -1627,6 +1660,17 @@ void main() {
                  (when dragging?
                    (swap! app update-in [:camera :yaw] + (* 0.005 dx))
                    (swap! app update-in [:camera :pitch] + (* -0.005 dy)))))))))
+      (GLFW/glfwSetScrollCallback
+       window
+       (reify GLFWScrollCallbackI
+         (invoke [_ _ _ yoffset]
+           (swap! app update-in [:camera :distance]
+                  (fn [d]
+                    (let [d (double (or d 3.0))
+                          next (- d (* 0.35 (double yoffset)))]
+                      (-> next
+                          (max 0.6)
+                          (min 12.0))))))))
       (init-resources!)
       (ensure-default-scenes!)
       (register-demo-commands!)

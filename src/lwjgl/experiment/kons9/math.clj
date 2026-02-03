@@ -16,26 +16,40 @@
   [r g b]
   [(float (clamp01 r)) (float (clamp01 g)) (float (clamp01 b))])
 
+(defn- ensure-vec3
+  "保证返回长度为 3 的向量，缺省值自动补齐。"
+  [v default]
+  (let [v (vec (or v []))]
+    [(float (or (get v 0) (get default 0)))
+     (float (or (get v 1) (get default 1)))
+     (float (or (get v 2) (get default 2)))]))
+
 (defn compose-transform
   "根据位移、旋转、缩放生成变换矩阵。"
   [pos rot scale]
-  (doto (Matrix4f.)
-    (.identity)
-    (.translate (float (nth pos 0)) (float (nth pos 1)) (float (nth pos 2)))
-    (.rotateX (float (Math/toRadians (nth rot 0))))
-    (.rotateY (float (Math/toRadians (nth rot 1))))
-    (.rotateZ (float (Math/toRadians (nth rot 2))))
-    (.scale (float (nth scale 0)) (float (nth scale 1)) (float (nth scale 2)))))
+  (let [[px py pz] (ensure-vec3 pos [0.0 0.0 0.0])
+        [rx ry rz] (ensure-vec3 rot [0.0 0.0 0.0])
+        [sx sy sz] (ensure-vec3 scale [1.0 1.0 1.0])]
+    (doto (Matrix4f.)
+      (.identity)
+      (.translate px py pz)
+      (.rotateX (float (Math/toRadians rx)))
+      (.rotateY (float (Math/toRadians ry)))
+      (.rotateZ (float (Math/toRadians rz)))
+      (.scale sx sy sz))))
 
 (defn chain-transform
   "在父矩阵基础上叠加位移、旋转与缩放。"
   [parent pos rot scale]
-  (doto (Matrix4f. parent)
-    (.translate (float (nth pos 0)) (float (nth pos 1)) (float (nth pos 2)))
-    (.rotateX (float (Math/toRadians (nth rot 0))))
-    (.rotateY (float (Math/toRadians (nth rot 1))))
-    (.rotateZ (float (Math/toRadians (nth rot 2))))
-    (.scale (float (nth scale 0)) (float (nth scale 1)) (float (nth scale 2)))))
+  (let [[px py pz] (ensure-vec3 pos [0.0 0.0 0.0])
+        [rx ry rz] (ensure-vec3 rot [0.0 0.0 0.0])
+        [sx sy sz] (ensure-vec3 scale [1.0 1.0 1.0])]
+    (doto (Matrix4f. parent)
+      (.translate px py pz)
+      (.rotateX (float (Math/toRadians rx)))
+      (.rotateY (float (Math/toRadians ry)))
+      (.rotateZ (float (Math/toRadians rz)))
+      (.scale sx sy sz))))
 
 (defn rand-range
   "生成范围内的随机值。"
