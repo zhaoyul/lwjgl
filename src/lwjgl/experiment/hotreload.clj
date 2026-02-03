@@ -12,8 +12,8 @@
             [lwjgl.experiment.kons9.spring :as kspring])
   (:import (org.lwjgl BufferUtils)
            (org.lwjgl.glfw GLFW GLFWCursorPosCallbackI GLFWFramebufferSizeCallbackI
-                           GLFWKeyCallbackI GLFWMouseButtonCallbackI)
-           (org.lwjgl.opengl GL GL11 GL13 GL15 GL20 GL30)
+                           GLFWKeyCallbackI GLFWMouseButtonCallbackI GLFWWindowSizeCallbackI)
+           (org.lwjgl.opengl GL GL11 GL13 GL15 GL20 GL30 GL32)
            (org.joml Matrix4f)))
 
 ;; ---- 运行时状态 ---------------------------------------------------------
@@ -43,7 +43,9 @@
          :input {:fb-width 800 :fb-height 600
                  :win-width 800 :win-height 600
                  :dragging? false :last-x 0.0 :last-y 0.0}
-         :flags {:paused? false}}))
+         :flags {:paused? false
+                 :manual-play? false
+                 :playing? true}}))
 
 ;; 立方体状态 - 每个立方体包含 :pos [x y z]、:rot [rx ry rz]、:scale [sx sy sz]、:color [r g b]
 (defonce cubes (atom []))
@@ -51,6 +53,11 @@
 
 (defonce scenes (atom {}))
 (defonce point-cloud-state (atom {:points [] :colors []}))
+(defonce sprite-state (atom {:points [] :colors [] :sizes []}))
+(defonce sprite-style
+  (atom {:size 16.0
+         :alpha 0.75
+         :softness 0.15}))
 (defonce rig-state (atom {:segments []}))
 (defonce mesh-style
   (atom {:pos [1.6 0.0 0.0]
@@ -86,6 +93,11 @@
          :point-vao 0
          :point-vbo 0
          :point-count 0
+         ;; 精灵渲染资源
+         :sprite-program 0
+         :sprite-vao 0
+         :sprite-vbo 0
+         :sprite-count 0
          ;; 通用网格资源
          :mesh-vao 0
          :mesh-vbo 0
@@ -158,6 +170,33 @@ in vec3 vColor;
 out vec4 FragColor;
 void main() {
     FragColor = vec4(vColor, 1.0);
+}")
+
+(def ^:private sprite-vs-source
+  "#version 330 core
+layout (location = 0) in vec3 aPos;
+layout (location = 1) in vec4 aColor;
+layout (location = 2) in float aSize;
+uniform mat4 mvp;
+out vec4 vColor;
+void main() {
+    vColor = aColor;
+    gl_Position = mvp * vec4(aPos, 1.0);
+    gl_PointSize = aSize;
+}")
+
+(def ^:private sprite-fs-source
+  "#version 330 core
+in vec4 vColor;
+uniform float uSoftness;
+out vec4 FragColor;
+void main() {
+    vec2 uv = gl_PointCoord * 2.0 - 1.0;
+    float d = length(uv);
+    if (d > 1.0) discard;
+    float edge = max(0.001, uSoftness);
+    float alpha = 1.0 - smoothstep(1.0 - edge, 1.0, d);
+    FragColor = vec4(vColor.rgb, vColor.a * alpha);
 }")
 
 (def ^:private overlay-vs-source
@@ -264,6 +303,9 @@ void main() {
          upload-spring-lines!
          set-point-cloud!
          clear-point-cloud!
+         set-sprites!
+         clear-sprites!
+         set-sprite-style!
          set-mesh!
          set-mesh-style!
          set-grid-style!
@@ -376,6 +418,28 @@ void main() {
   []
   (krt/resume! app))
 
+(defn set-manual-play!
+  "设置手动播放模式。开启后需要按住空格才会推进时间。"
+  [enabled?]
+  (swap! app assoc-in [:flags :manual-play?] (boolean enabled?))
+  (when-not enabled?
+    (swap! app assoc-in [:flags :playing?] true))
+  :ok)
+
+(defn reset-time!
+  "重置时间轴与场景计时。"
+  []
+  (let [now (now-seconds)]
+    (swap! app assoc :time {:now now :dt 0.0 :frame 0 :last now})
+    (swap! app assoc-in [:scene :since] 0.0))
+  :ok)
+
+(defn reset-scene!
+  "重新初始化当前场景并重置时间。"
+  []
+  (reset-time!)
+  (enqueue! #(apply-scene! (current-scene))))
+
 (defn register-command!
   "注册键盘命令。action 可以是 GLFW/GLFW_PRESS 等。"
   [key action f]
@@ -387,10 +451,17 @@ void main() {
         last (get-in @app [:time :last])
         dt (max 0.0 (- now last))
         paused? (get-in @app [:flags :paused?])
-        dt (if paused? 0.0 dt)]
+        manual? (get-in @app [:flags :manual-play?])
+        playing? (get-in @app [:flags :playing?])
+        dt (cond
+             paused? 0.0
+             (and manual? (not playing?)) 0.0
+             :else dt)
+        frame (get-in @app [:time :frame])
+        frame (if (pos? dt) (inc frame) frame)]
     (swap! app assoc :time {:now now
                             :dt dt
-                            :frame (inc (get-in @app [:time :frame]))
+                            :frame frame
                             :last now})))
 
 (defn- update-scene!
@@ -455,6 +526,58 @@ void main() {
   (.rewind buf)
   (when (<= 0 loc)
     (GL20/glUniformMatrix4fv loc false buf)))
+
+(defn- sprite-color
+  "补齐精灵颜色并保证有 alpha。"
+  [color default-alpha]
+  (cond
+    (and (vector? color) (= 4 (count color))) color
+    (and (vector? color) (= 3 (count color))) (conj color default-alpha)
+    (and (sequential? color) (= 4 (count color))) (vec color)
+    (and (sequential? color) (= 3 (count color))) (vec (concat color [default-alpha]))
+    :else [1.0 1.0 1.0 default-alpha]))
+
+(defn- sprite-depth
+  "使用视图矩阵计算相机空间的 Z 值，用于透明排序。"
+  [^Matrix4f view [x y z]]
+  (let [m02 (.m02 view)
+        m12 (.m12 view)
+        m22 (.m22 view)
+        m32 (.m32 view)]
+    (+ (* m02 x) (* m12 y) (* m22 z) m32)))
+
+(defn- upload-sprites!
+  "根据当前相机排序并上传精灵数据，返回精灵数量。"
+  [^Matrix4f view]
+  (let [{:keys [points colors sizes]} @sprite-state
+        points (vec points)
+        count (count points)]
+    (if (zero? count)
+      (do
+        (swap! state assoc :sprite-count 0)
+        0)
+      (let [{:keys [alpha size]} @sprite-style
+            colors (vec (or colors []))
+            sizes (vec (or sizes []))
+            order (sort-by :z (map-indexed (fn [i p] {:i i :z (sprite-depth view p)}) points))
+            buf (BufferUtils/createFloatBuffer (* count 8))]
+        (doseq [{:keys [i]} order]
+          (let [[x y z] (nth points i)
+                [r g b a] (sprite-color (get colors i) alpha)
+                s (float (or (get sizes i) size))]
+            (.put buf (float x))
+            (.put buf (float y))
+            (.put buf (float z))
+            (.put buf (float r))
+            (.put buf (float g))
+            (.put buf (float b))
+            (.put buf (float a))
+            (.put buf s)))
+        (.flip buf)
+        (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER (:sprite-vbo @state))
+        (GL15/glBufferData GL15/GL_ARRAY_BUFFER buf GL15/GL_DYNAMIC_DRAW)
+        (swap! state assoc :sprite-count count)
+        count))))
 
 (defn- create-quad
   []
@@ -578,6 +701,23 @@ void main() {
     (GL20/glEnableVertexAttribArray 0)
     (GL20/glVertexAttribPointer 1 3 GL11/GL_FLOAT false stride (* 3 Float/BYTES))
     (GL20/glEnableVertexAttribArray 1)
+    (GL30/glBindVertexArray 0)
+    {:vao vao :vbo vbo}))
+
+(defn- build-sprite-vao
+  []
+  (let [vao (GL30/glGenVertexArrays)
+        vbo (GL15/glGenBuffers)
+        stride (* 8 Float/BYTES)]
+    (GL30/glBindVertexArray vao)
+    (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER vbo)
+    (GL15/glBufferData GL15/GL_ARRAY_BUFFER 0 GL15/GL_DYNAMIC_DRAW)
+    (GL20/glVertexAttribPointer 0 3 GL11/GL_FLOAT false stride 0)
+    (GL20/glEnableVertexAttribArray 0)
+    (GL20/glVertexAttribPointer 1 4 GL11/GL_FLOAT false stride (* 3 Float/BYTES))
+    (GL20/glEnableVertexAttribArray 1)
+    (GL20/glVertexAttribPointer 2 1 GL11/GL_FLOAT false stride (* 7 Float/BYTES))
+    (GL20/glEnableVertexAttribArray 2)
     (GL30/glBindVertexArray 0)
     {:vao vao :vbo vbo}))
 
@@ -780,6 +920,7 @@ void main() {
         tex-loc (GL20/glGetUniformLocation program "texture1")
         axis-program (core/create-program axis-vs-source axis-fs-source)
         point-program (core/create-program point-vs-source point-fs-source)
+        sprite-program (core/create-program sprite-vs-source sprite-fs-source)
         overlay-program (core/create-program overlay-vs-source overlay-fs-source)
         {:keys [length arrow-length arrow-radius]} @axis-style
         {line-vao :vao line-vbo :vbo line-count :count}
@@ -790,6 +931,7 @@ void main() {
         ;; Cube resources
         cube-program (core/create-program cube-vs-source cube-fs-source)
         {point-vao :vao point-vbo :vbo} (build-point-vao)
+        {sprite-vao :vao sprite-vbo :vbo} (build-sprite-vao)
         {overlay-vao :vao overlay-vbo :vbo} (build-overlay-vao)
         {mesh-vao :vao mesh-vbo :vbo mesh-ebo :ebo} (build-mesh-vao)
         {spring-vao :vao spring-vbo :vbo} (build-spring-vao)
@@ -824,6 +966,11 @@ void main() {
            :point-vao point-vao
            :point-vbo point-vbo
            :point-count 0
+           ;; 精灵资源
+           :sprite-program sprite-program
+           :sprite-vao sprite-vao
+           :sprite-vbo sprite-vbo
+           :sprite-count 0
            :mesh-vao mesh-vao
            :mesh-vbo mesh-vbo
            :mesh-ebo mesh-ebo
@@ -880,6 +1027,7 @@ void main() {
                 grid-vao grid-vbo
                 cube-program cube-vao cube-vbo
                 point-program point-vao point-vbo
+                sprite-program sprite-vao sprite-vbo
                 overlay-program overlay-vao overlay-vbo
                 mesh-vao mesh-vbo mesh-ebo
                 spring-vao spring-vbo]} @state]
@@ -903,6 +1051,10 @@ void main() {
     (delete-if-positive point-program #(GL20/glDeleteProgram %))
     (delete-if-positive point-vbo #(GL15/glDeleteBuffers %))
     (delete-if-positive point-vao #(GL30/glDeleteVertexArrays %))
+    ;; 清理精灵资源
+    (delete-if-positive sprite-program #(GL20/glDeleteProgram %))
+    (delete-if-positive sprite-vbo #(GL15/glDeleteBuffers %))
+    (delete-if-positive sprite-vao #(GL30/glDeleteVertexArrays %))
     ;; 清理网格资源
     (delete-if-positive mesh-vbo #(GL15/glDeleteBuffers %))
     (delete-if-positive mesh-ebo #(GL15/glDeleteBuffers %))
@@ -920,6 +1072,7 @@ void main() {
                  :axis-arrow-vao 0 :axis-arrow-vbo 0 :axis-arrow-count 0
                  :cube-program 0 :cube-vao 0 :cube-vbo 0 :cube-vertex-count 0
                  :point-program 0 :point-vao 0 :point-vbo 0 :point-count 0
+                 :sprite-program 0 :sprite-vao 0 :sprite-vbo 0 :sprite-count 0
                  :mesh-vao 0 :mesh-vbo 0 :mesh-ebo 0 :mesh-index-count 0
                  :spring-vao 0 :spring-vbo 0 :spring-count 0
                  :overlay-program 0 :overlay-vao 0 :overlay-vbo 0}))
@@ -931,6 +1084,7 @@ void main() {
                 grid-vao grid-count
                 cube-program cube-vao cube-vertex-count
                 point-program point-vao point-count
+                sprite-program sprite-vao
                 mesh-vao mesh-index-count
                 spring-vao spring-count]} (:resources ctx)
         {:keys [yaw pitch]} (:camera ctx)
@@ -960,7 +1114,9 @@ void main() {
           cube-model-loc (GL20/glGetUniformLocation cube-program "model")
           cube-color-loc (GL20/glGetUniformLocation cube-program "uColor")
           cube-light-loc (GL20/glGetUniformLocation cube-program "uLightPos")
-          cube-viewpos-loc (GL20/glGetUniformLocation cube-program "uViewPos")]
+          cube-viewpos-loc (GL20/glGetUniformLocation cube-program "uViewPos")
+          sprite-mvp-loc (GL20/glGetUniformLocation sprite-program "mvp")
+          sprite-soft-loc (GL20/glGetUniformLocation sprite-program "uSoftness")]
 
       ;; Draw grid
       (let [mvp (doto (Matrix4f. projection) (.mul view))
@@ -1002,6 +1158,25 @@ void main() {
           (upload-mat! mvp mat-buf point-mvp-loc)
           (GL30/glBindVertexArray point-vao)
           (GL11/glDrawArrays GL11/GL_POINTS 0 point-count)))
+
+      ;; Draw sprites (透明排序后绘制)
+      (let [sprite-count (upload-sprites! view)]
+        (when (pos? sprite-count)
+          (let [mvp (doto (Matrix4f. projection) (.mul view))
+                softness (float (:softness @sprite-style))]
+            (GL11/glEnable GL32/GL_PROGRAM_POINT_SIZE)
+            (GL11/glEnable GL11/GL_BLEND)
+            (GL11/glBlendFunc GL11/GL_SRC_ALPHA GL11/GL_ONE_MINUS_SRC_ALPHA)
+            (GL11/glDepthMask false)
+            (GL20/glUseProgram sprite-program)
+            (upload-mat! mvp mat-buf sprite-mvp-loc)
+            (when (<= 0 sprite-soft-loc)
+              (GL20/glUniform1f sprite-soft-loc softness))
+            (GL30/glBindVertexArray sprite-vao)
+            (GL11/glDrawArrays GL11/GL_POINTS 0 sprite-count)
+            (GL30/glBindVertexArray 0)
+            (GL11/glDepthMask true)
+            (GL11/glDisable GL11/GL_BLEND))))
 
       ;; Draw cubes
       (GL20/glUseProgram cube-program)
@@ -1072,6 +1247,9 @@ void main() {
    :next-cube-id! (fn [] (swap! next-cube-id inc))
    :set-point-cloud! set-point-cloud!
    :clear-point-cloud! clear-point-cloud!
+   :set-sprites! set-sprites!
+   :clear-sprites! clear-sprites!
+   :set-sprite-style! set-sprite-style!
    :upload-point-cloud! upload-point-cloud!
    :set-mesh! set-mesh!
    :clear-mesh! clear-mesh!
@@ -1345,6 +1523,29 @@ void main() {
   []
   (set-point-cloud! []))
 
+(defn set-sprites!
+  "设置精灵数据。points 为 [[x y z] ...]，colors 为 [[r g b] 或 [r g b a] ...]，
+  sizes 为每个精灵的像素尺寸。若缺省则使用默认样式。"
+  [points & {:keys [colors sizes]}]
+  (let [points (vec points)
+        colors (vec (or colors []))
+        sizes (vec (or sizes []))]
+    (reset! sprite-state {:points points :colors colors :sizes sizes})
+    :ok))
+
+(defn clear-sprites!
+  "清空精灵数据。"
+  []
+  (reset! sprite-state {:points [] :colors [] :sizes []})
+  :ok)
+
+(defn set-sprite-style!
+  "设置精灵样式。支持的键：:size、:alpha、:softness。"
+  [style]
+  (swap! sprite-style merge
+         (select-keys style [:size :alpha :softness]))
+  :ok)
+
 (defn set-rig-segments!
   "设置机械臂/实例段列表。"
   [segments]
@@ -1365,19 +1566,29 @@ void main() {
         window (core/create-window width height "LWJGL - Hot Reload (experiment)")]
     (try
       (swap! app assoc :window window)
-      (swap! app assoc-in [:input :win-width] width)
-      (swap! app assoc-in [:input :win-height] height)
-      (GL/createCapabilities)
-      (core/init-viewport! window width height)
+      (let [w (BufferUtils/createIntBuffer 1)
+            h (BufferUtils/createIntBuffer 1)]
+        (GLFW/glfwGetWindowSize window w h)
+        (swap! app assoc-in [:input :win-width] (.get w 0))
+        (swap! app assoc-in [:input :win-height] (.get h 0)))
       (let [w (BufferUtils/createIntBuffer 1)
             h (BufferUtils/createIntBuffer 1)]
         (GLFW/glfwGetFramebufferSize window w h)
         (swap! app assoc-in [:input :fb-width] (.get w 0))
         (swap! app assoc-in [:input :fb-height] (.get h 0)))
+      (GL/createCapabilities)
+      ;; 这里强制使用 framebuffer 尺寸初始化 viewport，避免 HiDPI 下比例错误
+      (core/init-viewport! window (get-in @app [:input :fb-width]) (get-in @app [:input :fb-height]))
       (swap! app assoc :time {:now (now-seconds)
                               :dt 0.0
                               :frame 0
                               :last (now-seconds)})
+      (GLFW/glfwSetWindowSizeCallback
+       window
+       (reify GLFWWindowSizeCallbackI
+         (invoke [_ _ w h]
+           (swap! app assoc-in [:input :win-width] w)
+           (swap! app assoc-in [:input :win-height] h))))
       (GLFW/glfwSetFramebufferSizeCallback
        window
        (reify GLFWFramebufferSizeCallbackI
@@ -1418,6 +1629,22 @@ void main() {
                    (swap! app update-in [:camera :pitch] + (* -0.005 dy)))))))))
       (init-resources!)
       (ensure-default-scenes!)
+      (register-demo-commands!)
+      (register-command! GLFW/GLFW_KEY_M GLFW/GLFW_PRESS
+                         (fn [_ _ _]
+                           (set-manual-play!
+                            (not (get-in @app [:flags :manual-play?])))))
+      (register-command! GLFW/GLFW_KEY_SPACE GLFW/GLFW_PRESS
+                         (fn [_ _ _]
+                           (when (get-in @app [:flags :manual-play?])
+                             (swap! app assoc-in [:flags :playing?] true))))
+      (register-command! GLFW/GLFW_KEY_SPACE GLFW/GLFW_RELEASE
+                         (fn [_ _ _]
+                           (when (get-in @app [:flags :manual-play?])
+                             (swap! app assoc-in [:flags :playing?] false))))
+      (register-command! GLFW/GLFW_KEY_D GLFW/GLFW_PRESS
+                         (fn [_ _ _]
+                           (reset-scene!)))
       (apply-scene! :baseline)
       (reset! render-fn nil)
       (set-key-handler!
