@@ -222,6 +222,56 @@
   [diameter]
   (kgeom/icosahedron-mesh diameter))
 
+(defn tetrahedron-polyhedron
+  "生成四面体多面体数据."
+  [diameter]
+  (kgeom/tetrahedron-polyhedron diameter))
+
+(defn cube-polyhedron
+  "生成立方体多面体数据."
+  [side]
+  (kgeom/cube-polyhedron side))
+
+(defn octahedron-polyhedron
+  "生成八面体多面体数据."
+  [diameter]
+  (kgeom/octahedron-polyhedron diameter))
+
+(defn dodecahedron-polyhedron
+  "生成十二面体多面体数据."
+  [diameter]
+  (kgeom/dodecahedron-polyhedron diameter))
+
+(defn icosahedron-polyhedron
+  "生成二十面体多面体数据."
+  [diameter]
+  (kgeom/icosahedron-polyhedron diameter))
+
+(defn polyhedron->mesh
+  "将多面体数据转为网格."
+  [poly]
+  (kgeom/polyhedron-mesh poly))
+
+(defn refine-polyhedron
+  "细分多面体."
+  [poly levels]
+  (kgeom/refine-polyhedron poly levels))
+
+(defn fractalize-polyhedron
+  "分型细分多面体."
+  [poly levels displacement]
+  (kgeom/fractalize-polyhedron poly levels displacement))
+
+(defn box-polyhedron
+  "生成盒子多面体数据."
+  [x-size y-size z-size]
+  (kgeom/box-polyhedron x-size y-size z-size))
+
+(defn cut-cube-polyhedron
+  "生成切角立方体多面体数据."
+  [side]
+  (kgeom/cut-cube-polyhedron side))
+
 (defn mesh-from-sdf!
   "根据 SDF 函数生成网格并设置."
   [f opts]

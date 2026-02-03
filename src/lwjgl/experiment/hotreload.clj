@@ -47,7 +47,7 @@
                  :manual-play? false
                  :playing? true}}))
 
-;; 立方体状态 - 每个立方体包含 :pos [x y z]、:rot [rx ry rz]、:scale [sx sy sz]、:color [r g b]
+;; 立方体状态 - 每个立方体包含 :pos [x y z], :rot [rx ry rz], :scale [sx sy sz], :color [r g b]
 (defonce cubes (atom []))
 (defonce next-cube-id (atom 0))
 
@@ -313,8 +313,8 @@ void main() {
          clear-mesh!)
 
 (defn enqueue!
-  "将一个函数加入队列在 OpenGL/主线程上运行。返回一个 promise-chan，
-  它会返回 {:ok value} 或 {:err throwable}。"
+  "将一个函数加入队列在 OpenGL/主线程上运行. 返回一个 promise-chan,
+  它会返回 {:ok value} 或 {:err throwable}. "
   [f]
   (let [reply (async/promise-chan)]
     (async/put! cmd-chan
@@ -362,64 +362,64 @@ void main() {
   (krt/apply-scene! app scenes scene-context scene-key))
 
 (defn register-scene!
-  "注册一个场景，scene 需要包含 :init/:update/:render/:cleanup 中的任意组合。"
+  "注册一个场景, scene 需要包含 :init/:update/:render/:cleanup 中的任意组合. "
   [scene-key scene]
   (krt/register-scene! scenes scene-key scene))
 
 (defn list-scenes
-  "返回已注册的场景 key 列表。"
+  "返回已注册的场景 key 列表. "
   []
   (krt/list-scenes scenes))
 
 (defn current-scene
-  "返回当前场景 key。"
+  "返回当前场景 key. "
   []
   (krt/current-scene app))
 
 (defn set-scene!
-  "切换到指定场景。该操作在 GL 线程中执行。"
+  "切换到指定场景. 该操作在 GL 线程中执行. "
   [scene-key]
   (ensure-default-scenes!)
   (enqueue! #(apply-scene! scene-key)))
 
 (defn set-timeline!
-  "设置时间线。items 形如 {:scene :foo :duration 5.0} 的向量。"
+  "设置时间线. items 形如 {:scene :foo :duration 5.0} 的向量. "
   [items]
   (krt/set-timeline! app items))
 
 (defn start-timeline!
-  "启动时间线并切换到首个场景。"
+  "启动时间线并切换到首个场景. "
   []
   (ensure-default-scenes!)
   (enqueue! #(krt/start-timeline! app scenes scene-context)))
 
 (defn stop-timeline!
-  "停止时间线推进。"
+  "停止时间线推进. "
   []
   (krt/stop-timeline! app))
 
 (defn set-transition!
-  "设置过场时长（秒）。"
+  "设置过场时长(秒). "
   [duration]
   (krt/set-transition! app duration))
 
 (defn trigger-transition!
-  "手动触发一次过场遮罩。"
+  "手动触发一次过场遮罩. "
   []
   (krt/trigger-transition! app))
 
 (defn pause!
-  "暂停场景更新。"
+  "暂停场景更新. "
   []
   (krt/pause! app))
 
 (defn resume!
-  "恢复场景更新。"
+  "恢复场景更新. "
   []
   (krt/resume! app))
 
 (defn set-manual-play!
-  "设置手动播放模式。开启后需要按住空格才会推进时间。"
+  "设置手动播放模式. 开启后需要按住空格才会推进时间. "
   [enabled?]
   (swap! app assoc-in [:flags :manual-play?] (boolean enabled?))
   (when-not enabled?
@@ -427,7 +427,7 @@ void main() {
   :ok)
 
 (defn reset-time!
-  "重置时间轴与场景计时。"
+  "重置时间轴与场景计时. "
   []
   (let [now (now-seconds)]
     (swap! app assoc :time {:now now :dt 0.0 :frame 0 :last now})
@@ -435,13 +435,13 @@ void main() {
   :ok)
 
 (defn reset-scene!
-  "重新初始化当前场景并重置时间。"
+  "重新初始化当前场景并重置时间. "
   []
   (reset-time!)
   (enqueue! #(apply-scene! (current-scene))))
 
 (defn register-command!
-  "注册键盘命令。action 可以是 GLFW/GLFW_PRESS 等。"
+  "注册键盘命令. action 可以是 GLFW/GLFW_PRESS 等. "
   [key action f]
   (kinput/register-command! key action f))
 
@@ -510,12 +510,12 @@ void main() {
   (when (pos? id) (f id)))
 
 (defn vec3
-  "创建三维向量。"
+  "创建三维向量. "
   [x y z]
   (kmath/vec3 x y z))
 
 (defn color3
-  "创建颜色，自动限制在 0-1 范围内。"
+  "创建颜色, 自动限制在 0-1 范围内. "
   [r g b]
   (kmath/color3 r g b))
 
@@ -528,7 +528,7 @@ void main() {
     (GL20/glUniformMatrix4fv loc false buf)))
 
 (defn- sprite-color
-  "补齐精灵颜色并保证有 alpha。"
+  "补齐精灵颜色并保证有 alpha. "
   [color default-alpha]
   (cond
     (and (vector? color) (= 4 (count color))) color
@@ -538,7 +538,7 @@ void main() {
     :else [1.0 1.0 1.0 default-alpha]))
 
 (defn- sprite-depth
-  "使用视图矩阵计算相机空间的 Z 值，用于透明排序。"
+  "使用视图矩阵计算相机空间的 Z 值, 用于透明排序. "
   [^Matrix4f view [x y z]]
   (let [m02 (.m02 view)
         m12 (.m12 view)
@@ -547,7 +547,7 @@ void main() {
     (+ (* m02 x) (* m12 y) (* m22 z) m32)))
 
 (defn- upload-sprites!
-  "根据当前相机排序并上传精灵数据，返回精灵数量。"
+  "根据当前相机排序并上传精灵数据, 返回精灵数量. "
   [^Matrix4f view]
   (let [{:keys [points colors sizes]} @sprite-state
         points (vec points)
@@ -799,22 +799,22 @@ void main() {
     {:vao vao :vbo vbo :count (/ (alength cube-vertices) 6)}))
 
 (defn uv-sphere
-  "生成 UV 球体网格，返回 {:vertices float-array :indices int-array}。
-  参数：
+  "生成 UV 球体网格, 返回 {:vertices float-array :indices int-array}.
+  参数:
     lat-segs - 纬向分段数
     lon-segs - 经向分段数"
   [lat-segs lon-segs]
   (kgeom/uv-sphere lat-segs lon-segs))
 
 (defn make-point-cloud
-  "创建点云数据。传入 points 与可选 colors。
-  points 为 [[x y z] ...]。
-  colors 为 [[r g b] ...]，若不足则使用白色。"
+  "创建点云数据. 传入 points 与可选 colors.
+  points 为 [[x y z] ...].
+  colors 为 [[r g b] ...], 若不足则使用白色. "
   [points & {:keys [colors]}]
   (kgeom/make-point-cloud points :colors colors))
 
 (defn sphere-point-cloud
-  "生成球面点云。"
+  "生成球面点云. "
   [count radius]
   (kgeom/sphere-point-cloud count radius))
 
@@ -859,25 +859,25 @@ void main() {
   (ksdf/sdf-metaballs x y z t))
 
 (defn marching-tetrahedra
-  "使用四面体分割的 marching 算法生成网格。"
+  "使用四面体分割的 marching 算法生成网格. "
   [f {:keys [min max res t]}]
   (ksdf/marching-tetrahedra f {:min min :max max :res res :t t}))
 
 (defn sweep-mesh
-  "生成沿 X 轴扫掠的管状网格。返回 {:vertices float-array :indices int-array}。"
+  "生成沿 X 轴扫掠的管状网格. 返回 {:vertices float-array :indices int-array}. "
   [& opts]
   (apply kgeom/sweep-mesh opts))
 
 (defn- axis-line-vertices
   [len]
   (float-array
-   [;; X 轴（红色）
+   [;; X 轴(红色)
     0.0 0.0 0.0   1.0 0.0 0.0
     len 0.0 0.0   1.0 0.0 0.0
-    ;; Y 轴（绿色）
+    ;; Y 轴(绿色)
     0.0 0.0 0.0   0.0 1.0 0.0
     0.0 len 0.0   0.0 1.0 0.0
-    ;; Z 轴（蓝色）
+    ;; Z 轴(蓝色)
     0.0 0.0 0.0   0.0 0.0 1.0
     0.0 0.0 len   0.0 0.0 1.0]))
 
@@ -1218,7 +1218,7 @@ void main() {
           (GL30/glBindVertexArray mesh-vao)
           (GL11/glDrawElements GL11/GL_TRIANGLES mesh-index-count GL11/GL_UNSIGNED_INT 0)))
 
-      ;; 绘制原始四边形（在立方体后方，作为参考）
+      ;; 绘制原始四边形(在立方体后方, 作为参考)
       (let [mvp (doto (Matrix4f.)
                   (.identity)
                   (.translate 0.0 0.0 -2.0)
@@ -1234,12 +1234,12 @@ void main() {
         (GL11/glDrawElements GL11/GL_TRIANGLES index-count GL11/GL_UNSIGNED_INT 0)))))
 
 (defn render-default
-  "公开的默认渲染入口。"
+  "公开的默认渲染入口. "
   [ctx]
   (default-render ctx))
 
 (defn- scene-api
-  "组装场景使用的回调接口。"
+  "组装场景使用的回调接口. "
   []
   {:set-clear-color! (fn [color] (reset! clear-color color))
    :set-cubes! (fn [cs] (reset! cubes (vec cs)))
@@ -1267,19 +1267,19 @@ void main() {
     (when-not (contains? @scenes scene-key)
       (register-scene! scene-key scene))))
 
-;; ---- 热重载 API（面向 REPL） ----------------------------------------
+;; ---- 热重载 API(面向 REPL) ----------------------------------------
 
 (defn set-clear-color!
   [r g b a]
   (reset! clear-color [r g b a]))
 
 (defn add-cube!
-  "动态添加一个新立方体。返回该立方体的 id。
-  可选参数：
-    :pos [x y z] - 位置（默认 [0 0 0]）
-    :rot [rx ry rz] - 旋转角度，单位为度（默认 [0 0 0]）
-    :scale [sx sy sz] - 缩放系数（默认 [1 1 1]）
-    :color [r g b] - 颜色 RGB 值 0-1（默认随机颜色）"
+  "动态添加一个新立方体. 返回该立方体的 id.
+  可选参数:
+    :pos [x y z] - 位置(默认 [0 0 0])
+    :rot [rx ry rz] - 旋转角度, 单位为度(默认 [0 0 0])
+    :scale [sx sy sz] - 缩放系数(默认 [1 1 1])
+    :color [r g b] - 颜色 RGB 值 0-1(默认随机颜色)"
   [& {:keys [pos rot scale color]
       :or {pos [0.0 0.0 0.0]
            rot [0.0 0.0 0.0]
@@ -1293,19 +1293,19 @@ void main() {
     id))
 
 (defn remove-cube!
-  "根据 id 移除立方体。如果找到并移除成功则返回 true。"
+  "根据 id 移除立方体. 如果找到并移除成功则返回 true. "
   [id]
   (let [before (count @cubes)]
     (swap! cubes (fn [cs] (vec (remove #(= (:id %) id) cs))))
     (< (count @cubes) before)))
 
 (defn remove-all-cubes!
-  "移除所有立方体。"
+  "移除所有立方体. "
   []
   (reset! cubes []))
 
 (defn update-cube!
-  "根据 id 更新立方体的属性。支持的键：:pos、:rot、:scale、:color。"
+  "根据 id 更新立方体的属性. 支持的键: :pos, :rot, :scale, :color. "
   [id & {:as updates}]
   (swap! cubes
          (fn [cs]
@@ -1316,23 +1316,23 @@ void main() {
                  cs))))
 
 (defn list-cubes
-  "返回包含所有立方体及其 id 的向量。"
+  "返回包含所有立方体及其 id 的向量. "
   []
   @cubes)
 
 (defn cube-count
-  "返回立方体的数量。"
+  "返回立方体的数量. "
   []
   (count @cubes))
 
 (defn set-key-handler!
-  "处理器函数签名：(fn [window key action])"
+  "处理器函数签名: (fn [window key action])"
   [f]
   (kinput/set-key-handler! f))
 
 (defn set-axis-style!
-  "更新坐标轴样式。支持的键：:line-width、:length、:arrow-length、:arrow-radius。
-  几何变化会在 GL 线程上应用。"
+  "更新坐标轴样式. 支持的键: :line-width, :length, :arrow-length, :arrow-radius.
+  几何变化会在 GL 线程上应用. "
   [style]
   (let [keys-to-update (select-keys style [:line-width :length :arrow-length :arrow-radius])
         geometry? (some #(contains? keys-to-update %) [:length :arrow-length :arrow-radius])]
@@ -1344,8 +1344,8 @@ void main() {
         reply))))
 
 (defn set-grid-style!
-  "更新网格样式。支持的键：:size、:step、:major-step、:minor-color、:major-color、:line-width。
-  几何变化会在 GL 线程上应用。"
+  "更新网格样式. 支持的键: :size, :step, :major-step, :minor-color, :major-color, :line-width.
+  几何变化会在 GL 线程上应用. "
   [style]
   (let [keys-to-update (select-keys style [:size :step :major-step :minor-color :major-color :line-width])
         geometry? (some #(contains? keys-to-update %) [:size :step :major-step :minor-color :major-color])]
@@ -1357,7 +1357,7 @@ void main() {
         reply))))
 
 (defn set-render!
-  "替换渲染函数。函数签名：(fn [state])，会覆盖当前场景的渲染。"
+  "替换渲染函数. 函数签名: (fn [state]), 会覆盖当前场景的渲染. "
   [f]
   (reset! render-fn f))
 
@@ -1371,19 +1371,19 @@ void main() {
    {:scene :ecosystem :duration 10.0}])
 
 (defn start-demo!
-  "启动默认演示时间线。"
+  "启动默认演示时间线. "
   []
   (set-timeline! demo-timeline)
   (start-timeline!))
 
 (defn stop-demo!
-  "停止默认演示时间线。"
+  "停止默认演示时间线. "
   []
   (stop-timeline!))
 
 (defn register-demo-commands!
-  "注册默认快捷键：
-  1-7 切换场景，0 启动演示，P 暂停/恢复。"
+  "注册默认快捷键:
+  1-7 切换场景, 0 启动演示, P 暂停/恢复. "
   []
   (kinput/register-demo-commands!
    (fn [key action cmd]
@@ -1396,10 +1396,10 @@ void main() {
        (register-command! key action (fn [_ _ _] (set-scene! cmd)))))))
 
 (defn reload-shaders!
-  "在 GL 线程上重新加载着色器。接受新的顶点/片段着色器源码字符串。
-  传入 nil 表示保持现有的不变。
+  "在 GL 线程上重新加载着色器. 接受新的顶点/片段着色器源码字符串.
+  传入 nil 表示保持现有的不变.
 
-  示例：
+  示例:
   (async/<!! (reload-shaders! nil new-frag-src)))"
   [new-vs new-fs]
   (when new-vs (reset! vs-source new-vs))
@@ -1417,8 +1417,8 @@ void main() {
        program))))
 
 (defn update-vertices!
-  "在 GL 线程上替换四边形数据。传入顶点数据的 float-array 和索引的 int-array。
-  保持相同的属性布局。"
+  "在 GL 线程上替换四边形数据. 传入顶点数据的 float-array 和索引的 int-array.
+  保持相同的属性布局. "
   [vertices indices]
   (enqueue!
    (fn []
@@ -1436,7 +1436,7 @@ void main() {
        (swap! state assoc :index-count (alength indices))))))
 
 (defn set-mesh!
-  "设置通用网格数据。vertices 为包含位置与法线的 float-array，indices 为 int-array。"
+  "设置通用网格数据. vertices 为包含位置与法线的 float-array, indices 为 int-array. "
   [vertices indices]
   (enqueue!
    (fn []
@@ -1456,12 +1456,12 @@ void main() {
        (swap! state assoc :mesh-index-count (alength indices))))))
 
 (defn clear-mesh!
-  "清空通用网格。"
+  "清空通用网格. "
   []
   (set-mesh! (float-array []) (int-array [])))
 
 (defn set-mesh-style!
-  "设置网格的位姿与颜色。"
+  "设置网格的位姿与颜色. "
   [{:keys [pos rot scale color]}]
   (swap! mesh-style merge
          (select-keys {:pos pos :rot rot :scale scale :color color}
@@ -1508,8 +1508,8 @@ void main() {
     (swap! state assoc :point-count point-count)))
 
 (defn set-point-cloud!
-  "设置点云数据。points 为 [[x y z] ...]，colors 为 [[r g b] ...]。
-  若 colors 为空或不足，自动补白色。"
+  "设置点云数据. points 为 [[x y z] ...], colors 为 [[r g b] ...].
+  若 colors 为空或不足, 自动补白色. "
   [points & {:keys [colors]}]
   (let [points (vec points)
         colors (vec (or colors []))]
@@ -1519,13 +1519,13 @@ void main() {
        (upload-point-cloud! points colors)))))
 
 (defn clear-point-cloud!
-  "清空点云数据。"
+  "清空点云数据. "
   []
   (set-point-cloud! []))
 
 (defn set-sprites!
-  "设置精灵数据。points 为 [[x y z] ...]，colors 为 [[r g b] 或 [r g b a] ...]，
-  sizes 为每个精灵的像素尺寸。若缺省则使用默认样式。"
+  "设置精灵数据. points 为 [[x y z] ...], colors 为 [[r g b] 或 [r g b a] ...],
+  sizes 为每个精灵的像素尺寸. 若缺省则使用默认样式. "
   [points & {:keys [colors sizes]}]
   (let [points (vec points)
         colors (vec (or colors []))
@@ -1534,25 +1534,25 @@ void main() {
     :ok))
 
 (defn clear-sprites!
-  "清空精灵数据。"
+  "清空精灵数据. "
   []
   (reset! sprite-state {:points [] :colors [] :sizes []})
   :ok)
 
 (defn set-sprite-style!
-  "设置精灵样式。支持的键：:size、:alpha、:softness。"
+  "设置精灵样式. 支持的键: :size, :alpha, :softness. "
   [style]
   (swap! sprite-style merge
          (select-keys style [:size :alpha :softness]))
   :ok)
 
 (defn set-rig-segments!
-  "设置机械臂/实例段列表。"
+  "设置机械臂/实例段列表. "
   [segments]
   (reset! rig-state {:segments (vec segments)}))
 
 (defn clear-rig!
-  "清空机械臂/实例段。"
+  "清空机械臂/实例段. "
   []
   (reset! rig-state {:segments []}))
 
@@ -1577,7 +1577,7 @@ void main() {
         (swap! app assoc-in [:input :fb-width] (.get w 0))
         (swap! app assoc-in [:input :fb-height] (.get h 0)))
       (GL/createCapabilities)
-      ;; 这里强制使用 framebuffer 尺寸初始化 viewport，避免 HiDPI 下比例错误
+      ;; 这里强制使用 framebuffer 尺寸初始化 viewport, 避免 HiDPI 下比例错误
       (core/init-viewport! window (get-in @app [:input :fb-width]) (get-in @app [:input :fb-height]))
       (swap! app assoc :time {:now (now-seconds)
                               :dt 0.0
@@ -1701,7 +1701,7 @@ void main() {
      (GL30/glBindVertexArray vao)
      (GL11/glDrawElements GL11/GL_TRIANGLES index-count GL11/GL_UNSIGNED_INT 0)))
 
-  ;; 更新顶点（创建一个更小的四边形）
+  ;; 更新顶点(创建一个更小的四边形)
   (update-vertices!
    (float-array [0.3 0.3 0.0  1.0 1.0
                  0.3 -0.3 0.0 1.0 0.0
@@ -1717,13 +1717,13 @@ void main() {
   (cube-count)
   (remove-all-cubes!))
 
-;; REPL 示例（在窗口打开时运行）：
+;; REPL 示例(在窗口打开时运行):
 ;;
 ;; (require '[lwjgl.experiment.hotreload :as hr]
 ;;          '[clojure.core.async :as async]
 ;;          :reload)
 ;;
-;; ;; 修改清除颜色（无需 GL 调用）
+;; ;; 修改清除颜色(无需 GL 调用)
 ;; (hr/set-clear-color! 0.05 0.05 0.08 1.0)
 ;;
 ;; ;; 调整坐标轴粗细 / 箭头大小
@@ -1751,7 +1751,7 @@ void main() {
 ;;    (GL30/glBindVertexArray vao)
 ;;    (GL11/glDrawElements GL11/GL_TRIANGLES index-count GL11/GL_UNSIGNED_INT 0)))
 ;;
-;; ;; 更新顶点（创建更小的四边形）
+;; ;; 更新顶点(创建更小的四边形)
 ;; (async/<!!
 ;;  (hr/update-vertices!
 ;;   (float-array [0.3 0.3 0.0  1.0 1.0
@@ -1785,7 +1785,7 @@ void main() {
 ;; ;; 获取立方体数量
 ;; (hr/cube-count)
 ;;
-;; ;; 更新立方体（修改位置和颜色）
+;; ;; 更新立方体(修改位置和颜色)
 ;; (hr/update-cube! 1 :pos [0.0 1.0 0.0] :color [1.0 1.0 0.0])
 ;;
 ;; ;; 根据 id 移除立方体

@@ -490,6 +490,236 @@
                [9 4 6] [10 5 7] [11 7 5]]]
     (polyhedron->mesh points faces)))
 
+;; ---- 多面体细分/分型 -------------------------------------------------------
+
+(defn tetrahedron-polyhedron
+  "生成四面体多面体数据."
+  [diameter]
+  (let [r (* (double diameter) 0.5)
+        -r (* (double diameter) -0.5)]
+    {:points [[r (/ -r (Math/sqrt 6.0)) (/ -r (Math/sqrt 3.0))]
+              [-r (/ -r (Math/sqrt 6.0)) (/ -r (Math/sqrt 3.0))]
+              [0.0 (/ -r (Math/sqrt 6.0)) (/ (* 2.0 r) (Math/sqrt 3.0))]
+              [0.0 (/ (* 3.0 r) (Math/sqrt 6.0)) 0.0]]
+     :faces [[0 2 1] [0 3 2] [1 2 3] [0 1 3]]}))
+
+(defn cube-polyhedron
+  "生成立方体多面体数据."
+  [side]
+  (let [r (* (double side) 0.5)
+        -r (* (double side) -0.5)]
+    {:points [[-r -r -r]
+              [r -r -r]
+              [r -r r]
+              [-r -r r]
+              [-r r -r]
+              [r r -r]
+              [r r r]
+              [-r r r]]
+     :faces [[0 1 2 3] [0 4 5 1] [1 5 6 2]
+             [2 6 7 3] [3 7 4 0] [4 7 6 5]]}))
+
+(defn octahedron-polyhedron
+  "生成八面体多面体数据."
+  [diameter]
+  (let [r (Math/abs (/ (double diameter) 2.0))
+        -r (- r)]
+    {:points [[r 0.0 0.0]
+              [-r 0.0 0.0]
+              [0.0 r 0.0]
+              [0.0 -r 0.0]
+              [0.0 0.0 r]
+              [0.0 0.0 -r]]
+     :faces [[0 2 4] [2 0 5] [3 0 4] [0 3 5]
+             [2 1 4] [1 2 5] [1 3 4] [3 1 5]]}))
+
+(defn dodecahedron-polyhedron
+  "生成十二面体多面体数据."
+  [diameter]
+  (let [r (/ (double diameter) 4.0)
+        phi (* 1.61803 r)
+        inv (* 0.6180355 r)]
+    {:points [[0.0 inv phi]
+              [0.0 (- inv) phi]
+              [0.0 (- inv) (- phi)]
+              [0.0 inv (- phi)]
+              [phi 0.0 inv]
+              [(- phi) 0.0 inv]
+              [(- phi) 0.0 (- inv)]
+              [phi 0.0 (- inv)]
+              [inv phi 0.0]
+              [(- inv) phi 0.0]
+              [(- inv) (- phi) 0.0]
+              [inv (- phi) 0.0]
+              [r r r]
+              [(- r) r r]
+              [(- r) (- r) r]
+              [r (- r) r]
+              [r (- r) (- r)]
+              [r r (- r)]
+              [(- r) r (- r)]
+              [(- r) (- r) (- r)]]
+     :faces [[0 1 15 4 12]
+             [0 12 8 9 13]
+             [0 13 5 14 1]
+             [1 14 10 11 15]
+             [2 3 17 7 16]
+             [2 16 11 10 19]
+             [2 19 6 18 3]
+             [18 9 8 17 3]
+             [15 11 16 7 4]
+             [4 7 17 8 12]
+             [13 9 18 6 5]
+             [5 6 19 10 14]]}))
+
+(defn icosahedron-polyhedron
+  "生成二十面体多面体数据."
+  [diameter]
+  (let [p1 (/ (Math/abs (/ (double diameter) 2.0)) 1.902076)
+        p2 (* p1 1.618034)
+        -p1 (- p1)
+        -p2 (- p2)]
+    {:points [[p2 p1 0.0]
+              [-p2 p1 0.0]
+              [p2 -p1 0.0]
+              [-p2 -p1 0.0]
+              [p1 0.0 p2]
+              [p1 0.0 -p2]
+              [-p1 0.0 p2]
+              [-p1 0.0 -p2]
+              [0.0 p2 p1]
+              [0.0 -p2 p1]
+              [0.0 p2 -p1]
+              [0.0 -p2 -p1]]
+     :faces [[0 8 4] [0 5 10] [2 4 9] [2 11 5] [1 6 8] [1 10 7]
+             [3 9 6] [3 7 11] [0 10 8] [1 8 10] [2 9 11]
+             [3 11 9] [4 2 0] [5 0 2] [6 1 3] [7 3 1] [8 6 4]
+             [9 4 6] [10 5 7] [11 7 5]]}))
+
+(defn polyhedron-mesh
+  "将多面体数据转为网格."
+  [{:keys [points faces]}]
+  (polyhedron->mesh points faces))
+
+(defn- face-normal
+  [points face]
+  (if (< (count face) 3)
+    [0.0 0.0 0.0]
+    (let [p0 (nth points (nth face 0))
+          p1 (nth points (nth face 1))
+          p2 (nth points (nth face 2))]
+      (vnormalize (vcross (vsub p1 p0) (vsub p2 p0))))))
+
+(defn- refine-polyhedron-step
+  "细分多面体一次，返回新的多面体以及新顶点标记与法线."
+  [{:keys [points faces]}]
+  (let [new-points (transient [])
+        new-faces (transient [])
+        orig-mask (transient [])
+        normals (transient [])]
+    (doseq [face faces]
+      (let [face-pts (mapv #(nth points %) face)
+            center (mapv #(/ % (double (count face-pts)))
+                         (reduce (fn [acc p] (mapv + acc p))
+                                 [0.0 0.0 0.0]
+                                 face-pts))
+            n (face-normal points face)
+            cnt (count face-pts)]
+        (dotimes [i cnt]
+          (let [p0 (nth face-pts i)
+                p1 (nth face-pts (mod (inc i) cnt))
+                p-1 (nth face-pts (mod (dec i) cnt))
+                mid-next (mapv #(/ % 2.0) (mapv + p0 p1))
+                mid-prev (mapv #(/ % 2.0) (mapv + p0 p-1))
+                base (count new-points)]
+            (conj! new-points p0)
+            (conj! new-points mid-next)
+            (conj! new-points center)
+            (conj! new-points mid-prev)
+            (conj! orig-mask true)
+            (conj! orig-mask false)
+            (conj! orig-mask false)
+            (conj! orig-mask false)
+            (dotimes [_ 4]
+              (conj! normals n))
+            (conj! new-faces [base (inc base) (+ base 2) (+ base 3)])))))
+    {:points (vec (persistent! new-points))
+     :faces (vec (persistent! new-faces))
+     :orig-mask (vec (persistent! orig-mask))
+     :normals (vec (persistent! normals))}))
+
+(defn refine-polyhedron
+  "细分多面体。levels 为细分层数."
+  [poly levels]
+  (loop [poly poly
+         levels (int levels)]
+    (if (<= levels 0)
+      poly
+      (recur (select-keys (refine-polyhedron-step poly) [:points :faces])
+             (dec levels)))))
+
+(defn fractalize-polyhedron
+  "分型细分多面体。displacement 控制扰动幅度."
+  [poly levels displacement]
+  (loop [poly poly
+         levels (int levels)
+         disp (double displacement)]
+    (if (<= levels 0)
+      poly
+      (let [{:keys [points faces orig-mask normals]} (refine-polyhedron-step poly)
+            points (mapv (fn [p orig? n]
+                           (if orig?
+                             p
+                             (let [d (math/rand-range (- disp) disp)]
+                               [(float (+ (nth p 0) (* (nth n 0) d)))
+                                (float (+ (nth p 1) (* (nth n 1) d)))
+                                (float (+ (nth p 2) (* (nth n 2) d)))])))
+                         points orig-mask normals)]
+        (recur {:points points :faces faces}
+               (dec levels)
+               (/ disp 2.0))))))
+
+(defn box-polyhedron
+  "生成盒子多面体数据。"
+  [x-size y-size z-size]
+  (let [x (* (double x-size) 0.5)
+        y (* (double y-size) 0.5)
+        z (* (double z-size) 0.5)]
+    {:points [[(- x) (- y) (- z)]
+              [x (- y) (- z)]
+              [x (- y) z]
+              [(- x) (- y) z]
+              [(- x) y (- z)]
+              [x y (- z)]
+              [x y z]
+              [(- x) y z]]
+     :faces [[0 1 2 3] [0 4 5 1] [1 5 6 2]
+             [2 6 7 3] [3 7 4 0] [4 7 6 5]]}))
+
+(defn cut-cube-polyhedron
+  "生成切角立方体多面体数据。"
+  [side]
+  (let [r (* (double side) 0.5)
+        -r (* (double side) -0.5)
+        b (* (double side) 0.3)]
+    {:points [[-r -r -r]
+              [r -r -r]
+              [r -r r]
+              [-r -r r]
+              [-r r -r]
+              [r r -r]
+              [r r b]
+              [b r r]
+              [-r r r]
+              [r b r]]
+     :faces [[1 2 3 0]
+             [5 6 9 2 1]
+             [9 7 8 3 2]
+             [0 4 5 1]
+             [8 4 0 3]
+             [8 7 6 5 4]
+             [6 7 9]]}))
+
 (defn sweep-mesh
   "生成沿 X 轴扫掠的管状网格. 返回 {:vertices float-array :indices int-array}.
   参数:
