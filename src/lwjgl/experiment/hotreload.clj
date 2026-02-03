@@ -244,10 +244,12 @@ void main() {
 
 (declare ensure-default-scenes!
          upload-point-cloud!
+         upload-spring-lines!
          set-point-cloud!
          clear-point-cloud!
          set-mesh!
          set-mesh-style!
+         clear-spring-lines!
          clear-mesh!)
 
 (defn enqueue!
@@ -615,6 +617,21 @@ void main() {
     (GL30/glBindVertexArray 0)
     {:vao vao :vbo vbo :ebo ebo}))
 
+(defn- build-spring-vao
+  []
+  (let [vao (GL30/glGenVertexArrays)
+        vbo (GL15/glGenBuffers)
+        stride (* 6 Float/BYTES)]
+    (GL30/glBindVertexArray vao)
+    (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER vbo)
+    (GL15/glBufferData GL15/GL_ARRAY_BUFFER 0 GL15/GL_DYNAMIC_DRAW)
+    (GL20/glVertexAttribPointer 0 3 GL11/GL_FLOAT false stride 0)
+    (GL20/glEnableVertexAttribArray 0)
+    (GL20/glVertexAttribPointer 1 3 GL11/GL_FLOAT false stride (* 3 Float/BYTES))
+    (GL20/glEnableVertexAttribArray 1)
+    (GL30/glBindVertexArray 0)
+    {:vao vao :vbo vbo}))
+
 (defn- create-cube-vao
   []
   (let [vao (GL30/glGenVertexArrays)
@@ -789,6 +806,129 @@ void main() {
         colors (mapv :color particles)]
     {:points points :colors colors}))
 
+(defn- spring-color
+  [ratio]
+  (let [ratio (max -1.0 (min 1.0 ratio))]
+    (if (pos? ratio)
+      [(+ 0.2 (* 0.8 ratio))
+       (+ 0.8 (* -0.6 ratio))
+       0.2]
+      [0.2
+       (+ 0.8 (* -0.6 (- ratio)))
+       (+ 0.2 (* 0.8 (- ratio)))])))
+
+(defn- make-spring-grid
+  [rows cols spacing]
+  (let [rows (max 2 (int rows))
+        cols (max 2 (int cols))
+        spacing (double spacing)
+        half-w (* 0.5 spacing (dec cols))
+        half-d (* 0.5 spacing (dec rows))
+        idx (fn [r c] (+ (* r cols) c))
+        nodes (vec
+               (for [r (range rows)
+                     c (range cols)]
+                 (let [x (- (* c spacing) half-w)
+                       z (- (* r spacing) half-d)
+                       y 0.6
+                       fixed? (= r 0)]
+                   {:pos [(float x) (float y) (float z)]
+                    :vel [0.0 0.0 0.0]
+                    :fixed? fixed?})))
+        springs (transient [])]
+    (doseq [r (range rows)
+            c (range cols)]
+      (let [i (idx r c)]
+        (when (< c (dec cols))
+          (let [j (idx r (inc c))]
+            (conj! springs [i j spacing])))
+        (when (< r (dec rows))
+          (let [j (idx (inc r) c)]
+            (conj! springs [i j spacing])))
+        (when (and (< r (dec rows)) (< c (dec cols)))
+          (let [j (idx (inc r) (inc c))]
+            (conj! springs [i j (* spacing (Math/sqrt 2.0))])))
+        (when (and (< r (dec rows)) (> c 0))
+          (let [j (idx (inc r) (dec c))]
+            (conj! springs [i j (* spacing (Math/sqrt 2.0))])))))
+    {:rows rows :cols cols :nodes nodes :springs (persistent! springs)}))
+
+(defn- update-spring-grid
+  [nodes springs dt]
+  (let [k 8.0
+        damping 0.4
+        gravity [0.0 -1.4 0.0]
+        forces (vec (repeat (count nodes) [0.0 0.0 0.0]))]
+    (let [forces
+          (reduce
+           (fn [fs [i j rest]]
+             (let [{:keys [pos]} (nth nodes i)
+                   {pos2 :pos} (nth nodes j)
+                   [x1 y1 z1] pos
+                   [x2 y2 z2] pos2
+                   dx (- x2 x1)
+                   dy (- y2 y1)
+                   dz (- z2 z1)
+                   dist (Math/sqrt (+ (* dx dx) (* dy dy) (* dz dz) 1.0e-6))
+                   diff (- dist rest)
+                   f (* k diff)
+                   fx (* f (/ dx dist))
+                   fy (* f (/ dy dist))
+                   fz (* f (/ dz dist))
+                   [f1x f1y f1z] (nth fs i)
+                   [f2x f2y f2z] (nth fs j)]
+               (assoc fs
+                      i [(+ f1x fx) (+ f1y fy) (+ f1z fz)]
+                      j [(+ f2x (- fx)) (+ f2y (- fy)) (+ f2z (- fz))])))
+           forces
+           springs)]
+      (mapv
+       (fn [{:keys [pos vel fixed?] :as n} [fx fy fz]]
+         (if fixed?
+           (assoc n :vel [0.0 0.0 0.0])
+           (let [[vx vy vz] vel
+                 ax (+ fx (nth gravity 0) (* (- damping) vx))
+                 ay (+ fy (nth gravity 1) (* (- damping) vy))
+                 az (+ fz (nth gravity 2) (* (- damping) vz))
+                 nvx (+ vx (* ax dt))
+                 nvy (+ vy (* ay dt))
+                 nvz (+ vz (* az dt))
+                 [px py pz] pos
+                 npx (+ px (* nvx dt))
+                 npy (+ py (* nvy dt))
+                 npz (+ pz (* nvz dt))]
+             (assoc n :pos [(float npx) (float npy) (float npz)]
+                    :vel [(float nvx) (float nvy) (float nvz)]))))
+       nodes
+       forces))))
+
+(defn- spring-lines
+  [nodes springs]
+  (let [data (transient [])]
+    (doseq [[i j rest] springs]
+      (let [{:keys [pos]} (nth nodes i)
+            {pos2 :pos} (nth nodes j)
+            [x1 y1 z1] pos
+            [x2 y2 z2] pos2
+            dx (- x2 x1)
+            dy (- y2 y1)
+            dz (- z2 z1)
+            dist (Math/sqrt (+ (* dx dx) (* dy dy) (* dz dz) 1.0e-6))
+            ratio (/ (- dist rest) (max rest 1.0e-6))
+            [r g b] (spring-color ratio)]
+        (conj! data (float x1))
+        (conj! data (float y1))
+        (conj! data (float z1))
+        (conj! data (float r))
+        (conj! data (float g))
+        (conj! data (float b))
+        (conj! data (float x2))
+        (conj! data (float y2))
+        (conj! data (float z2))
+        (conj! data (float r))
+        (conj! data (float g))
+        (conj! data (float b))))
+    (persistent! data)))
 (defn- sdf-sphere
   [x y z [cx cy cz] r]
   (let [dx (- x cx)
@@ -1046,6 +1186,7 @@ void main() {
         {point-vao :vao point-vbo :vbo} (build-point-vao)
         {overlay-vao :vao overlay-vbo :vbo} (build-overlay-vao)
         {mesh-vao :vao mesh-vbo :vbo mesh-ebo :ebo} (build-mesh-vao)
+        {spring-vao :vao spring-vbo :vbo} (build-spring-vao)
         {cube-vao :vao cube-vbo :vbo cube-count :count} (create-cube-vao)]
     (GL20/glUseProgram program)
     (when (<= 0 tex-loc)
@@ -1078,6 +1219,9 @@ void main() {
            :mesh-vbo mesh-vbo
            :mesh-ebo mesh-ebo
            :mesh-index-count 0
+           :spring-vao spring-vao
+           :spring-vbo spring-vbo
+           :spring-count 0
            :overlay-program overlay-program
            :overlay-vao overlay-vao
            :overlay-vbo overlay-vbo)
@@ -1116,7 +1260,8 @@ void main() {
                 cube-program cube-vao cube-vbo
                 point-program point-vao point-vbo
                 overlay-program overlay-vao overlay-vbo
-                mesh-vao mesh-vbo mesh-ebo]} @state]
+                mesh-vao mesh-vbo mesh-ebo
+                spring-vao spring-vbo]} @state]
     (delete-if-positive program #(GL20/glDeleteProgram %))
     (delete-if-positive vbo #(GL15/glDeleteBuffers %))
     (delete-if-positive ebo #(GL15/glDeleteBuffers %))
@@ -1139,6 +1284,9 @@ void main() {
     (delete-if-positive mesh-vbo #(GL15/glDeleteBuffers %))
     (delete-if-positive mesh-ebo #(GL15/glDeleteBuffers %))
     (delete-if-positive mesh-vao #(GL30/glDeleteVertexArrays %))
+    ;; 清理弹簧线段资源
+    (delete-if-positive spring-vbo #(GL15/glDeleteBuffers %))
+    (delete-if-positive spring-vao #(GL30/glDeleteVertexArrays %))
     ;; 清理覆盖层资源
     (delete-if-positive overlay-program #(GL20/glDeleteProgram %))
     (delete-if-positive overlay-vbo #(GL15/glDeleteBuffers %))
@@ -1150,6 +1298,7 @@ void main() {
                  :cube-program 0 :cube-vao 0 :cube-vbo 0 :cube-vertex-count 0
                  :point-program 0 :point-vao 0 :point-vbo 0 :point-count 0
                  :mesh-vao 0 :mesh-vbo 0 :mesh-ebo 0 :mesh-index-count 0
+                 :spring-vao 0 :spring-vbo 0 :spring-count 0
                  :overlay-program 0 :overlay-vao 0 :overlay-vbo 0}))
 
 (defn- default-render
@@ -1158,7 +1307,8 @@ void main() {
                 axis-line-vao axis-line-count axis-arrow-vao axis-arrow-count
                 cube-program cube-vao cube-vertex-count
                 point-program point-vao point-count
-                mesh-vao mesh-index-count]} (:resources ctx)
+                mesh-vao mesh-index-count
+                spring-vao spring-count]} (:resources ctx)
         {:keys [yaw pitch]} (:camera ctx)
         {:keys [fb-width fb-height]} (:input ctx)
         [r g b a] @clear-color]
@@ -1198,6 +1348,16 @@ void main() {
         (GL30/glBindVertexArray axis-arrow-vao)
         (GL11/glDrawArrays GL11/GL_TRIANGLES 0 axis-arrow-count)
         (GL11/glLineWidth 1.0))
+
+      ;; Draw spring lines
+      (when (pos? spring-count)
+        (let [mvp (doto (Matrix4f. projection) (.mul view))]
+          (GL20/glUseProgram axis-program)
+          (upload-mat! mvp mat-buf axis-mvp-loc)
+          (GL11/glLineWidth 1.5)
+          (GL30/glBindVertexArray spring-vao)
+          (GL11/glDrawArrays GL11/GL_LINES 0 spring-count)
+          (GL11/glLineWidth 1.0)))
 
       ;; Draw point cloud
       (when (pos? point-count)
@@ -1418,6 +1578,205 @@ void main() {
   :render (fn [ctx _] (default-render ctx))
   :cleanup (fn [_ _] nil)})
 
+(register-scene!
+ :spring
+ {:init (fn [_]
+          (reset! clear-color [0.02 0.02 0.05 1.0])
+          (reset! cubes [])
+          (clear-point-cloud!)
+          (reset! rig-state {:segments []})
+          (swap! state assoc :mesh-index-count 0)
+          (let [{:keys [nodes springs]} (make-spring-grid 10 10 0.22)
+                points (mapv :pos nodes)
+                colors (mapv (fn [{:keys [fixed?]}]
+                               (if fixed? [1.0 0.9 0.2] [0.8 0.8 0.9]))
+                             nodes)
+                lines (spring-lines nodes springs)]
+            (upload-point-cloud! points colors)
+            (upload-spring-lines! lines)
+            {:nodes nodes :springs springs}))
+  :update (fn [{:keys [time]} scene-state]
+            (let [dt (:dt time)
+                  nodes (update-spring-grid (:nodes scene-state) (:springs scene-state) dt)
+                  points (mapv :pos nodes)
+                  colors (mapv (fn [{:keys [fixed?]}]
+                                 (if fixed? [1.0 0.9 0.2] [0.8 0.8 0.9]))
+                               nodes)
+                  lines (spring-lines nodes (:springs scene-state))]
+              (upload-point-cloud! points colors)
+              (upload-spring-lines! lines)
+              (assoc scene-state :nodes nodes)))
+  :render (fn [ctx _] (default-render ctx))
+  :cleanup (fn [_ _] nil)})
+
+(register-scene!
+ :ecosystem
+ {:init (fn [_]
+          (reset! clear-color [0.02 0.02 0.05 1.0])
+          (reset! rig-state {:segments []})
+          (clear-point-cloud!)
+          (clear-mesh!)
+          (clear-spring-lines!)
+          (let [plants (repeatedly 30 (fn []
+                                        {:pos [(rand-range -1.2 1.2) 0.0 (rand-range -1.0 1.0)]
+                                         :energy 1.0}))
+                herbivores (repeatedly 14 (fn []
+                                            {:pos [(rand-range -1.4 1.4) 0.0 (rand-range -1.2 1.2)]
+                                             :vel [0.0 0.0 0.0]
+                                             :energy 1.2}))
+                predators (repeatedly 6 (fn []
+                                          {:pos [(rand-range -1.4 1.4) 0.0 (rand-range -1.2 1.2)]
+                                           :vel [0.0 0.0 0.0]
+                                           :energy 1.6}))]
+            (reset! cubes [])
+            {:plants (vec plants)
+             :herbivores (vec herbivores)
+             :predators (vec predators)
+             :t 0.0}))
+  :update (fn [{:keys [time]} scene-state]
+            (let [dt (:dt time)
+                  t (+ (:t scene-state) dt)
+                  dist2 (fn [a b]
+                          (let [[ax ay az] a
+                                [bx by bz] b
+                                dx (- bx ax)
+                                dy (- by ay)
+                                dz (- bz az)]
+                            (+ (* dx dx) (* dy dy) (* dz dz))))
+                  steer (fn [pos target speed]
+                          (let [[px py pz] pos
+                                [tx ty tz] target
+                                dx (- tx px)
+                                dy (- ty py)
+                                dz (- tz pz)
+                                dist (Math/sqrt (+ (* dx dx) (* dy dy) (* dz dz) 1.0e-6))
+                                s (min speed (/ speed dist))]
+                            [(* dx s) (* dy s) (* dz s)]))
+                  plants (:plants scene-state)
+                  herbivores
+                  (mapv
+                   (fn [{:keys [pos energy] :as h}]
+                     (let [food (when (seq plants)
+                                  (apply min-key #(dist2 pos (:pos %)) plants))
+                           jitter [(rand-range -0.35 0.35) 0.0 (rand-range -0.35 0.35)]
+                           vel (if food
+                                 (let [d (dist2 pos (:pos food))]
+                                   (if (< d 0.04)
+                                     jitter
+                                     (steer pos (:pos food) 1.2)))
+                                 jitter)
+                           [vx vy vz] vel
+                           [px py pz] pos
+                           npos [(+ px (* vx dt)) 0.0 (+ pz (* vz dt))]
+                           energy (- energy (* 0.08 dt))
+                           eaten? (and food (< (dist2 npos (:pos food)) 0.03))]
+                       (cond-> (assoc h :pos npos :vel vel :energy energy)
+                         eaten? (update :energy + 0.6))))
+                   (:herbivores scene-state))
+                  eaten-plants
+                  (set (keep (fn [{:keys [pos energy]}]
+                               (when (> energy 1.5) pos))
+                             herbivores))
+                  plants
+                  (vec (remove (fn [{:keys [pos]}]
+                                 (some #(<= (dist2 pos %) 0.03) eaten-plants))
+                               plants))
+                  herbivores
+                  (vec (remove #(<= (:energy %) 0.0) herbivores))
+                  born-herbivores
+                  (mapcat (fn [{:keys [pos energy]}]
+                            (when (> energy 2.2)
+                              [{:pos [(+ (first pos) (rand-range -0.1 0.1))
+                                      0.0
+                                      (+ (nth pos 2) (rand-range -0.1 0.1))]
+                                :vel [0.0 0.0 0.0]
+                                :energy 1.0}]))
+                          herbivores)
+                  herbivores
+                  (vec (concat (mapv (fn [h]
+                                       (if (> (:energy h) 2.2)
+                                         (assoc h :energy 1.2)
+                                         h))
+                                     herbivores)
+                               born-herbivores))
+                  predators
+                  (mapv
+                   (fn [{:keys [pos energy] :as p}]
+                     (let [target (when (seq herbivores)
+                                    (apply min-key #(dist2 pos (:pos %)) herbivores))
+                           jitter [(rand-range -0.25 0.25) 0.0 (rand-range -0.25 0.25)]
+                           vel (if target
+                                 (let [d (dist2 pos (:pos target))]
+                                   (if (< d 0.06)
+                                     jitter
+                                     (steer pos (:pos target) 1.6)))
+                                 jitter)
+                           [vx vy vz] vel
+                           [px py pz] pos
+                           npos [(+ px (* vx dt)) 0.0 (+ pz (* vz dt))]
+                           energy (- energy (* 0.12 dt))
+                           eaten? (and target (< (dist2 npos (:pos target)) 0.04))]
+                       (cond-> (assoc p :pos npos :vel vel :energy energy)
+                         eaten? (update :energy + 0.8))))
+                   (:predators scene-state))
+                  eaten-herbivores
+                  (set (keep (fn [{:keys [pos energy]}]
+                               (when (> energy 2.0) pos))
+                             predators))
+                  herbivores
+                  (vec (remove (fn [{:keys [pos]}]
+                                 (some #(<= (dist2 pos %) 0.04) eaten-herbivores))
+                               herbivores))
+                  predators
+                  (vec (remove #(<= (:energy %) 0.0) predators))
+                  born-predators
+                  (mapcat (fn [{:keys [pos energy]}]
+                            (when (> energy 2.6)
+                              [{:pos [(+ (first pos) (rand-range -0.1 0.1))
+                                      0.0
+                                      (+ (nth pos 2) (rand-range -0.1 0.1))]
+                                :vel [0.0 0.0 0.0]
+                                :energy 1.4}]))
+                          predators)
+                  predators
+                  (vec (concat (mapv (fn [p]
+                                       (if (> (:energy p) 2.6)
+                                         (assoc p :energy 1.6)
+                                         p))
+                                     predators)
+                               born-predators))
+                  plants
+                  (vec (concat plants
+                               (repeatedly (max 0 (- 30 (count plants)))
+                                           (fn []
+                                             {:pos [(rand-range -1.2 1.2) 0.0 (rand-range -1.0 1.0)]
+                                              :energy 1.0}))))]
+              (reset! cubes
+                      (vec
+                       (concat
+                        (map (fn [{:keys [pos]}]
+                               {:id (swap! next-cube-id inc)
+                                :pos pos :rot [0.0 0.0 0.0] :scale [0.12 0.12 0.12]
+                                :color [0.2 0.9 0.3]})
+                             plants)
+                        (map (fn [{:keys [pos]}]
+                               {:id (swap! next-cube-id inc)
+                                :pos pos :rot [0.0 0.0 0.0] :scale [0.16 0.16 0.16]
+                                :color [0.9 0.9 0.2]})
+                             herbivores)
+                        (map (fn [{:keys [pos]}]
+                               {:id (swap! next-cube-id inc)
+                                :pos pos :rot [0.0 0.0 0.0] :scale [0.2 0.2 0.2]
+                                :color [0.9 0.2 0.2]})
+                             predators))))
+              (assoc scene-state
+                     :plants plants
+                     :herbivores herbivores
+                     :predators predators
+                     :t t)))
+  :render (fn [ctx _] (default-render ctx))
+  :cleanup (fn [_ _] nil)})
+
 ;; ---- 热重载 API（面向 REPL） ----------------------------------------
 
 (defn set-clear-color!
@@ -1499,6 +1858,45 @@ void main() {
   [f]
   (reset! render-fn f))
 
+(def ^:private demo-timeline
+  [{:scene :geometry :duration 6.0}
+   {:scene :rig :duration 6.0}
+   {:scene :sweep :duration 6.0}
+   {:scene :particles :duration 6.0}
+   {:scene :sdf :duration 8.0}
+   {:scene :spring :duration 8.0}
+   {:scene :ecosystem :duration 10.0}])
+
+(defn start-demo!
+  "启动默认演示时间线。"
+  []
+  (set-timeline! demo-timeline)
+  (start-timeline!))
+
+(defn stop-demo!
+  "停止默认演示时间线。"
+  []
+  (stop-timeline!))
+
+(defn register-demo-commands!
+  "注册默认快捷键：
+  1-7 切换场景，0 启动演示，P 暂停/恢复。"
+  []
+  (register-command! GLFW/GLFW_KEY_1 GLFW/GLFW_PRESS (fn [_ _ _] (set-scene! :geometry)))
+  (register-command! GLFW/GLFW_KEY_2 GLFW/GLFW_PRESS (fn [_ _ _] (set-scene! :rig)))
+  (register-command! GLFW/GLFW_KEY_3 GLFW/GLFW_PRESS (fn [_ _ _] (set-scene! :sweep)))
+  (register-command! GLFW/GLFW_KEY_4 GLFW/GLFW_PRESS (fn [_ _ _] (set-scene! :particles)))
+  (register-command! GLFW/GLFW_KEY_5 GLFW/GLFW_PRESS (fn [_ _ _] (set-scene! :sdf)))
+  (register-command! GLFW/GLFW_KEY_6 GLFW/GLFW_PRESS (fn [_ _ _] (set-scene! :spring)))
+  (register-command! GLFW/GLFW_KEY_7 GLFW/GLFW_PRESS (fn [_ _ _] (set-scene! :ecosystem)))
+  (register-command! GLFW/GLFW_KEY_0 GLFW/GLFW_PRESS (fn [_ _ _] (start-demo!)))
+  (register-command! GLFW/GLFW_KEY_P GLFW/GLFW_PRESS
+                     (fn [_ _ _]
+                       (if (get-in @app [:flags :paused?])
+                         (resume!)
+                         (pause!))))
+  :ok)
+
 (defn reload-shaders!
   "在 GL 线程上重新加载着色器。接受新的顶点/片段着色器源码字符串。
   传入 nil 表示保持现有的不变。
@@ -1570,6 +1968,22 @@ void main() {
   (swap! mesh-style merge
          (select-keys {:pos pos :rot rot :scale scale :color color}
                       [:pos :rot :scale :color])))
+
+(defn- upload-spring-lines!
+  [line-data]
+  (let [{:keys [spring-vbo]} @state
+        line-data (float-array line-data)
+        count (quot (alength line-data) 6)
+        buf (BufferUtils/createFloatBuffer (alength line-data))]
+    (.put buf line-data)
+    (.flip buf)
+    (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER spring-vbo)
+    (GL15/glBufferData GL15/GL_ARRAY_BUFFER buf GL15/GL_DYNAMIC_DRAW)
+    (swap! state assoc :spring-count count)))
+
+(defn- clear-spring-lines!
+  []
+  (upload-spring-lines! []))
 
 (defn- upload-point-cloud!
   [points colors]
