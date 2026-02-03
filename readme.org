@@ -326,6 +326,28 @@ Just poking the scene and watching it change in real time.
 (hr/set-sprites! (k/sphere-point-cloud 200 1.2))
 #+end_src
 
+*** 点云 vs 精灵 对比
+#+begin_src clojure
+;; 点云：GPU 点
+(k/points! (k/sphere-point-cloud 200 1.2))
+
+;; 精灵：带透明混合的 billboard
+(require '[lwjgl.experiment.hotreload :as hr])
+(hr/set-sprite-style! {:size 14.0 :alpha 0.65 :softness 0.2})
+(hr/set-sprites! (k/sphere-point-cloud 200 1.2))
+#+end_src
+
+*** 手动播放模式与场景重置
+#+begin_src clojure
+(require '[lwjgl.experiment.hotreload :as hr])
+
+;; 切换到手动播放（空格按住播放）
+(hr/set-manual-play! true)
+
+;; 重置当前场景（时间与状态）
+(hr/reset-scene!)
+#+end_src
+
 ** Live 场景（自定义展示）
 #+begin_src clojure
 (k/live!
