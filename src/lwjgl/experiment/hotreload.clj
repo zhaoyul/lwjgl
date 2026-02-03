@@ -1,7 +1,15 @@
 (ns lwjgl.experiment.hotreload
   (:gen-class)
   (:require [clojure.core.async :as async]
-            [lwjgl.core :as core])
+            [lwjgl.core :as core]
+            [lwjgl.experiment.kons9.geometry :as kgeom]
+            [lwjgl.experiment.kons9.input :as kinput]
+            [lwjgl.experiment.kons9.math :as kmath]
+            [lwjgl.experiment.kons9.particles :as kpart]
+            [lwjgl.experiment.kons9.runtime :as krt]
+            [lwjgl.experiment.kons9.scenes :as kscenes]
+            [lwjgl.experiment.kons9.sdf :as ksdf]
+            [lwjgl.experiment.kons9.spring :as kspring])
   (:import (org.lwjgl BufferUtils)
            (org.lwjgl.glfw GLFW GLFWCursorPosCallbackI GLFWFramebufferSizeCallbackI
                            GLFWKeyCallbackI GLFWMouseButtonCallbackI)
@@ -12,8 +20,6 @@
 
 (defonce cmd-chan (async/chan 128))
 (defonce render-fn (atom nil))
-(defonce key-handler (atom nil))
-(defonce command-table (atom {}))
 (defonce clear-color (atom [0.2 0.3 0.3 1.0]))
 (defonce axis-style
   (atom {:length 1.0
@@ -295,40 +301,26 @@ void main() {
 
 (defn- current-scene-def
   []
-  (get @scenes (get-in @app [:scene :key])))
+  (krt/current-scene-def app scenes))
 
 (defn- apply-scene!
   [scene-key]
-  (let [scene (get @scenes scene-key)]
-    (when-not scene
-      (throw (ex-info "未找到场景" {:scene scene-key})))
-    (let [{:keys [key state]} (:scene @app)
-          old-scene (get @scenes key)
-          ctx (scene-context)]
-      (when-let [cleanup (:cleanup old-scene)]
-        (cleanup ctx state))
-      (swap! app assoc :scene {:key scene-key :state nil :since 0.0})
-      (let [init (:init scene)
-            init-ctx (scene-context)
-            new-state (when init (init init-ctx))]
-        (swap! app assoc-in [:scene :state] new-state))
-      scene-key)))
+  (krt/apply-scene! app scenes scene-context scene-key))
 
 (defn register-scene!
   "注册一个场景，scene 需要包含 :init/:update/:render/:cleanup 中的任意组合。"
   [scene-key scene]
-  (swap! scenes assoc scene-key scene)
-  scene-key)
+  (krt/register-scene! scenes scene-key scene))
 
 (defn list-scenes
   "返回已注册的场景 key 列表。"
   []
-  (vec (keys @scenes)))
+  (krt/list-scenes scenes))
 
 (defn current-scene
   "返回当前场景 key。"
   []
-  (get-in @app [:scene :key]))
+  (krt/current-scene app))
 
 (defn set-scene!
   "切换到指定场景。该操作在 GL 线程中执行。"
@@ -339,53 +331,43 @@ void main() {
 (defn set-timeline!
   "设置时间线。items 形如 {:scene :foo :duration 5.0} 的向量。"
   [items]
-  (swap! app assoc :timeline {:enabled? false
-                              :items (vec items)
-                              :index 0
-                              :elapsed 0.0})
-  :ok)
+  (krt/set-timeline! app items))
 
 (defn start-timeline!
   "启动时间线并切换到首个场景。"
   []
-  (let [items (get-in @app [:timeline :items])]
-    (when (seq items)
-      (swap! app assoc-in [:timeline :enabled?] true)
-      (set-scene! (:scene (first items))))))
+  (ensure-default-scenes!)
+  (enqueue! #(krt/start-timeline! app scenes scene-context)))
 
 (defn stop-timeline!
   "停止时间线推进。"
   []
-  (swap! app assoc-in [:timeline :enabled?] false))
+  (krt/stop-timeline! app))
 
 (defn set-transition!
   "设置过场时长（秒）。"
   [duration]
-  (swap! app assoc-in [:transition :duration] (max 0.0 (double duration)))
-  :ok)
+  (krt/set-transition! app duration))
 
 (defn trigger-transition!
   "手动触发一次过场遮罩。"
   []
-  (swap! app assoc :transition {:active? true
-                                :alpha 1.0
-                                :duration (get-in @app [:transition :duration])})
-  :ok)
+  (krt/trigger-transition! app))
 
 (defn pause!
   "暂停场景更新。"
   []
-  (swap! app assoc-in [:flags :paused?] true))
+  (krt/pause! app))
 
 (defn resume!
   "恢复场景更新。"
   []
-  (swap! app assoc-in [:flags :paused?] false))
+  (krt/resume! app))
 
 (defn register-command!
   "注册键盘命令。action 可以是 GLFW/GLFW_PRESS 等。"
   [key action f]
-  (swap! command-table assoc [key action] f))
+  (kinput/register-command! key action f))
 
 (defn- update-time!
   []
@@ -401,40 +383,15 @@ void main() {
 
 (defn- update-scene!
   [dt]
-  (swap! app update-in [:scene :since] + dt)
-  (when-not (get-in @app [:flags :paused?])
-    (when-let [update-fn (:update (current-scene-def))]
-      (let [ctx (scene-context)
-            scene-state (get-in @app [:scene :state])
-            new-state (update-fn ctx scene-state)]
-        (swap! app assoc-in [:scene :state] new-state)))))
+  (krt/update-scene! app scenes scene-context dt))
 
 (defn- update-timeline!
   [dt]
-  (let [{:keys [enabled? items index elapsed]} (:timeline @app)]
-    (when (and enabled? (seq items))
-      (let [elapsed (+ elapsed dt)
-            {:keys [duration]} (nth items index)]
-        (if (>= elapsed duration)
-          (let [next-index (mod (inc index) (count items))
-                next-scene (:scene (nth items next-index))]
-            (swap! app assoc-in [:timeline :index] next-index)
-            (swap! app assoc-in [:timeline :elapsed] 0.0)
-            (apply-scene! next-scene)
-            (swap! app assoc :transition {:active? true
-                                          :alpha 1.0
-                                          :duration (get-in @app [:transition :duration])}))
-          (swap! app assoc-in [:timeline :elapsed] elapsed))))))
+  (krt/update-timeline! app scenes scene-context dt))
 
 (defn- update-transition!
   [dt]
-  (let [{:keys [active? alpha duration]} (:transition @app)]
-    (when active?
-      (let [step (if (pos? duration) (/ dt duration) 1.0)
-            alpha (max 0.0 (- alpha step))]
-        (if (<= alpha 0.0)
-          (swap! app assoc :transition {:active? false :alpha 0.0 :duration duration})
-          (swap! app assoc-in [:transition :alpha] alpha))))))
+  (krt/update-transition! app dt))
 
 (defn- render-scene!
   []
@@ -469,19 +426,15 @@ void main() {
   [id f]
   (when (pos? id) (f id)))
 
-(defn- clamp01
-  [v]
-  (min 1.0 (max 0.0 v)))
-
 (defn vec3
   "创建三维向量。"
   [x y z]
-  [(float x) (float y) (float z)])
+  (kmath/vec3 x y z))
 
 (defn color3
   "创建颜色，自动限制在 0-1 范围内。"
   [r g b]
-  [(float (clamp01 r)) (float (clamp01 g)) (float (clamp01 b))])
+  (kmath/color3 r g b))
 
 (defn- upload-mat!
   [^Matrix4f m ^java.nio.FloatBuffer buf loc]
@@ -658,470 +611,69 @@ void main() {
     lat-segs - 纬向分段数
     lon-segs - 经向分段数"
   [lat-segs lon-segs]
-  (let [lat-segs (max 3 (int lat-segs))
-        lon-segs (max 3 (int lon-segs))
-        vertex-count (* (inc lat-segs) (inc lon-segs))
-        vertices (transient [])
-        indices (transient [])]
-    (dotimes [i (inc lat-segs)]
-      (let [v (/ (double i) lat-segs)
-            phi (* Math/PI v)
-            y (Math/cos phi)
-            r (Math/sin phi)]
-        (dotimes [j (inc lon-segs)]
-          (let [u (/ (double j) lon-segs)
-                theta (* 2.0 Math/PI u)
-                x (* r (Math/cos theta))
-                z (* r (Math/sin theta))
-                nx x
-                ny y
-                nz z]
-            (conj! vertices (float x))
-            (conj! vertices (float y))
-            (conj! vertices (float z))
-            (conj! vertices (float nx))
-            (conj! vertices (float ny))
-            (conj! vertices (float nz))))))
-    (dotimes [i lat-segs]
-      (dotimes [j lon-segs]
-        (let [row-a (* i (inc lon-segs))
-              row-b (* (inc i) (inc lon-segs))
-              a (+ row-a j)
-              b (+ row-b j)
-              c (+ row-b (inc j))
-              d (+ row-a (inc j))]
-          (conj! indices a)
-          (conj! indices b)
-          (conj! indices d)
-          (conj! indices b)
-          (conj! indices c)
-          (conj! indices d))))
-    {:vertices (float-array (persistent! vertices))
-     :indices (int-array (persistent! indices))
-     :vertex-count vertex-count}))
+  (kgeom/uv-sphere lat-segs lon-segs))
 
 (defn make-point-cloud
   "创建点云数据。传入 points 与可选 colors。
   points 为 [[x y z] ...]。
   colors 为 [[r g b] ...]，若不足则使用白色。"
   [points & {:keys [colors]}]
-  {:points (vec points)
-   :colors (vec (or colors []))})
+  (kgeom/make-point-cloud points :colors colors))
 
 (defn sphere-point-cloud
   "生成球面点云。"
   [count radius]
-  (let [count (max 1 (int count))
-        radius (double radius)]
-    (vec
-     (repeatedly count
-                 (fn []
-                   (let [u (rand)
-                         v (rand)
-                         theta (* 2.0 Math/PI u)
-                         phi (Math/acos (- 1.0 (* 2.0 v)))
-                         x (* radius (Math/sin phi) (Math/cos theta))
-                         y (* radius (Math/cos phi))
-                         z (* radius (Math/sin phi) (Math/sin theta))]
-                     [(float x) (float y) (float z)]))))))
+  (kgeom/sphere-point-cloud count radius))
 
 (defn- compose-transform
   [pos rot scale]
-  (doto (Matrix4f.)
-    (.identity)
-    (.translate (float (nth pos 0)) (float (nth pos 1)) (float (nth pos 2)))
-    (.rotateX (float (Math/toRadians (nth rot 0))))
-    (.rotateY (float (Math/toRadians (nth rot 1))))
-    (.rotateZ (float (Math/toRadians (nth rot 2))))
-    (.scale (float (nth scale 0)) (float (nth scale 1)) (float (nth scale 2)))))
+  (kmath/compose-transform pos rot scale))
 
 (defn- chain-transform
   [parent pos rot scale]
-  (doto (Matrix4f. parent)
-    (.translate (float (nth pos 0)) (float (nth pos 1)) (float (nth pos 2)))
-    (.rotateX (float (Math/toRadians (nth rot 0))))
-    (.rotateY (float (Math/toRadians (nth rot 1))))
-    (.rotateZ (float (Math/toRadians (nth rot 2))))
-    (.scale (float (nth scale 0)) (float (nth scale 1)) (float (nth scale 2)))))
+  (kmath/chain-transform parent pos rot scale))
 
 (defn- rand-range
   [a b]
-  (+ a (* (rand) (- b a))))
-
-(defn- respawn-particle
-  [radius]
-  (let [angle (* 2.0 Math/PI (rand))
-        r (rand-range (* 0.2 radius) radius)
-        x (* r (Math/cos angle))
-        z (* r (Math/sin angle))
-        y (rand-range -0.2 0.2)
-        vx (rand-range -0.3 0.3)
-        vy (rand-range 0.1 0.6)
-        vz (rand-range -0.3 0.3)]
-    {:pos [(float x) (float y) (float z)]
-     :vel [(float vx) (float vy) (float vz)]
-     :life (rand-range 1.5 4.0)
-     :color [(float (rand)) (float (rand)) (float (rand))]}))
+  (kmath/rand-range a b))
 
 (defn- init-particles
   [count radius]
-  (vec (repeatedly (max 1 (int count)) #(respawn-particle radius))))
+  (kpart/init-particles count radius))
 
 (defn- update-particles
   [particles dt t]
-  (let [target [(float (* 0.5 (Math/sin (* 0.6 t))))
-                (float (* 0.3 (Math/cos (* 0.4 t))))
-                0.0]
-        gravity [0.0 -0.25 0.0]]
-    (mapv
-     (fn [{:keys [pos vel life] :as p}]
-       (let [[px py pz] pos
-             [vx vy vz] vel
-             [tx ty tz] target
-             dx (- tx px)
-             dy (- ty py)
-             dz (- tz pz)
-             dist (Math/sqrt (+ (* dx dx) (* dy dy) (* dz dz) 0.001))
-             att-scale (/ 0.6 (+ 0.2 (* dist dist)))
-             ax (+ (nth gravity 0) (* att-scale (/ dx dist)) (* 0.15 (- pz)))
-             ay (+ (nth gravity 1) (* att-scale (/ dy dist)))
-             az (+ (nth gravity 2) (* att-scale (/ dz dist)) (* 0.15 px))
-             nvx (+ vx (* ax dt))
-             nvy (+ vy (* ay dt))
-             nvz (+ vz (* az dt))
-             npx (+ px (* nvx dt))
-             npy (+ py (* nvy dt))
-             npz (+ pz (* nvz dt))
-             life (- life dt)]
-         (if (or (<= life 0.0) (> (Math/abs npx) 4.0) (> (Math/abs npy) 4.0) (> (Math/abs npz) 4.0))
-           (respawn-particle 1.6)
-           (assoc p :pos [(float npx) (float npy) (float npz)]
-                  :vel [(float nvx) (float nvy) (float nvz)]
-                  :life life))))
-     particles)))
+  (kpart/update-particles particles dt t))
 
 (defn- particles->points
   [particles]
-  (let [points (mapv :pos particles)
-        colors (mapv :color particles)]
-    {:points points :colors colors}))
-
-(defn- spring-color
-  [ratio]
-  (let [ratio (max -1.0 (min 1.0 ratio))]
-    (if (pos? ratio)
-      [(+ 0.2 (* 0.8 ratio))
-       (+ 0.8 (* -0.6 ratio))
-       0.2]
-      [0.2
-       (+ 0.8 (* -0.6 (- ratio)))
-       (+ 0.2 (* 0.8 (- ratio)))])))
+  (kpart/particles->points particles))
 
 (defn- make-spring-grid
   [rows cols spacing]
-  (let [rows (max 2 (int rows))
-        cols (max 2 (int cols))
-        spacing (double spacing)
-        half-w (* 0.5 spacing (dec cols))
-        half-d (* 0.5 spacing (dec rows))
-        idx (fn [r c] (+ (* r cols) c))
-        nodes (vec
-               (for [r (range rows)
-                     c (range cols)]
-                 (let [x (- (* c spacing) half-w)
-                       z (- (* r spacing) half-d)
-                       y 0.6
-                       fixed? (= r 0)]
-                   {:pos [(float x) (float y) (float z)]
-                    :vel [0.0 0.0 0.0]
-                    :fixed? fixed?})))
-        springs (transient [])]
-    (doseq [r (range rows)
-            c (range cols)]
-      (let [i (idx r c)]
-        (when (< c (dec cols))
-          (let [j (idx r (inc c))]
-            (conj! springs [i j spacing])))
-        (when (< r (dec rows))
-          (let [j (idx (inc r) c)]
-            (conj! springs [i j spacing])))
-        (when (and (< r (dec rows)) (< c (dec cols)))
-          (let [j (idx (inc r) (inc c))]
-            (conj! springs [i j (* spacing (Math/sqrt 2.0))])))
-        (when (and (< r (dec rows)) (> c 0))
-          (let [j (idx (inc r) (dec c))]
-            (conj! springs [i j (* spacing (Math/sqrt 2.0))])))))
-    {:rows rows :cols cols :nodes nodes :springs (persistent! springs)}))
+  (kspring/make-spring-grid rows cols spacing))
 
 (defn- update-spring-grid
   [nodes springs dt]
-  (let [k 8.0
-        damping 0.4
-        gravity [0.0 -1.4 0.0]
-        forces (vec (repeat (count nodes) [0.0 0.0 0.0]))]
-    (let [forces
-          (reduce
-           (fn [fs [i j rest]]
-             (let [{:keys [pos]} (nth nodes i)
-                   {pos2 :pos} (nth nodes j)
-                   [x1 y1 z1] pos
-                   [x2 y2 z2] pos2
-                   dx (- x2 x1)
-                   dy (- y2 y1)
-                   dz (- z2 z1)
-                   dist (Math/sqrt (+ (* dx dx) (* dy dy) (* dz dz) 1.0e-6))
-                   diff (- dist rest)
-                   f (* k diff)
-                   fx (* f (/ dx dist))
-                   fy (* f (/ dy dist))
-                   fz (* f (/ dz dist))
-                   [f1x f1y f1z] (nth fs i)
-                   [f2x f2y f2z] (nth fs j)]
-               (assoc fs
-                      i [(+ f1x fx) (+ f1y fy) (+ f1z fz)]
-                      j [(+ f2x (- fx)) (+ f2y (- fy)) (+ f2z (- fz))])))
-           forces
-           springs)]
-      (mapv
-       (fn [{:keys [pos vel fixed?] :as n} [fx fy fz]]
-         (if fixed?
-           (assoc n :vel [0.0 0.0 0.0])
-           (let [[vx vy vz] vel
-                 ax (+ fx (nth gravity 0) (* (- damping) vx))
-                 ay (+ fy (nth gravity 1) (* (- damping) vy))
-                 az (+ fz (nth gravity 2) (* (- damping) vz))
-                 nvx (+ vx (* ax dt))
-                 nvy (+ vy (* ay dt))
-                 nvz (+ vz (* az dt))
-                 [px py pz] pos
-                 npx (+ px (* nvx dt))
-                 npy (+ py (* nvy dt))
-                 npz (+ pz (* nvz dt))]
-             (assoc n :pos [(float npx) (float npy) (float npz)]
-                    :vel [(float nvx) (float nvy) (float nvz)]))))
-       nodes
-       forces))))
+  (kspring/update-spring-grid nodes springs dt))
 
 (defn- spring-lines
   [nodes springs]
-  (let [data (transient [])]
-    (doseq [[i j rest] springs]
-      (let [{:keys [pos]} (nth nodes i)
-            {pos2 :pos} (nth nodes j)
-            [x1 y1 z1] pos
-            [x2 y2 z2] pos2
-            dx (- x2 x1)
-            dy (- y2 y1)
-            dz (- z2 z1)
-            dist (Math/sqrt (+ (* dx dx) (* dy dy) (* dz dz) 1.0e-6))
-            ratio (/ (- dist rest) (max rest 1.0e-6))
-            [r g b] (spring-color ratio)]
-        (conj! data (float x1))
-        (conj! data (float y1))
-        (conj! data (float z1))
-        (conj! data (float r))
-        (conj! data (float g))
-        (conj! data (float b))
-        (conj! data (float x2))
-        (conj! data (float y2))
-        (conj! data (float z2))
-        (conj! data (float r))
-        (conj! data (float g))
-        (conj! data (float b))))
-    (persistent! data)))
-(defn- sdf-sphere
-  [x y z [cx cy cz] r]
-  (let [dx (- x cx)
-        dy (- y cy)
-        dz (- z cz)]
-    (- (Math/sqrt (+ (* dx dx) (* dy dy) (* dz dz))) r)))
-
-(defn- smooth-min
-  "平滑最小值（k 越大越平滑）。"
-  [^double a ^double b ^double k]
-  (let [h (clamp01 (+ 0.5 (/ (- b a) (* 2.0 k))))]
-    (- (min a b) (* k h (- 1.0 h)))))
+  (kspring/spring-lines nodes springs))
 
 (defn- sdf-metaballs
-  [^double x ^double y ^double z t]
-  (let [c1 [(+ -0.6 (* 0.6 (Math/sin (* 0.7 t))))
-            (* 0.4 (Math/cos (* 0.5 t)))
-            0.0]
-        c2 [(+ 0.6 (* 0.4 (Math/sin (* 0.9 t))))
-            (* -0.3 (Math/cos (* 0.6 t)))
-            0.2]
-        c3 [0.0 (* 0.5 (Math/sin (* 0.4 t))) -0.4]
-        d1 (sdf-sphere x y z c1 0.6)
-        d2 (sdf-sphere x y z c2 0.55)
-        d3 (sdf-sphere x y z c3 0.5)]
-    (-> d1
-        (smooth-min d2 0.4)
-        (smooth-min d3 0.4))))
-
-(defn- sdf-gradient
-  [f x y z t]
-  (let [e 0.002
-        dx (- (f (+ x e) y z t) (f (- x e) y z t))
-        dy (- (f x (+ y e) z t) (f x (- y e) z t))
-        dz (- (f x y (+ z e) t) (f x y (- z e) t))
-        len (Math/sqrt (+ (* dx dx) (* dy dy) (* dz dz) 1.0e-9))]
-    [(/ dx len) (/ dy len) (/ dz len)]))
-
-(def ^:private tetra-indices
-  [[0 5 1 6]
-   [0 1 2 6]
-   [0 2 3 6]
-   [0 3 7 6]
-   [0 7 4 6]
-   [0 4 5 6]])
-
-(def ^:private cube-offsets
-  [[0 0 0]
-   [1 0 0]
-   [1 1 0]
-   [0 1 0]
-   [0 0 1]
-   [1 0 1]
-   [1 1 1]
-   [0 1 1]])
-
-(defn- interp-point
-  [p1 p2 v1 v2]
-  (let [t (/ v1 (- v1 v2))
-        [x1 y1 z1] p1
-        [x2 y2 z2] p2]
-    [(+ x1 (* t (- x2 x1)))
-     (+ y1 (* t (- y2 y1)))
-     (+ z1 (* t (- z2 z1)))]))
-
-(defn- marching-tetra
-  [points values f t vertices indices]
-  (let [edges [[0 1] [1 2] [2 0] [0 3] [1 3] [2 3]]
-        crosses (reduce
-                 (fn [acc [a b]]
-                   (let [va (nth values a)
-                         vb (nth values b)]
-                     (if (<= (* va vb) 0.0)
-                       (conj acc (interp-point (nth points a) (nth points b) va vb))
-                       acc)))
-                 []
-                 edges)]
-    (cond
-      (= 3 (count crosses))
-      (let [base (quot (count @vertices) 6)]
-        (doseq [p crosses]
-          (let [[nx ny nz] (sdf-gradient f (nth p 0) (nth p 1) (nth p 2) t)]
-            (swap! vertices into [(float (nth p 0)) (float (nth p 1)) (float (nth p 2))
-                                  (float nx) (float ny) (float nz)])))
-        (swap! indices into [base (inc base) (+ base 2)]))
-      (= 4 (count crosses))
-      (let [base (quot (count @vertices) 6)
-            order [[0 1 2] [0 2 3]]]
-        (doseq [p crosses]
-          (let [[nx ny nz] (sdf-gradient f (nth p 0) (nth p 1) (nth p 2) t)]
-            (swap! vertices into [(float (nth p 0)) (float (nth p 1)) (float (nth p 2))
-                                  (float nx) (float ny) (float nz)])))
-        (swap! indices into
-               (mapcat (fn [[a b c]] [(+ base a) (+ base b) (+ base c)]) order)))
-      :else nil)))
+  [x y z t]
+  (ksdf/sdf-metaballs x y z t))
 
 (defn marching-tetrahedra
   "使用四面体分割的 marching 算法生成网格。"
   [f {:keys [min max res t]}]
-  (let [[minx miny minz] min
-        [maxx maxy maxz] max
-        res (clojure.core/max 4 (int res))
-        step-x (/ (- maxx minx) res)
-        step-y (/ (- maxy miny) res)
-        step-z (/ (- maxz minz) res)
-        vertices (atom [])
-        indices (atom [])]
-    (dotimes [i res]
-      (dotimes [j res]
-        (dotimes [k res]
-          (let [base [i j k]
-                cube-points (mapv (fn [[ox oy oz]]
-                                    [(+ minx (* (+ i ox) step-x))
-                                     (+ miny (* (+ j oy) step-y))
-                                     (+ minz (* (+ k oz) step-z))])
-                                  cube-offsets)
-                cube-values (mapv (fn [[x y z]] (f x y z t)) cube-points)]
-            (doseq [[a b c d] tetra-indices]
-              (marching-tetra [(nth cube-points a)
-                               (nth cube-points b)
-                               (nth cube-points c)
-                               (nth cube-points d)]
-                              [(nth cube-values a)
-                               (nth cube-values b)
-                               (nth cube-values c)
-                               (nth cube-values d)]
-                              f t vertices indices))))))
-    {:vertices (float-array @vertices)
-     :indices (int-array @indices)}))
+  (ksdf/marching-tetrahedra f {:min min :max max :res res :t t}))
 
 (defn sweep-mesh
-  "生成沿 X 轴扫掠的管状网格。返回 {:vertices float-array :indices int-array}。
-  参数：
-    :segments  路径分段
-    :ring      环形分段
-    :length    路径长度
-    :radius    基础半径
-    :amp       路径摆动幅度
-    :freq      摆动频率
-    :twist     扭转角度（度）"
-  [& {:keys [segments ring length radius amp freq twist]
-      :or {segments 80 ring 16 length 3.0 radius 0.25 amp 0.35 freq 1.5 twist 0.0}}]
-  (let [segments (max 3 (int segments))
-        ring (max 6 (int ring))
-        length (double length)
-        radius (double radius)
-        amp (double amp)
-        freq (double freq)
-        twist (Math/toRadians (double twist))
-        vertices (transient [])
-        indices (transient [])]
-    (dotimes [i (inc segments)]
-      (let [t (/ (double i) segments)
-            x (- (* t length) (* 0.5 length))
-            phase (* 2.0 Math/PI freq t)
-            y (* amp (Math/sin phase))
-            z (* (* 0.5 amp) (Math/cos phase))
-            taper (+ 0.85 (* 0.25 (Math/sin (* 2.0 Math/PI t))))
-            r (* radius taper)
-            twist-angle (* twist t)]
-        (dotimes [j (inc ring)]
-          (let [u (/ (double j) ring)
-                theta (+ (* 2.0 Math/PI u) twist-angle)
-                cy (Math/cos theta)
-                sy (Math/sin theta)
-                px x
-                py (+ y (* r cy))
-                pz (+ z (* r sy))
-                nx 0.0
-                ny cy
-                nz sy]
-            (conj! vertices (float px))
-            (conj! vertices (float py))
-            (conj! vertices (float pz))
-            (conj! vertices (float nx))
-            (conj! vertices (float ny))
-            (conj! vertices (float nz))))))
-    (dotimes [i segments]
-      (dotimes [j ring]
-        (let [row-a (* i (inc ring))
-              row-b (* (inc i) (inc ring))
-              a (+ row-a j)
-              b (+ row-b j)
-              c (+ row-b (inc j))
-              d (+ row-a (inc j))]
-          (conj! indices a)
-          (conj! indices b)
-          (conj! indices d)
-          (conj! indices b)
-          (conj! indices c)
-          (conj! indices d))))
-    {:vertices (float-array (persistent! vertices))
-     :indices (int-array (persistent! indices))}))
+  "生成沿 X 轴扫掠的管状网格。返回 {:vertices float-array :indices int-array}。"
+  [& opts]
+  (apply kgeom/sweep-mesh opts))
 
 (defn- axis-line-vertices
   [len]
@@ -1423,359 +975,36 @@ void main() {
         (GL30/glBindVertexArray vao)
         (GL11/glDrawElements GL11/GL_TRIANGLES index-count GL11/GL_UNSIGNED_INT 0)))))
 
+(defn render-default
+  "公开的默认渲染入口。"
+  [ctx]
+  (default-render ctx))
+
+(defn- scene-api
+  "组装场景使用的回调接口。"
+  []
+  {:set-clear-color! (fn [color] (reset! clear-color color))
+   :set-cubes! (fn [cs] (reset! cubes (vec cs)))
+   :update-cubes! (fn [f] (swap! cubes f))
+   :next-cube-id! (fn [] (swap! next-cube-id inc))
+   :set-point-cloud! set-point-cloud!
+   :clear-point-cloud! clear-point-cloud!
+   :upload-point-cloud! upload-point-cloud!
+   :set-mesh! set-mesh!
+   :clear-mesh! clear-mesh!
+   :set-mesh-style! set-mesh-style!
+   :set-mesh-index-count! (fn [n] (swap! state assoc :mesh-index-count n))
+   :upload-spring-lines! upload-spring-lines!
+   :clear-spring-lines! clear-spring-lines!
+   :set-rig-segments! (fn [segments] (reset! rig-state {:segments segments}))
+   :clear-rig! (fn [] (reset! rig-state {:segments []}))
+   :default-render default-render})
+
 (defn- ensure-default-scenes!
   []
-  (when-not (contains? @scenes :baseline)
-    (register-scene!
-     :baseline
-     {:init (fn [_] nil)
-      :update (fn [_ scene-state] scene-state)
-      :render (fn [ctx _] (default-render ctx))
-      :cleanup (fn [_ _] nil)}))
-  (when-not (contains? @scenes :geometry)
-    (register-scene!
-     :geometry
-     {:init (fn [_]
-              (reset! clear-color [0.05 0.05 0.08 1.0])
-              (reset! cubes [{:id (swap! next-cube-id inc)
-                              :pos [-1.0 0.0 0.0]
-                              :rot [0.0 0.0 0.0]
-                              :scale [0.6 0.6 0.6]
-                              :color [0.9 0.4 0.2]}
-                             {:id (swap! next-cube-id inc)
-                              :pos [0.0 0.0 0.0]
-                              :rot [0.0 0.0 0.0]
-                              :scale [0.8 0.8 0.8]
-                              :color [0.2 0.8 0.4]}
-                             {:id (swap! next-cube-id inc)
-                              :pos [0.8 -0.6 0.3]
-                              :rot [0.0 0.0 0.0]
-                              :scale [0.5 0.5 0.5]
-                              :color [0.2 0.6 0.9]}])
-              (let [points (sphere-point-cloud 120 0.7)
-                    colors (repeatedly (count points) #(color3 (rand) (rand) (rand)))]
-                (set-point-cloud! points :colors colors))
-              (let [{:keys [vertices indices]} (uv-sphere 24 36)]
-                (set-mesh! vertices indices))
-              nil)
-      :update (fn [{:keys [time]} scene-state]
-                (let [dt (:dt time)
-                      deg (* 30.0 dt)]
-                  (swap! cubes
-                         (fn [cs]
-                           (mapv (fn [c]
-                                   (update c :rot (fn [[rx ry rz]]
-                                                    [(+ rx deg) (+ ry (* 0.6 deg)) rz])))
-                                 cs))))
-                scene-state)
-      :render (fn [ctx _] (default-render ctx))
-      :cleanup (fn [_ _] nil)})))
-
-(register-scene!
- :rig
- {:init (fn [_]
-          (reset! clear-color [0.03 0.03 0.06 1.0])
-          (reset! cubes [])
-          (clear-point-cloud!)
-          (clear-mesh!)
-          (reset! rig-state {:segments []})
-          {:t 0.0})
-  :update (fn [{:keys [time]} scene-state]
-            (let [t (+ (:t scene-state) (:dt time))
-                  root-rot [0.0 (* 25.0 (Math/sin t)) 0.0]
-                  upper-rot [(* 35.0 (Math/sin (* 1.2 t))) 0.0 0.0]
-                  lower-rot [(* -50.0 (Math/sin (* 1.6 t))) 0.0 0.0]
-                  root (compose-transform [0.0 -0.1 0.0] root-rot [0.32 0.9 0.32])
-                  upper (chain-transform root [0.0 0.9 0.0] upper-rot [0.30 0.85 0.30])
-                  lower (chain-transform upper [0.0 0.85 0.0] lower-rot [0.28 0.8 0.28])]
-              (reset! rig-state
-                      {:segments [{:model root :color [0.9 0.4 0.2]}
-                                  {:model upper :color [0.2 0.8 0.4]}
-                                  {:model lower :color [0.2 0.6 0.9]}]})
-              (assoc scene-state :t t)))
-  :render (fn [ctx _] (default-render ctx))
-  :cleanup (fn [_ _] nil)})
-
-(register-scene!
- :sweep
- {:init (fn [_]
-          (reset! clear-color [0.02 0.02 0.05 1.0])
-          (reset! cubes [])
-          (clear-point-cloud!)
-          (reset! rig-state {:segments []})
-          (let [{:keys [vertices indices]} (sweep-mesh)]
-            (set-mesh! vertices indices))
-          {:t 0.0})
-  :update (fn [{:keys [time]} scene-state]
-            (let [t (+ (:t scene-state) (:dt time))
-                  twist (* 90.0 (Math/sin (* 0.6 t)))
-                  {:keys [vertices indices]}
-                  (sweep-mesh :segments 90
-                              :ring 18
-                              :length 3.2
-                              :radius 0.22
-                              :amp 0.4
-                              :freq 1.3
-                              :twist twist)]
-              (set-mesh! vertices indices)
-              (assoc scene-state :t t)))
-  :render (fn [ctx _] (default-render ctx))
-  :cleanup (fn [_ _] nil)})
-
-(register-scene!
- :particles
- {:init (fn [_]
-          (reset! clear-color [0.01 0.01 0.04 1.0])
-          (reset! cubes [])
-          (reset! rig-state {:segments []})
-          (swap! state assoc :mesh-index-count 0)
-          (let [particles (init-particles 400 1.6)
-                {:keys [points colors]} (particles->points particles)]
-            (upload-point-cloud! points colors)
-            {:t 0.0 :particles particles}))
-  :update (fn [{:keys [time]} scene-state]
-            (let [dt (:dt time)
-                  t (+ (:t scene-state) dt)
-                  particles (update-particles (:particles scene-state) dt t)
-                  {:keys [points colors]} (particles->points particles)]
-              (upload-point-cloud! points colors)
-              (assoc scene-state :t t :particles particles)))
-  :render (fn [ctx _] (default-render ctx))
-  :cleanup (fn [_ _] nil)})
-
-(register-scene!
- :sdf
- {:init (fn [_]
-          (reset! clear-color [0.02 0.02 0.05 1.0])
-          (reset! cubes [])
-          (clear-point-cloud!)
-          (reset! rig-state {:segments []})
-          (set-mesh-style! {:pos [0.0 0.0 0.0]
-                            :rot [0.0 0.0 0.0]
-                            :scale [1.0 1.0 1.0]
-                            :color [0.7 0.7 0.95]})
-          (let [{:keys [vertices indices]}
-                (marching-tetrahedra sdf-metaballs {:min [-1.4 -1.1 -1.1]
-                                                    :max [1.4 1.1 1.1]
-                                                    :res 36
-                                                    :t 0.0})]
-            (set-mesh! vertices indices))
-          {:t 0.0 :acc 0.0})
-  :update (fn [{:keys [time]} scene-state]
-            (let [scene-state (or scene-state {:t 0.0 :acc 0.0})
-                  dt (:dt time)
-                  t (+ (:t scene-state) dt)
-                  acc (+ (:acc scene-state) dt)]
-              (if (>= acc 0.2)
-                (let [{:keys [vertices indices]}
-                      (marching-tetrahedra sdf-metaballs {:min [-1.4 -1.1 -1.1]
-                                                          :max [1.4 1.1 1.1]
-                                                          :res 36
-                                                          :t t})]
-                  (set-mesh! vertices indices)
-                  (assoc scene-state :t t :acc 0.0))
-                (assoc scene-state :t t :acc acc))))
-  :render (fn [ctx _] (default-render ctx))
-  :cleanup (fn [_ _] nil)})
-
-(register-scene!
- :spring
- {:init (fn [_]
-          (reset! clear-color [0.02 0.02 0.05 1.0])
-          (reset! cubes [])
-          (clear-point-cloud!)
-          (reset! rig-state {:segments []})
-          (swap! state assoc :mesh-index-count 0)
-          (let [{:keys [nodes springs]} (make-spring-grid 10 10 0.22)
-                points (mapv :pos nodes)
-                colors (mapv (fn [{:keys [fixed?]}]
-                               (if fixed? [1.0 0.9 0.2] [0.8 0.8 0.9]))
-                             nodes)
-                lines (spring-lines nodes springs)]
-            (upload-point-cloud! points colors)
-            (upload-spring-lines! lines)
-            {:nodes nodes :springs springs}))
-  :update (fn [{:keys [time]} scene-state]
-            (let [dt (:dt time)
-                  nodes (update-spring-grid (:nodes scene-state) (:springs scene-state) dt)
-                  points (mapv :pos nodes)
-                  colors (mapv (fn [{:keys [fixed?]}]
-                                 (if fixed? [1.0 0.9 0.2] [0.8 0.8 0.9]))
-                               nodes)
-                  lines (spring-lines nodes (:springs scene-state))]
-              (upload-point-cloud! points colors)
-              (upload-spring-lines! lines)
-              (assoc scene-state :nodes nodes)))
-  :render (fn [ctx _] (default-render ctx))
-  :cleanup (fn [_ _] nil)})
-
-(register-scene!
- :ecosystem
- {:init (fn [_]
-          (reset! clear-color [0.02 0.02 0.05 1.0])
-          (reset! rig-state {:segments []})
-          (clear-point-cloud!)
-          (clear-mesh!)
-          (clear-spring-lines!)
-          (let [plants (repeatedly 30 (fn []
-                                        {:pos [(rand-range -1.2 1.2) 0.0 (rand-range -1.0 1.0)]
-                                         :energy 1.0}))
-                herbivores (repeatedly 14 (fn []
-                                            {:pos [(rand-range -1.4 1.4) 0.0 (rand-range -1.2 1.2)]
-                                             :vel [0.0 0.0 0.0]
-                                             :energy 1.2}))
-                predators (repeatedly 6 (fn []
-                                          {:pos [(rand-range -1.4 1.4) 0.0 (rand-range -1.2 1.2)]
-                                           :vel [0.0 0.0 0.0]
-                                           :energy 1.6}))]
-            (reset! cubes [])
-            {:plants (vec plants)
-             :herbivores (vec herbivores)
-             :predators (vec predators)
-             :t 0.0}))
-  :update (fn [{:keys [time]} scene-state]
-            (let [dt (:dt time)
-                  t (+ (:t scene-state) dt)
-                  dist2 (fn [a b]
-                          (let [[ax ay az] a
-                                [bx by bz] b
-                                dx (- bx ax)
-                                dy (- by ay)
-                                dz (- bz az)]
-                            (+ (* dx dx) (* dy dy) (* dz dz))))
-                  steer (fn [pos target speed]
-                          (let [[px py pz] pos
-                                [tx ty tz] target
-                                dx (- tx px)
-                                dy (- ty py)
-                                dz (- tz pz)
-                                dist (Math/sqrt (+ (* dx dx) (* dy dy) (* dz dz) 1.0e-6))
-                                s (min speed (/ speed dist))]
-                            [(* dx s) (* dy s) (* dz s)]))
-                  plants (:plants scene-state)
-                  herbivores
-                  (mapv
-                   (fn [{:keys [pos energy] :as h}]
-                     (let [food (when (seq plants)
-                                  (apply min-key #(dist2 pos (:pos %)) plants))
-                           jitter [(rand-range -0.35 0.35) 0.0 (rand-range -0.35 0.35)]
-                           vel (if food
-                                 (let [d (dist2 pos (:pos food))]
-                                   (if (< d 0.04)
-                                     jitter
-                                     (steer pos (:pos food) 1.2)))
-                                 jitter)
-                           [vx vy vz] vel
-                           [px py pz] pos
-                           npos [(+ px (* vx dt)) 0.0 (+ pz (* vz dt))]
-                           energy (- energy (* 0.08 dt))
-                           eaten? (and food (< (dist2 npos (:pos food)) 0.03))]
-                       (cond-> (assoc h :pos npos :vel vel :energy energy)
-                         eaten? (update :energy + 0.6))))
-                   (:herbivores scene-state))
-                  eaten-plants
-                  (set (keep (fn [{:keys [pos energy]}]
-                               (when (> energy 1.5) pos))
-                             herbivores))
-                  plants
-                  (vec (remove (fn [{:keys [pos]}]
-                                 (some #(<= (dist2 pos %) 0.03) eaten-plants))
-                               plants))
-                  herbivores
-                  (vec (remove #(<= (:energy %) 0.0) herbivores))
-                  born-herbivores
-                  (mapcat (fn [{:keys [pos energy]}]
-                            (when (> energy 2.2)
-                              [{:pos [(+ (first pos) (rand-range -0.1 0.1))
-                                      0.0
-                                      (+ (nth pos 2) (rand-range -0.1 0.1))]
-                                :vel [0.0 0.0 0.0]
-                                :energy 1.0}]))
-                          herbivores)
-                  herbivores
-                  (vec (concat (mapv (fn [h]
-                                       (if (> (:energy h) 2.2)
-                                         (assoc h :energy 1.2)
-                                         h))
-                                     herbivores)
-                               born-herbivores))
-                  predators
-                  (mapv
-                   (fn [{:keys [pos energy] :as p}]
-                     (let [target (when (seq herbivores)
-                                    (apply min-key #(dist2 pos (:pos %)) herbivores))
-                           jitter [(rand-range -0.25 0.25) 0.0 (rand-range -0.25 0.25)]
-                           vel (if target
-                                 (let [d (dist2 pos (:pos target))]
-                                   (if (< d 0.06)
-                                     jitter
-                                     (steer pos (:pos target) 1.6)))
-                                 jitter)
-                           [vx vy vz] vel
-                           [px py pz] pos
-                           npos [(+ px (* vx dt)) 0.0 (+ pz (* vz dt))]
-                           energy (- energy (* 0.12 dt))
-                           eaten? (and target (< (dist2 npos (:pos target)) 0.04))]
-                       (cond-> (assoc p :pos npos :vel vel :energy energy)
-                         eaten? (update :energy + 0.8))))
-                   (:predators scene-state))
-                  eaten-herbivores
-                  (set (keep (fn [{:keys [pos energy]}]
-                               (when (> energy 2.0) pos))
-                             predators))
-                  herbivores
-                  (vec (remove (fn [{:keys [pos]}]
-                                 (some #(<= (dist2 pos %) 0.04) eaten-herbivores))
-                               herbivores))
-                  predators
-                  (vec (remove #(<= (:energy %) 0.0) predators))
-                  born-predators
-                  (mapcat (fn [{:keys [pos energy]}]
-                            (when (> energy 2.6)
-                              [{:pos [(+ (first pos) (rand-range -0.1 0.1))
-                                      0.0
-                                      (+ (nth pos 2) (rand-range -0.1 0.1))]
-                                :vel [0.0 0.0 0.0]
-                                :energy 1.4}]))
-                          predators)
-                  predators
-                  (vec (concat (mapv (fn [p]
-                                       (if (> (:energy p) 2.6)
-                                         (assoc p :energy 1.6)
-                                         p))
-                                     predators)
-                               born-predators))
-                  plants
-                  (vec (concat plants
-                               (repeatedly (max 0 (- 30 (count plants)))
-                                           (fn []
-                                             {:pos [(rand-range -1.2 1.2) 0.0 (rand-range -1.0 1.0)]
-                                              :energy 1.0}))))]
-              (reset! cubes
-                      (vec
-                       (concat
-                        (map (fn [{:keys [pos]}]
-                               {:id (swap! next-cube-id inc)
-                                :pos pos :rot [0.0 0.0 0.0] :scale [0.12 0.12 0.12]
-                                :color [0.2 0.9 0.3]})
-                             plants)
-                        (map (fn [{:keys [pos]}]
-                               {:id (swap! next-cube-id inc)
-                                :pos pos :rot [0.0 0.0 0.0] :scale [0.16 0.16 0.16]
-                                :color [0.9 0.9 0.2]})
-                             herbivores)
-                        (map (fn [{:keys [pos]}]
-                               {:id (swap! next-cube-id inc)
-                                :pos pos :rot [0.0 0.0 0.0] :scale [0.2 0.2 0.2]
-                                :color [0.9 0.2 0.2]})
-                             predators))))
-              (assoc scene-state
-                     :plants plants
-                     :herbivores herbivores
-                     :predators predators
-                     :t t)))
-  :render (fn [ctx _] (default-render ctx))
-  :cleanup (fn [_ _] nil)})
+  (doseq [[scene-key scene] (kscenes/default-scenes (scene-api))]
+    (when-not (contains? @scenes scene-key)
+      (register-scene! scene-key scene))))
 
 ;; ---- 热重载 API（面向 REPL） ----------------------------------------
 
@@ -1838,7 +1067,7 @@ void main() {
 (defn set-key-handler!
   "处理器函数签名：(fn [window key action])"
   [f]
-  (reset! key-handler f))
+  (kinput/set-key-handler! f))
 
 (defn set-axis-style!
   "更新坐标轴样式。支持的键：:line-width、:length、:arrow-length、:arrow-radius。
@@ -1882,20 +1111,15 @@ void main() {
   "注册默认快捷键：
   1-7 切换场景，0 启动演示，P 暂停/恢复。"
   []
-  (register-command! GLFW/GLFW_KEY_1 GLFW/GLFW_PRESS (fn [_ _ _] (set-scene! :geometry)))
-  (register-command! GLFW/GLFW_KEY_2 GLFW/GLFW_PRESS (fn [_ _ _] (set-scene! :rig)))
-  (register-command! GLFW/GLFW_KEY_3 GLFW/GLFW_PRESS (fn [_ _ _] (set-scene! :sweep)))
-  (register-command! GLFW/GLFW_KEY_4 GLFW/GLFW_PRESS (fn [_ _ _] (set-scene! :particles)))
-  (register-command! GLFW/GLFW_KEY_5 GLFW/GLFW_PRESS (fn [_ _ _] (set-scene! :sdf)))
-  (register-command! GLFW/GLFW_KEY_6 GLFW/GLFW_PRESS (fn [_ _ _] (set-scene! :spring)))
-  (register-command! GLFW/GLFW_KEY_7 GLFW/GLFW_PRESS (fn [_ _ _] (set-scene! :ecosystem)))
-  (register-command! GLFW/GLFW_KEY_0 GLFW/GLFW_PRESS (fn [_ _ _] (start-demo!)))
-  (register-command! GLFW/GLFW_KEY_P GLFW/GLFW_PRESS
-                     (fn [_ _ _]
-                       (if (get-in @app [:flags :paused?])
-                         (resume!)
-                         (pause!))))
-  :ok)
+  (kinput/register-demo-commands!
+   (fn [key action cmd]
+     (case cmd
+       :demo (register-command! key action (fn [_ _ _] (start-demo!)))
+       :pause (register-command! key action (fn [_ _ _]
+                                              (if (get-in @app [:flags :paused?])
+                                                (resume!)
+                                                (pause!))))
+       (register-command! key action (fn [_ _ _] (set-scene! cmd)))))))
 
 (defn reload-shaders!
   "在 GL 线程上重新加载着色器。接受新的顶点/片段着色器源码字符串。
@@ -2025,6 +1249,16 @@ void main() {
   []
   (set-point-cloud! []))
 
+(defn set-rig-segments!
+  "设置机械臂/实例段列表。"
+  [segments]
+  (reset! rig-state {:segments (vec segments)}))
+
+(defn clear-rig!
+  "清空机械臂/实例段。"
+  []
+  (reset! rig-state {:segments []}))
+
 ;; ---- 主入口 -----------------------------------------------------------
 
 (defn run-example!
@@ -2059,10 +1293,7 @@ void main() {
        window
        (reify GLFWKeyCallbackI
          (invoke [_ win key _ action _]
-           (when-let [cmd (get @command-table [key action])]
-             (cmd win key action))
-           (when-let [f @key-handler]
-             (f win key action)))))
+           (kinput/handle-key win key action))))
       (GLFW/glfwSetMouseButtonCallback
        window
        (reify GLFWMouseButtonCallbackI
@@ -2086,11 +1317,11 @@ void main() {
       (ensure-default-scenes!)
       (apply-scene! :baseline)
       (reset! render-fn nil)
-      (reset! key-handler
-              (fn [win key action]
-                (when (and (= key GLFW/GLFW_KEY_ESCAPE)
-                           (= action GLFW/GLFW_PRESS))
-                  (GLFW/glfwSetWindowShouldClose win true))))
+      (set-key-handler!
+       (fn [win key action]
+         (when (and (= key GLFW/GLFW_KEY_ESCAPE)
+                    (= action GLFW/GLFW_PRESS))
+           (GLFW/glfwSetWindowShouldClose win true))))
       (loop []
         (when-not (GLFW/glfwWindowShouldClose window)
           (drain-commands!)
