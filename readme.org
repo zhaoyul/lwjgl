@@ -201,6 +201,13 @@ Just poking the scene and watching it change in real time.
 - 推荐：=./run.sh hotreload-nrepl=
 - Intel macOS：=clj -M:natives-intel:hotreload=
 
+** 快捷键（hotreload 窗口）
+- 1-7 切换内置场景
+- 0 启动默认演示时间线
+- P 暂停/恢复
+- M 切换手动播放模式（按住空格播放）
+- D 重置当前场景
+
 ** 连接 REPL 与加载
 #+begin_src clojure
 (require 'lwjgl.experiment.kons9.dsl :reload)
@@ -215,6 +222,108 @@ Just poking the scene and watching it change in real time.
 (k/scene! :sdf)         ;; 切换场景
 (k/start-demo!)         ;; 默认时间线
 (k/stop-demo!)
+#+end_src
+
+- 可展示场景：
+  - :baseline（基础坐标轴与网格）
+  - :geometry（基础几何/点云/球体）
+  - :rig（层级结构 + 关节动画）
+  - :sweep（扫掠网格）
+  - :particles（粒子点云）
+  - :sdf（SDF 等值面）
+  - :spring（弹簧网格）
+  - :ecosystem（生态系统）
+  - :live（自定义 live 场景）
+
+** 迁移函数可视化速查
+*** 曲线/点云 -> =k/points!=
+#+begin_src clojure
+(require '[lwjgl.experiment.kons9.api :as k])
+
+(k/points! (k/line-curve [0 0 0] [1 1 0] 16))
+(k/points! (k/circle-curve 2.0 64))
+(k/points! (k/arc-curve 2.0 0 180 32))
+(k/points! (k/spiral-curve 0.2 2.0 -1.0 4 128))
+(k/points! (k/sine-curve 360 1.0 2.0 1.0 128))
+(k/points! (k/bezier-curve [0 0 0] [1 2 0] [2 -1 0] [3 0 0] 64))
+(k/points! (k/butterfly-curve 256))
+(k/points! (k/hypotrochoid-curve 7 3 2.5 256))
+(k/points! (k/epitrochoid-curve 7 3 2.5 256))
+(k/points! (k/random-points 200 [-1 -1 -1] [1 1 1]))
+(k/points! (k/grid-points 8 1 8 [-1 0 -1] [1 0 1]))
+#+end_src
+
+*** 多面体 -> =k/polyhedron->mesh= + =k/mesh!=
+#+begin_src clojure
+(let [poly (k/cube-polyhedron 2.0)
+      poly2 (k/refine-polyhedron poly 2)
+      {:keys [vertices indices]} (k/polyhedron->mesh poly2)]
+  (k/mesh! vertices indices))
+
+(let [poly (k/icosahedron-polyhedron 2.0)
+      poly2 (k/smooth-polyhedron poly 2)
+      {:keys [vertices indices]} (k/polyhedron->mesh poly2)]
+  (k/mesh! vertices indices))
+
+(let [poly (k/cube-polyhedron 2.0)
+      poly2 (k/fractalize-polyhedron poly 3 0.5)
+      {:keys [vertices indices]} (k/polyhedron->mesh poly2)]
+  (k/mesh! vertices indices))
+#+end_src
+
+*** 多面体原型与变体（直接展示）
+#+begin_src clojure
+;; 基础多面体
+(let [{:keys [vertices indices]} (k/tetrahedron-mesh 2.0)]
+  (k/mesh! vertices indices))
+
+(let [{:keys [vertices indices]} (k/octahedron-mesh 2.0)]
+  (k/mesh! vertices indices))
+
+(let [{:keys [vertices indices]} (k/dodecahedron-mesh 2.0)]
+  (k/mesh! vertices indices))
+
+(let [{:keys [vertices indices]} (k/icosahedron-mesh 2.0)]
+  (k/mesh! vertices indices))
+
+;; 盒子与切角立方体（polyhedron -> mesh）
+(let [poly (k/box-polyhedron 2.0 1.2 0.8)
+      {:keys [vertices indices]} (k/polyhedron->mesh poly)]
+  (k/mesh! vertices indices))
+
+(let [poly (k/cut-cube-polyhedron 2.0)
+      {:keys [vertices indices]} (k/polyhedron->mesh poly)]
+  (k/mesh! vertices indices))
+#+end_src
+
+*** 直接网格 -> =k/mesh!=
+#+begin_src clojure
+(let [{:keys [vertices indices]} (k/uv-sphere 24 36)]
+  (k/mesh! vertices indices))
+
+(let [{:keys [vertices indices]} (k/sweep-mesh :segments 80 :ring 16 :length 3.0)]
+  (k/mesh! vertices indices))
+
+(let [{:keys [vertices indices]} (k/cube-mesh 2.0)]
+  (k/mesh! vertices indices))
+#+end_src
+
+*** 细分/分型参数建议
+- refine: =levels= 建议 1-3（超过 3 顶点数快速增长）
+- smooth: 适合二十面体/十二面体，细分 1-2 层即可明显圆润
+- fractalize: =displacement= 建议 0.2~0.8，层数 2-3
+
+*** SDF/等值面
+#+begin_src clojure
+(k/metaballs!)  ;; 默认参数
+#+end_src
+
+*** 精灵（透明排序）
+#+begin_src clojure
+(require '[lwjgl.experiment.hotreload :as hr])
+
+(hr/set-sprite-style! {:size 18.0 :alpha 0.7 :softness 0.15})
+(hr/set-sprites! (k/sphere-point-cloud 200 1.2))
 #+end_src
 
 ** Live 场景（自定义展示）

@@ -257,6 +257,11 @@
   [poly levels]
   (kgeom/refine-polyhedron poly levels))
 
+(defn smooth-polyhedron
+  "平滑细分多面体."
+  [poly levels]
+  (kgeom/smooth-polyhedron poly levels))
+
 (defn fractalize-polyhedron
   "分型细分多面体."
   [poly levels displacement]

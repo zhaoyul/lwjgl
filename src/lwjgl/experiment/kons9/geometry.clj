@@ -610,43 +610,145 @@
           p2 (nth points (nth face 2))]
       (vnormalize (vcross (vsub p1 p0) (vsub p2 p0))))))
 
-(defn- refine-polyhedron-step
-  "细分多面体一次，返回新的多面体以及新顶点标记与法线."
-  [{:keys [points faces]}]
-  (let [new-points (transient [])
-        new-faces (transient [])
-        orig-mask (transient [])
-        normals (transient [])]
-    (doseq [face faces]
-      (let [face-pts (mapv #(nth points %) face)
-            center (mapv #(/ % (double (count face-pts)))
-                         (reduce (fn [acc p] (mapv + acc p))
-                                 [0.0 0.0 0.0]
-                                 face-pts))
-            n (face-normal points face)
-            cnt (count face-pts)]
-        (dotimes [i cnt]
-          (let [p0 (nth face-pts i)
-                p1 (nth face-pts (mod (inc i) cnt))
-                p-1 (nth face-pts (mod (dec i) cnt))
-                mid-next (mapv #(/ % 2.0) (mapv + p0 p1))
-                mid-prev (mapv #(/ % 2.0) (mapv + p0 p-1))
-                base (count new-points)]
-            (conj! new-points p0)
-            (conj! new-points mid-next)
-            (conj! new-points center)
-            (conj! new-points mid-prev)
-            (conj! orig-mask true)
-            (conj! orig-mask false)
-            (conj! orig-mask false)
-            (conj! orig-mask false)
-            (dotimes [_ 4]
-              (conj! normals n))
-            (conj! new-faces [base (inc base) (+ base 2) (+ base 3)])))))
-    {:points (vec (persistent! new-points))
-     :faces (vec (persistent! new-faces))
-     :orig-mask (vec (persistent! orig-mask))
-     :normals (vec (persistent! normals))}))
+(defn- avg-points
+  [pts]
+  (let [n (count pts)]
+    (if (zero? n)
+      [0.0 0.0 0.0]
+      (mapv #(/ % (double n))
+            (reduce (fn [acc p] (mapv + acc p)) [0.0 0.0 0.0] pts)))))
+
+(defn- edge-key
+  [a b]
+  (if (< a b) [a b] [b a]))
+
+(defn- build-edge-map
+  [faces]
+  (reduce-kv
+   (fn [m fi face]
+     (let [cnt (count face)]
+       (loop [i 0 m m]
+         (if (= i cnt)
+           m
+           (let [a (nth face i)
+                 b (nth face (mod (inc i) cnt))
+                 key (edge-key a b)]
+             (recur (inc i)
+                    (update m key
+                            (fnil (fn [e] (update e :faces conj fi))
+                                  {:v0 (first key) :v1 (second key) :faces []}))))))))
+   {}
+   (vec faces)))
+
+(defn- build-vertex-faces
+  [faces]
+  (reduce-kv
+   (fn [m fi face]
+     (reduce (fn [m v] (update m v (fnil conj []) fi)) m face))
+   {}
+   (vec faces)))
+
+(defn- build-vertex-edges
+  [edge-map]
+  (reduce
+   (fn [m [k {:keys [v0 v1]}]]
+     (-> m
+         (update v0 (fnil conj []) k)
+         (update v1 (fnil conj []) k)))
+   {}
+   edge-map))
+
+(defn- compute-vertex-normals
+  [points faces]
+  (let [normals (vec (repeat (count points) [0.0 0.0 0.0]))]
+    (let [normals
+          (reduce
+           (fn [acc face]
+             (let [n (face-normal points face)]
+               (reduce (fn [acc v]
+                         (update acc v (fn [curr] (mapv + curr n))))
+                       acc
+                       face)))
+           normals
+           faces)]
+      (mapv vnormalize normals))))
+
+(defn- subdivide-polyhedron
+  [poly mode]
+  (let [{:keys [points faces]} poly
+        points (vec points)
+        faces (vec faces)
+        face-centers (mapv (fn [face] (avg-points (mapv #(nth points %) face))) faces)
+        edge-map (build-edge-map faces)
+        edge-keys (vec (sort-by (fn [[a b]] [a b]) (keys edge-map)))
+        edge-midpoints (into {}
+                             (map (fn [k]
+                                    (let [{:keys [v0 v1]} (get edge-map k)
+                                          p0 (nth points v0)
+                                          p1 (nth points v1)]
+                                      [k (mapv #(/ % 2.0) (mapv + p0 p1))]))
+                                  edge-keys))
+        edge-points (into {}
+                          (map (fn [k]
+                                 (let [{:keys [v0 v1 faces]} (get edge-map k)
+                                       p0 (nth points v0)
+                                       p1 (nth points v1)
+                                       mid (get edge-midpoints k)
+                                       p (if (and (= mode :smooth) (= 2 (count faces)))
+                                           (let [f0 (nth face-centers (first faces))
+                                                 f1 (nth face-centers (second faces))]
+                                             (mapv #(/ % 4.0) (mapv + p0 p1 f0 f1)))
+                                           mid)]
+                                   [k p]))
+                               edge-keys))
+        vertex-faces (build-vertex-faces faces)
+        vertex-edges (build-vertex-edges edge-map)
+        vertex-points
+        (mapv
+         (fn [idx]
+           (let [p (nth points idx)]
+             (if (= mode :smooth)
+               (let [faces* (get vertex-faces idx [])
+                     edges* (get vertex-edges idx [])
+                     n (count faces*)]
+                 (if (zero? n)
+                   p
+                   (let [f (avg-points (mapv #(nth face-centers %) faces*))
+                         r (avg-points (mapv #(get edge-midpoints %) edges*))
+                         [px py pz] p
+                         [fx fy fz] f
+                         [rx ry rz] r
+                         nn (double n)]
+                     [(/ (+ fx (* 2.0 rx) (* (- nn 3.0) px)) nn)
+                      (/ (+ fy (* 2.0 ry) (* (- nn 3.0) py)) nn)
+                      (/ (+ fz (* 2.0 rz) (* (- nn 3.0) pz)) nn)])))
+               p)))
+         (range (count points)))
+        v-count (count vertex-points)
+        edge-index (zipmap edge-keys (range v-count (+ v-count (count edge-keys))))
+        face-index (zipmap (range (count faces))
+                           (range (+ v-count (count edge-keys))
+                                  (+ v-count (count edge-keys) (count faces))))
+        new-faces
+        (vec
+         (mapcat
+          (fn [fi face]
+            (let [cnt (count face)
+                  f-idx (get face-index fi)]
+              (mapv (fn [i]
+                      (let [v (nth face i)
+                            v-next (nth face (mod (inc i) cnt))
+                            v-prev (nth face (mod (dec i) cnt))
+                            e-next (get edge-index (edge-key v v-next))
+                            e-prev (get edge-index (edge-key v-prev v))]
+                        [v e-next f-idx e-prev]))
+                    (range cnt))))
+          (range (count faces))
+          faces))
+        new-points (vec (concat vertex-points
+                                (mapv edge-points edge-keys)
+                                face-centers))]
+    {:points new-points :faces new-faces}))
 
 (defn refine-polyhedron
   "细分多面体。levels 为细分层数."
@@ -655,7 +757,17 @@
          levels (int levels)]
     (if (<= levels 0)
       poly
-      (recur (select-keys (refine-polyhedron-step poly) [:points :faces])
+      (recur (subdivide-polyhedron poly :refine)
+             (dec levels)))))
+
+(defn smooth-polyhedron
+  "平滑细分多面体。levels 为细分层数."
+  [poly levels]
+  (loop [poly poly
+         levels (int levels)]
+    (if (<= levels 0)
+      poly
+      (recur (subdivide-polyhedron poly :smooth)
              (dec levels)))))
 
 (defn fractalize-polyhedron
@@ -666,16 +778,20 @@
          disp (double displacement)]
     (if (<= levels 0)
       poly
-      (let [{:keys [points faces orig-mask normals]} (refine-polyhedron-step poly)
-            points (mapv (fn [p orig? n]
-                           (if orig?
+      (let [orig-count (count (:points poly))
+            poly (subdivide-polyhedron poly :refine)
+            normals (compute-vertex-normals (:points poly) (:faces poly))
+            points (mapv (fn [idx p]
+                           (if (< idx orig-count)
                              p
-                             (let [d (math/rand-range (- disp) disp)]
+                             (let [n (nth normals idx)
+                                   d (math/rand-range (- disp) disp)]
                                [(float (+ (nth p 0) (* (nth n 0) d)))
                                 (float (+ (nth p 1) (* (nth n 1) d)))
                                 (float (+ (nth p 2) (* (nth n 2) d)))])))
-                         points orig-mask normals)]
-        (recur {:points points :faces faces}
+                         (range (count (:points poly)))
+                         (:points poly))]
+        (recur {:points points :faces (:faces poly)}
                (dec levels)
                (/ disp 2.0))))))
 

@@ -6,3 +6,5 @@
 /src/lwjgl/experiment/.clj-kondo/.cache/v1/clj/*.json
 /src/lwjgl/experiment/.clj-kondo/
 /src/lwjgl/experiment/.lsp/
+/src/lwjgl/experiment/kons9/.clj-kondo/
+/src/lwjgl/experiment/kons9/.lsp/
