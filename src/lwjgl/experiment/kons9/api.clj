@@ -56,6 +56,11 @@
   [style]
   (hot/set-axis-style! style))
 
+(defn grid-style!
+  "设置网格样式。"
+  [style]
+  (hot/set-grid-style! style))
+
 (defn transition!
   "设置过场时长（秒）。"
   [duration]

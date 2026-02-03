@@ -26,6 +26,13 @@
          :arrow-length 0.12
          :arrow-radius 0.05
          :line-width 2.0}))
+(defonce grid-style
+  (atom {:size 6.0
+         :step 0.5
+         :major-step 1.0
+         :minor-color [0.18 0.18 0.24]
+         :major-color [0.28 0.28 0.34]
+         :line-width 1.0}))
 (defonce app
   (atom {:window 0
          :time {:now 0.0 :dt 0.0 :frame 0 :last 0.0}
@@ -65,6 +72,10 @@
          :axis-arrow-vao 0
          :axis-arrow-vbo 0
          :axis-arrow-count 0
+         ;; 网格平面
+         :grid-vao 0
+         :grid-vbo 0
+         :grid-count 0
          ;; 立方体渲染资源
          :cube-program 0
          :cube-vao 0
@@ -255,6 +266,7 @@ void main() {
          clear-point-cloud!
          set-mesh!
          set-mesh-style!
+         set-grid-style!
          clear-spring-lines!
          clear-mesh!)
 
@@ -513,6 +525,47 @@ void main() {
     (GL30/glBindVertexArray 0)
     {:vao vao :vbo vbo :count (int (/ (alength vertices) 6))}))
 
+(defn- build-grid-vao
+  []
+  (let [{:keys [size step major-step minor-color major-color]} @grid-style
+        size (double size)
+        step (double step)
+        major-step (double major-step)
+        coords (range (- size) (+ size 1.0e-6) step)
+        data (transient [])
+        major? (fn [v]
+                 (let [r (Math/abs (rem v major-step))]
+                   (< r (* 0.5 step))))]
+    (doseq [z coords]
+      (let [[r g b] (if (major? z) major-color minor-color)]
+        (conj! data (float (- size)))
+        (conj! data 0.0)
+        (conj! data (float z))
+        (conj! data (float r))
+        (conj! data (float g))
+        (conj! data (float b))
+        (conj! data (float size))
+        (conj! data 0.0)
+        (conj! data (float z))
+        (conj! data (float r))
+        (conj! data (float g))
+        (conj! data (float b))))
+    (doseq [x coords]
+      (let [[r g b] (if (major? x) major-color minor-color)]
+        (conj! data (float x))
+        (conj! data 0.0)
+        (conj! data (float (- size)))
+        (conj! data (float r))
+        (conj! data (float g))
+        (conj! data (float b))
+        (conj! data (float x))
+        (conj! data 0.0)
+        (conj! data (float size))
+        (conj! data (float r))
+        (conj! data (float g))
+        (conj! data (float b))))
+    (build-axis-vao (float-array (persistent! data)))))
+
 (defn- build-point-vao
   []
   (let [vao (GL30/glGenVertexArrays)
@@ -733,6 +786,7 @@ void main() {
         (build-axis-vao (axis-line-vertices length))
         {arrow-vao :vao arrow-vbo :vbo arrow-count :count}
         (build-axis-vao (axis-arrow-vertices length arrow-length arrow-radius))
+        {grid-vao :vao grid-vbo :vbo grid-count :count} (build-grid-vao)
         ;; Cube resources
         cube-program (core/create-program cube-vs-source cube-fs-source)
         {point-vao :vao point-vbo :vbo} (build-point-vao)
@@ -757,6 +811,9 @@ void main() {
            :axis-arrow-vao arrow-vao
            :axis-arrow-vbo arrow-vbo
            :axis-arrow-count arrow-count
+           :grid-vao grid-vao
+           :grid-vbo grid-vbo
+           :grid-count grid-count
            ;; 立方体资源
            :cube-program cube-program
            :cube-vao cube-vao
@@ -805,10 +862,22 @@ void main() {
            :axis-arrow-vbo arrow-vbo
            :axis-arrow-count arrow-count)))
 
+(defn- rebuild-grid!
+  []
+  (let [{:keys [grid-vao grid-vbo]} @state
+        {new-vao :vao new-vbo :vbo new-count :count} (build-grid-vao)]
+    (delete-if-positive grid-vbo #(GL15/glDeleteBuffers %))
+    (delete-if-positive grid-vao #(GL30/glDeleteVertexArrays %))
+    (swap! state assoc
+           :grid-vao new-vao
+           :grid-vbo new-vbo
+           :grid-count new-count)))
+
 (defn- cleanup-resources!
   []
   (let [{:keys [program vao vbo ebo tex axis-program
                 axis-line-vao axis-line-vbo axis-arrow-vao axis-arrow-vbo
+                grid-vao grid-vbo
                 cube-program cube-vao cube-vbo
                 point-program point-vao point-vbo
                 overlay-program overlay-vao overlay-vbo
@@ -824,6 +893,8 @@ void main() {
     (delete-if-positive axis-line-vao #(GL30/glDeleteVertexArrays %))
     (delete-if-positive axis-arrow-vbo #(GL15/glDeleteBuffers %))
     (delete-if-positive axis-arrow-vao #(GL30/glDeleteVertexArrays %))
+    (delete-if-positive grid-vbo #(GL15/glDeleteBuffers %))
+    (delete-if-positive grid-vao #(GL30/glDeleteVertexArrays %))
     ;; 清理立方体资源
     (delete-if-positive cube-program #(GL20/glDeleteProgram %))
     (delete-if-positive cube-vbo #(GL15/glDeleteBuffers %))
@@ -857,6 +928,7 @@ void main() {
   [ctx]
   (let [{:keys [program vao tex index-count axis-program
                 axis-line-vao axis-line-count axis-arrow-vao axis-arrow-count
+                grid-vao grid-count
                 cube-program cube-vao cube-vertex-count
                 point-program point-vao point-count
                 mesh-vao mesh-index-count
@@ -889,6 +961,17 @@ void main() {
           cube-color-loc (GL20/glGetUniformLocation cube-program "uColor")
           cube-light-loc (GL20/glGetUniformLocation cube-program "uLightPos")
           cube-viewpos-loc (GL20/glGetUniformLocation cube-program "uViewPos")]
+
+      ;; Draw grid
+      (let [mvp (doto (Matrix4f. projection) (.mul view))
+            grid-width (:line-width @grid-style)]
+        (when (pos? grid-count)
+          (GL20/glUseProgram axis-program)
+          (upload-mat! mvp mat-buf axis-mvp-loc)
+          (GL11/glLineWidth (float grid-width))
+          (GL30/glBindVertexArray grid-vao)
+          (GL11/glDrawArrays GL11/GL_LINES 0 grid-count)
+          (GL11/glLineWidth 1.0)))
 
       ;; Draw axes
       (let [mvp (doto (Matrix4f. projection) (.mul view))]
@@ -1078,6 +1161,19 @@ void main() {
     (swap! axis-style merge keys-to-update)
     (if geometry?
       (enqueue! rebuild-axes!)
+      (let [reply (async/promise-chan)]
+        (async/put! reply {:ok :no-op})
+        reply))))
+
+(defn set-grid-style!
+  "更新网格样式。支持的键：:size、:step、:major-step、:minor-color、:major-color、:line-width。
+  几何变化会在 GL 线程上应用。"
+  [style]
+  (let [keys-to-update (select-keys style [:size :step :major-step :minor-color :major-color :line-width])
+        geometry? (some #(contains? keys-to-update %) [:size :step :major-step :minor-color :major-color])]
+    (swap! grid-style merge keys-to-update)
+    (if geometry?
+      (enqueue! rebuild-grid!)
       (let [reply (async/promise-chan)]
         (async/put! reply {:ok :no-op})
         reply))))
@@ -1297,9 +1393,16 @@ void main() {
       (GLFW/glfwSetMouseButtonCallback
        window
        (reify GLFWMouseButtonCallbackI
-         (invoke [_ _ button action _]
+         (invoke [_ win button action _]
            (when (= button GLFW/GLFW_MOUSE_BUTTON_LEFT)
-             (swap! app assoc-in [:input :dragging?] (= action GLFW/GLFW_PRESS))))))
+             (if (= action GLFW/GLFW_PRESS)
+               (let [xbuf (BufferUtils/createDoubleBuffer 1)
+                     ybuf (BufferUtils/createDoubleBuffer 1)]
+                 (GLFW/glfwGetCursorPos win xbuf ybuf)
+                 (swap! app assoc-in [:input :dragging?] true)
+                 (swap! app assoc-in [:input :last-x] (.get xbuf 0))
+                 (swap! app assoc-in [:input :last-y] (.get ybuf 0)))
+               (swap! app assoc-in [:input :dragging?] false))))))
       (GLFW/glfwSetCursorPosCallback
        window
        (reify GLFWCursorPosCallbackI
