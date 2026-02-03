@@ -25,6 +25,7 @@
          :time {:now 0.0 :dt 0.0 :frame 0 :last 0.0}
          :scene {:key :baseline :state nil :since 0.0}
          :timeline {:enabled? false :items [] :index 0 :elapsed 0.0}
+         :transition {:active? false :alpha 0.0 :duration 0.6}
          :camera {:yaw 0.0 :pitch 0.0}
          :input {:fb-width 800 :fb-height 600
                  :win-width 800 :win-height 600
@@ -37,6 +38,12 @@
 
 (defonce scenes (atom {}))
 (defonce point-cloud-state (atom {:points [] :colors []}))
+(defonce rig-state (atom {:segments []}))
+(defonce mesh-style
+  (atom {:pos [1.6 0.0 0.0]
+         :rot [0.0 0.0 0.0]
+         :scale [0.8 0.8 0.8]
+         :color [0.2 0.6 0.9]}))
 
 (defonce state
   (atom {:program 0
@@ -61,7 +68,20 @@
          :point-program 0
          :point-vao 0
          :point-vbo 0
-         :point-count 0}))
+         :point-count 0
+         ;; 通用网格资源
+         :mesh-vao 0
+         :mesh-vbo 0
+         :mesh-ebo 0
+         :mesh-index-count 0
+         ;; 弹簧线段
+         :spring-vao 0
+         :spring-vbo 0
+         :spring-count 0
+         ;; 过场覆盖层
+         :overlay-program 0
+         :overlay-vao 0
+         :overlay-vbo 0}))
 
 (defonce vs-source
   (atom
@@ -121,6 +141,21 @@ in vec3 vColor;
 out vec4 FragColor;
 void main() {
     FragColor = vec4(vColor, 1.0);
+}")
+
+(def ^:private overlay-vs-source
+  "#version 330 core
+layout (location = 0) in vec2 aPos;
+void main() {
+    gl_Position = vec4(aPos, 0.0, 1.0);
+}")
+
+(def ^:private overlay-fs-source
+  "#version 330 core
+uniform vec4 uColor;
+out vec4 FragColor;
+void main() {
+    FragColor = uColor;
 }")
 
 ;; ---- 立方体几何数据 ---------------------------------------------------------
@@ -207,6 +242,14 @@ void main() {
     FragColor = vec4(ambient + diffuse + specular, 1.0);
 }")
 
+(declare ensure-default-scenes!
+         upload-point-cloud!
+         set-point-cloud!
+         clear-point-cloud!
+         set-mesh!
+         set-mesh-style!
+         clear-mesh!)
+
 (defn enqueue!
   "将一个函数加入队列在 OpenGL/主线程上运行。返回一个 promise-chan，
   它会返回 {:ok value} 或 {:err throwable}。"
@@ -288,6 +331,7 @@ void main() {
 (defn set-scene!
   "切换到指定场景。该操作在 GL 线程中执行。"
   [scene-key]
+  (ensure-default-scenes!)
   (enqueue! #(apply-scene! scene-key)))
 
 (defn set-timeline!
@@ -311,6 +355,20 @@ void main() {
   "停止时间线推进。"
   []
   (swap! app assoc-in [:timeline :enabled?] false))
+
+(defn set-transition!
+  "设置过场时长（秒）。"
+  [duration]
+  (swap! app assoc-in [:transition :duration] (max 0.0 (double duration)))
+  :ok)
+
+(defn trigger-transition!
+  "手动触发一次过场遮罩。"
+  []
+  (swap! app assoc :transition {:active? true
+                                :alpha 1.0
+                                :duration (get-in @app [:transition :duration])})
+  :ok)
 
 (defn pause!
   "暂停场景更新。"
@@ -360,8 +418,21 @@ void main() {
                 next-scene (:scene (nth items next-index))]
             (swap! app assoc-in [:timeline :index] next-index)
             (swap! app assoc-in [:timeline :elapsed] 0.0)
-            (apply-scene! next-scene))
+            (apply-scene! next-scene)
+            (swap! app assoc :transition {:active? true
+                                          :alpha 1.0
+                                          :duration (get-in @app [:transition :duration])}))
           (swap! app assoc-in [:timeline :elapsed] elapsed))))))
+
+(defn- update-transition!
+  [dt]
+  (let [{:keys [active? alpha duration]} (:transition @app)]
+    (when active?
+      (let [step (if (pos? duration) (/ dt duration) 1.0)
+            alpha (max 0.0 (- alpha step))]
+        (if (<= alpha 0.0)
+          (swap! app assoc :transition {:active? false :alpha 0.0 :duration duration})
+          (swap! app assoc-in [:transition :alpha] alpha))))))
 
 (defn- render-scene!
   []
@@ -371,6 +442,24 @@ void main() {
       (override (:resources ctx))
       (when-let [render-fn (:render (current-scene-def))]
         (render-fn ctx scene-state)))))
+
+(defn- render-transition!
+  []
+  (let [{:keys [active? alpha]} (:transition @app)]
+    (when (and active? (pos? alpha))
+      (let [{:keys [overlay-program overlay-vao]} @state
+            color-loc (GL20/glGetUniformLocation overlay-program "uColor")]
+        (GL11/glDisable GL11/GL_DEPTH_TEST)
+        (GL11/glEnable GL11/GL_BLEND)
+        (GL11/glBlendFunc GL11/GL_SRC_ALPHA GL11/GL_ONE_MINUS_SRC_ALPHA)
+        (GL20/glUseProgram overlay-program)
+        (when (<= 0 color-loc)
+          (GL20/glUniform4f color-loc 0.0 0.0 0.0 (float alpha)))
+        (GL30/glBindVertexArray overlay-vao)
+        (GL11/glDrawArrays GL11/GL_TRIANGLES 0 6)
+        (GL30/glBindVertexArray 0)
+        (GL11/glDisable GL11/GL_BLEND)
+        (GL11/glEnable GL11/GL_DEPTH_TEST)))))
 
 ;; ---- OpenGL 辅助函数 -----------------------------------------------------------
 
@@ -484,6 +573,48 @@ void main() {
     (GL30/glBindVertexArray 0)
     {:vao vao :vbo vbo}))
 
+(defn- build-overlay-vao
+  []
+  (let [vao (GL30/glGenVertexArrays)
+        vbo (GL15/glGenBuffers)
+        vertices (float-array
+                  [;; full screen quad in NDC
+                   -1.0 -1.0
+                   1.0 -1.0
+                   1.0  1.0
+                   1.0  1.0
+                   -1.0  1.0
+                   -1.0 -1.0])
+        buf (BufferUtils/createFloatBuffer (alength vertices))
+        stride (* 2 Float/BYTES)]
+    (GL30/glBindVertexArray vao)
+    (.put buf vertices)
+    (.flip buf)
+    (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER vbo)
+    (GL15/glBufferData GL15/GL_ARRAY_BUFFER buf GL15/GL_STATIC_DRAW)
+    (GL20/glVertexAttribPointer 0 2 GL11/GL_FLOAT false stride 0)
+    (GL20/glEnableVertexAttribArray 0)
+    (GL30/glBindVertexArray 0)
+    {:vao vao :vbo vbo}))
+
+(defn- build-mesh-vao
+  []
+  (let [vao (GL30/glGenVertexArrays)
+        vbo (GL15/glGenBuffers)
+        ebo (GL15/glGenBuffers)
+        stride (* 6 Float/BYTES)]
+    (GL30/glBindVertexArray vao)
+    (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER vbo)
+    (GL15/glBufferData GL15/GL_ARRAY_BUFFER 0 GL15/GL_DYNAMIC_DRAW)
+    (GL15/glBindBuffer GL15/GL_ELEMENT_ARRAY_BUFFER ebo)
+    (GL15/glBufferData GL15/GL_ELEMENT_ARRAY_BUFFER 0 GL15/GL_DYNAMIC_DRAW)
+    (GL20/glVertexAttribPointer 0 3 GL11/GL_FLOAT false stride 0)
+    (GL20/glEnableVertexAttribArray 0)
+    (GL20/glVertexAttribPointer 1 3 GL11/GL_FLOAT false stride (* 3 Float/BYTES))
+    (GL20/glEnableVertexAttribArray 1)
+    (GL30/glBindVertexArray 0)
+    {:vao vao :vbo vbo :ebo ebo}))
+
 (defn- create-cube-vao
   []
   (let [vao (GL30/glGenVertexArrays)
@@ -560,6 +691,298 @@ void main() {
   {:points (vec points)
    :colors (vec (or colors []))})
 
+(defn sphere-point-cloud
+  "生成球面点云。"
+  [count radius]
+  (let [count (max 1 (int count))
+        radius (double radius)]
+    (vec
+     (repeatedly count
+                 (fn []
+                   (let [u (rand)
+                         v (rand)
+                         theta (* 2.0 Math/PI u)
+                         phi (Math/acos (- 1.0 (* 2.0 v)))
+                         x (* radius (Math/sin phi) (Math/cos theta))
+                         y (* radius (Math/cos phi))
+                         z (* radius (Math/sin phi) (Math/sin theta))]
+                     [(float x) (float y) (float z)]))))))
+
+(defn- compose-transform
+  [pos rot scale]
+  (doto (Matrix4f.)
+    (.identity)
+    (.translate (float (nth pos 0)) (float (nth pos 1)) (float (nth pos 2)))
+    (.rotateX (float (Math/toRadians (nth rot 0))))
+    (.rotateY (float (Math/toRadians (nth rot 1))))
+    (.rotateZ (float (Math/toRadians (nth rot 2))))
+    (.scale (float (nth scale 0)) (float (nth scale 1)) (float (nth scale 2)))))
+
+(defn- chain-transform
+  [parent pos rot scale]
+  (doto (Matrix4f. parent)
+    (.translate (float (nth pos 0)) (float (nth pos 1)) (float (nth pos 2)))
+    (.rotateX (float (Math/toRadians (nth rot 0))))
+    (.rotateY (float (Math/toRadians (nth rot 1))))
+    (.rotateZ (float (Math/toRadians (nth rot 2))))
+    (.scale (float (nth scale 0)) (float (nth scale 1)) (float (nth scale 2)))))
+
+(defn- rand-range
+  [a b]
+  (+ a (* (rand) (- b a))))
+
+(defn- respawn-particle
+  [radius]
+  (let [angle (* 2.0 Math/PI (rand))
+        r (rand-range (* 0.2 radius) radius)
+        x (* r (Math/cos angle))
+        z (* r (Math/sin angle))
+        y (rand-range -0.2 0.2)
+        vx (rand-range -0.3 0.3)
+        vy (rand-range 0.1 0.6)
+        vz (rand-range -0.3 0.3)]
+    {:pos [(float x) (float y) (float z)]
+     :vel [(float vx) (float vy) (float vz)]
+     :life (rand-range 1.5 4.0)
+     :color [(float (rand)) (float (rand)) (float (rand))]}))
+
+(defn- init-particles
+  [count radius]
+  (vec (repeatedly (max 1 (int count)) #(respawn-particle radius))))
+
+(defn- update-particles
+  [particles dt t]
+  (let [target [(float (* 0.5 (Math/sin (* 0.6 t))))
+                (float (* 0.3 (Math/cos (* 0.4 t))))
+                0.0]
+        gravity [0.0 -0.25 0.0]]
+    (mapv
+     (fn [{:keys [pos vel life] :as p}]
+       (let [[px py pz] pos
+             [vx vy vz] vel
+             [tx ty tz] target
+             dx (- tx px)
+             dy (- ty py)
+             dz (- tz pz)
+             dist (Math/sqrt (+ (* dx dx) (* dy dy) (* dz dz) 0.001))
+             att-scale (/ 0.6 (+ 0.2 (* dist dist)))
+             ax (+ (nth gravity 0) (* att-scale (/ dx dist)) (* 0.15 (- pz)))
+             ay (+ (nth gravity 1) (* att-scale (/ dy dist)))
+             az (+ (nth gravity 2) (* att-scale (/ dz dist)) (* 0.15 px))
+             nvx (+ vx (* ax dt))
+             nvy (+ vy (* ay dt))
+             nvz (+ vz (* az dt))
+             npx (+ px (* nvx dt))
+             npy (+ py (* nvy dt))
+             npz (+ pz (* nvz dt))
+             life (- life dt)]
+         (if (or (<= life 0.0) (> (Math/abs npx) 4.0) (> (Math/abs npy) 4.0) (> (Math/abs npz) 4.0))
+           (respawn-particle 1.6)
+           (assoc p :pos [(float npx) (float npy) (float npz)]
+                  :vel [(float nvx) (float nvy) (float nvz)]
+                  :life life))))
+     particles)))
+
+(defn- particles->points
+  [particles]
+  (let [points (mapv :pos particles)
+        colors (mapv :color particles)]
+    {:points points :colors colors}))
+
+(defn- sdf-sphere
+  [x y z [cx cy cz] r]
+  (let [dx (- x cx)
+        dy (- y cy)
+        dz (- z cz)]
+    (- (Math/sqrt (+ (* dx dx) (* dy dy) (* dz dz))) r)))
+
+(defn- smooth-min
+  "平滑最小值（k 越大越平滑）。"
+  [^double a ^double b ^double k]
+  (let [h (clamp01 (+ 0.5 (/ (- b a) (* 2.0 k))))]
+    (- (min a b) (* k h (- 1.0 h)))))
+
+(defn- sdf-metaballs
+  [^double x ^double y ^double z t]
+  (let [c1 [(+ -0.6 (* 0.6 (Math/sin (* 0.7 t))))
+            (* 0.4 (Math/cos (* 0.5 t)))
+            0.0]
+        c2 [(+ 0.6 (* 0.4 (Math/sin (* 0.9 t))))
+            (* -0.3 (Math/cos (* 0.6 t)))
+            0.2]
+        c3 [0.0 (* 0.5 (Math/sin (* 0.4 t))) -0.4]
+        d1 (sdf-sphere x y z c1 0.6)
+        d2 (sdf-sphere x y z c2 0.55)
+        d3 (sdf-sphere x y z c3 0.5)]
+    (-> d1
+        (smooth-min d2 0.4)
+        (smooth-min d3 0.4))))
+
+(defn- sdf-gradient
+  [f x y z t]
+  (let [e 0.002
+        dx (- (f (+ x e) y z t) (f (- x e) y z t))
+        dy (- (f x (+ y e) z t) (f x (- y e) z t))
+        dz (- (f x y (+ z e) t) (f x y (- z e) t))
+        len (Math/sqrt (+ (* dx dx) (* dy dy) (* dz dz) 1.0e-9))]
+    [(/ dx len) (/ dy len) (/ dz len)]))
+
+(def ^:private tetra-indices
+  [[0 5 1 6]
+   [0 1 2 6]
+   [0 2 3 6]
+   [0 3 7 6]
+   [0 7 4 6]
+   [0 4 5 6]])
+
+(def ^:private cube-offsets
+  [[0 0 0]
+   [1 0 0]
+   [1 1 0]
+   [0 1 0]
+   [0 0 1]
+   [1 0 1]
+   [1 1 1]
+   [0 1 1]])
+
+(defn- interp-point
+  [p1 p2 v1 v2]
+  (let [t (/ v1 (- v1 v2))
+        [x1 y1 z1] p1
+        [x2 y2 z2] p2]
+    [(+ x1 (* t (- x2 x1)))
+     (+ y1 (* t (- y2 y1)))
+     (+ z1 (* t (- z2 z1)))]))
+
+(defn- marching-tetra
+  [points values f t vertices indices]
+  (let [edges [[0 1] [1 2] [2 0] [0 3] [1 3] [2 3]]
+        crosses (reduce
+                 (fn [acc [a b]]
+                   (let [va (nth values a)
+                         vb (nth values b)]
+                     (if (<= (* va vb) 0.0)
+                       (conj acc (interp-point (nth points a) (nth points b) va vb))
+                       acc)))
+                 []
+                 edges)]
+    (cond
+      (= 3 (count crosses))
+      (let [base (quot (count @vertices) 6)]
+        (doseq [p crosses]
+          (let [[nx ny nz] (sdf-gradient f (nth p 0) (nth p 1) (nth p 2) t)]
+            (swap! vertices into [(float (nth p 0)) (float (nth p 1)) (float (nth p 2))
+                                  (float nx) (float ny) (float nz)])))
+        (swap! indices into [base (inc base) (+ base 2)]))
+      (= 4 (count crosses))
+      (let [base (quot (count @vertices) 6)
+            order [[0 1 2] [0 2 3]]]
+        (doseq [p crosses]
+          (let [[nx ny nz] (sdf-gradient f (nth p 0) (nth p 1) (nth p 2) t)]
+            (swap! vertices into [(float (nth p 0)) (float (nth p 1)) (float (nth p 2))
+                                  (float nx) (float ny) (float nz)])))
+        (swap! indices into
+               (mapcat (fn [[a b c]] [(+ base a) (+ base b) (+ base c)]) order)))
+      :else nil)))
+
+(defn marching-tetrahedra
+  "使用四面体分割的 marching 算法生成网格。"
+  [f {:keys [min max res t]}]
+  (let [[minx miny minz] min
+        [maxx maxy maxz] max
+        res (clojure.core/max 4 (int res))
+        step-x (/ (- maxx minx) res)
+        step-y (/ (- maxy miny) res)
+        step-z (/ (- maxz minz) res)
+        vertices (atom [])
+        indices (atom [])]
+    (dotimes [i res]
+      (dotimes [j res]
+        (dotimes [k res]
+          (let [base [i j k]
+                cube-points (mapv (fn [[ox oy oz]]
+                                    [(+ minx (* (+ i ox) step-x))
+                                     (+ miny (* (+ j oy) step-y))
+                                     (+ minz (* (+ k oz) step-z))])
+                                  cube-offsets)
+                cube-values (mapv (fn [[x y z]] (f x y z t)) cube-points)]
+            (doseq [[a b c d] tetra-indices]
+              (marching-tetra [(nth cube-points a)
+                               (nth cube-points b)
+                               (nth cube-points c)
+                               (nth cube-points d)]
+                              [(nth cube-values a)
+                               (nth cube-values b)
+                               (nth cube-values c)
+                               (nth cube-values d)]
+                              f t vertices indices))))))
+    {:vertices (float-array @vertices)
+     :indices (int-array @indices)}))
+
+(defn sweep-mesh
+  "生成沿 X 轴扫掠的管状网格。返回 {:vertices float-array :indices int-array}。
+  参数：
+    :segments  路径分段
+    :ring      环形分段
+    :length    路径长度
+    :radius    基础半径
+    :amp       路径摆动幅度
+    :freq      摆动频率
+    :twist     扭转角度（度）"
+  [& {:keys [segments ring length radius amp freq twist]
+      :or {segments 80 ring 16 length 3.0 radius 0.25 amp 0.35 freq 1.5 twist 0.0}}]
+  (let [segments (max 3 (int segments))
+        ring (max 6 (int ring))
+        length (double length)
+        radius (double radius)
+        amp (double amp)
+        freq (double freq)
+        twist (Math/toRadians (double twist))
+        vertices (transient [])
+        indices (transient [])]
+    (dotimes [i (inc segments)]
+      (let [t (/ (double i) segments)
+            x (- (* t length) (* 0.5 length))
+            phase (* 2.0 Math/PI freq t)
+            y (* amp (Math/sin phase))
+            z (* (* 0.5 amp) (Math/cos phase))
+            taper (+ 0.85 (* 0.25 (Math/sin (* 2.0 Math/PI t))))
+            r (* radius taper)
+            twist-angle (* twist t)]
+        (dotimes [j (inc ring)]
+          (let [u (/ (double j) ring)
+                theta (+ (* 2.0 Math/PI u) twist-angle)
+                cy (Math/cos theta)
+                sy (Math/sin theta)
+                px x
+                py (+ y (* r cy))
+                pz (+ z (* r sy))
+                nx 0.0
+                ny cy
+                nz sy]
+            (conj! vertices (float px))
+            (conj! vertices (float py))
+            (conj! vertices (float pz))
+            (conj! vertices (float nx))
+            (conj! vertices (float ny))
+            (conj! vertices (float nz))))))
+    (dotimes [i segments]
+      (dotimes [j ring]
+        (let [row-a (* i (inc ring))
+              row-b (* (inc i) (inc ring))
+              a (+ row-a j)
+              b (+ row-b j)
+              c (+ row-b (inc j))
+              d (+ row-a (inc j))]
+          (conj! indices a)
+          (conj! indices b)
+          (conj! indices d)
+          (conj! indices b)
+          (conj! indices c)
+          (conj! indices d))))
+    {:vertices (float-array (persistent! vertices))
+     :indices (int-array (persistent! indices))}))
+
 (defn- axis-line-vertices
   [len]
   (float-array
@@ -612,6 +1035,7 @@ void main() {
         tex-loc (GL20/glGetUniformLocation program "texture1")
         axis-program (core/create-program axis-vs-source axis-fs-source)
         point-program (core/create-program point-vs-source point-fs-source)
+        overlay-program (core/create-program overlay-vs-source overlay-fs-source)
         {:keys [length arrow-length arrow-radius]} @axis-style
         {line-vao :vao line-vbo :vbo line-count :count}
         (build-axis-vao (axis-line-vertices length))
@@ -620,6 +1044,8 @@ void main() {
         ;; Cube resources
         cube-program (core/create-program cube-vs-source cube-fs-source)
         {point-vao :vao point-vbo :vbo} (build-point-vao)
+        {overlay-vao :vao overlay-vbo :vbo} (build-overlay-vao)
+        {mesh-vao :vao mesh-vbo :vbo mesh-ebo :ebo} (build-mesh-vao)
         {cube-vao :vao cube-vbo :vbo cube-count :count} (create-cube-vao)]
     (GL20/glUseProgram program)
     (when (<= 0 tex-loc)
@@ -647,7 +1073,14 @@ void main() {
            :point-program point-program
            :point-vao point-vao
            :point-vbo point-vbo
-           :point-count 0)
+           :point-count 0
+           :mesh-vao mesh-vao
+           :mesh-vbo mesh-vbo
+           :mesh-ebo mesh-ebo
+           :mesh-index-count 0
+           :overlay-program overlay-program
+           :overlay-vao overlay-vao
+           :overlay-vbo overlay-vbo)
     ;; 使用一个默认立方体初始化
     (when (empty? @cubes)
       (reset! cubes [{:id (swap! next-cube-id inc)
@@ -681,7 +1114,9 @@ void main() {
   (let [{:keys [program vao vbo ebo tex axis-program
                 axis-line-vao axis-line-vbo axis-arrow-vao axis-arrow-vbo
                 cube-program cube-vao cube-vbo
-                point-program point-vao point-vbo]} @state]
+                point-program point-vao point-vbo
+                overlay-program overlay-vao overlay-vbo
+                mesh-vao mesh-vbo mesh-ebo]} @state]
     (delete-if-positive program #(GL20/glDeleteProgram %))
     (delete-if-positive vbo #(GL15/glDeleteBuffers %))
     (delete-if-positive ebo #(GL15/glDeleteBuffers %))
@@ -699,20 +1134,31 @@ void main() {
     ;; 清理点云资源
     (delete-if-positive point-program #(GL20/glDeleteProgram %))
     (delete-if-positive point-vbo #(GL15/glDeleteBuffers %))
-    (delete-if-positive point-vao #(GL30/glDeleteVertexArrays %)))
+    (delete-if-positive point-vao #(GL30/glDeleteVertexArrays %))
+    ;; 清理网格资源
+    (delete-if-positive mesh-vbo #(GL15/glDeleteBuffers %))
+    (delete-if-positive mesh-ebo #(GL15/glDeleteBuffers %))
+    (delete-if-positive mesh-vao #(GL30/glDeleteVertexArrays %))
+    ;; 清理覆盖层资源
+    (delete-if-positive overlay-program #(GL20/glDeleteProgram %))
+    (delete-if-positive overlay-vbo #(GL15/glDeleteBuffers %))
+    (delete-if-positive overlay-vao #(GL30/glDeleteVertexArrays %)))
   (reset! state {:program 0 :vao 0 :vbo 0 :ebo 0 :tex 0 :index-count 0
                  :axis-program 0
                  :axis-line-vao 0 :axis-line-vbo 0 :axis-line-count 0
                  :axis-arrow-vao 0 :axis-arrow-vbo 0 :axis-arrow-count 0
                  :cube-program 0 :cube-vao 0 :cube-vbo 0 :cube-vertex-count 0
-                 :point-program 0 :point-vao 0 :point-vbo 0 :point-count 0}))
+                 :point-program 0 :point-vao 0 :point-vbo 0 :point-count 0
+                 :mesh-vao 0 :mesh-vbo 0 :mesh-ebo 0 :mesh-index-count 0
+                 :overlay-program 0 :overlay-vao 0 :overlay-vbo 0}))
 
 (defn- default-render
   [ctx]
   (let [{:keys [program vao tex index-count axis-program
                 axis-line-vao axis-line-count axis-arrow-vao axis-arrow-count
                 cube-program cube-vao cube-vertex-count
-                point-program point-vao point-count]} (:resources ctx)
+                point-program point-vao point-count
+                mesh-vao mesh-index-count]} (:resources ctx)
         {:keys [yaw pitch]} (:camera ctx)
         {:keys [fb-width fb-height]} (:input ctx)
         [r g b a] @clear-color]
@@ -775,18 +1221,32 @@ void main() {
 
       (GL30/glBindVertexArray cube-vao)
       (doseq [{:keys [pos rot scale color]} @cubes]
-        (let [model (doto (Matrix4f.)
-                      (.identity)
-                      (.translate (float (nth pos 0)) (float (nth pos 1)) (float (nth pos 2)))
-                      (.rotateX (float (Math/toRadians (nth rot 0))))
-                      (.rotateY (float (Math/toRadians (nth rot 1))))
-                      (.rotateZ (float (Math/toRadians (nth rot 2))))
-                      (.scale (float (nth scale 0)) (float (nth scale 1)) (float (nth scale 2))))]
+        (let [model (compose-transform pos rot scale)]
           (when (<= 0 cube-model-loc)
             (upload-mat! model mat-buf cube-model-loc))
           (when (<= 0 cube-color-loc)
             (GL20/glUniform3f cube-color-loc (float (nth color 0)) (float (nth color 1)) (float (nth color 2))))
           (GL11/glDrawArrays GL11/GL_TRIANGLES 0 cube-vertex-count)))
+
+      ;; Draw rig segments
+      (when (seq (:segments @rig-state))
+        (doseq [{:keys [model color]} (:segments @rig-state)]
+          (when (<= 0 cube-model-loc)
+            (upload-mat! model mat-buf cube-model-loc))
+          (when (<= 0 cube-color-loc)
+            (GL20/glUniform3f cube-color-loc (float (nth color 0)) (float (nth color 1)) (float (nth color 2))))
+          (GL11/glDrawArrays GL11/GL_TRIANGLES 0 cube-vertex-count)))
+
+      ;; Draw generic mesh (e.g. sphere)
+      (when (pos? mesh-index-count)
+        (let [{:keys [pos rot scale color]} @mesh-style
+              model (compose-transform pos rot scale)]
+          (when (<= 0 cube-model-loc)
+            (upload-mat! model mat-buf cube-model-loc))
+          (when (<= 0 cube-color-loc)
+            (GL20/glUniform3f cube-color-loc (float (nth color 0)) (float (nth color 1)) (float (nth color 2))))
+          (GL30/glBindVertexArray mesh-vao)
+          (GL11/glDrawElements GL11/GL_TRIANGLES mesh-index-count GL11/GL_UNSIGNED_INT 0)))
 
       ;; 绘制原始四边形（在立方体后方，作为参考）
       (let [mvp (doto (Matrix4f.)
@@ -811,7 +1271,152 @@ void main() {
      {:init (fn [_] nil)
       :update (fn [_ scene-state] scene-state)
       :render (fn [ctx _] (default-render ctx))
+      :cleanup (fn [_ _] nil)}))
+  (when-not (contains? @scenes :geometry)
+    (register-scene!
+     :geometry
+     {:init (fn [_]
+              (reset! clear-color [0.05 0.05 0.08 1.0])
+              (reset! cubes [{:id (swap! next-cube-id inc)
+                              :pos [-1.0 0.0 0.0]
+                              :rot [0.0 0.0 0.0]
+                              :scale [0.6 0.6 0.6]
+                              :color [0.9 0.4 0.2]}
+                             {:id (swap! next-cube-id inc)
+                              :pos [0.0 0.0 0.0]
+                              :rot [0.0 0.0 0.0]
+                              :scale [0.8 0.8 0.8]
+                              :color [0.2 0.8 0.4]}
+                             {:id (swap! next-cube-id inc)
+                              :pos [0.8 -0.6 0.3]
+                              :rot [0.0 0.0 0.0]
+                              :scale [0.5 0.5 0.5]
+                              :color [0.2 0.6 0.9]}])
+              (let [points (sphere-point-cloud 120 0.7)
+                    colors (repeatedly (count points) #(color3 (rand) (rand) (rand)))]
+                (set-point-cloud! points :colors colors))
+              (let [{:keys [vertices indices]} (uv-sphere 24 36)]
+                (set-mesh! vertices indices))
+              nil)
+      :update (fn [{:keys [time]} scene-state]
+                (let [dt (:dt time)
+                      deg (* 30.0 dt)]
+                  (swap! cubes
+                         (fn [cs]
+                           (mapv (fn [c]
+                                   (update c :rot (fn [[rx ry rz]]
+                                                    [(+ rx deg) (+ ry (* 0.6 deg)) rz])))
+                                 cs))))
+                scene-state)
+      :render (fn [ctx _] (default-render ctx))
       :cleanup (fn [_ _] nil)})))
+
+(register-scene!
+ :rig
+ {:init (fn [_]
+          (reset! clear-color [0.03 0.03 0.06 1.0])
+          (reset! cubes [])
+          (clear-point-cloud!)
+          (clear-mesh!)
+          (reset! rig-state {:segments []})
+          {:t 0.0})
+  :update (fn [{:keys [time]} scene-state]
+            (let [t (+ (:t scene-state) (:dt time))
+                  root-rot [0.0 (* 25.0 (Math/sin t)) 0.0]
+                  upper-rot [(* 35.0 (Math/sin (* 1.2 t))) 0.0 0.0]
+                  lower-rot [(* -50.0 (Math/sin (* 1.6 t))) 0.0 0.0]
+                  root (compose-transform [0.0 -0.1 0.0] root-rot [0.32 0.9 0.32])
+                  upper (chain-transform root [0.0 0.9 0.0] upper-rot [0.30 0.85 0.30])
+                  lower (chain-transform upper [0.0 0.85 0.0] lower-rot [0.28 0.8 0.28])]
+              (reset! rig-state
+                      {:segments [{:model root :color [0.9 0.4 0.2]}
+                                  {:model upper :color [0.2 0.8 0.4]}
+                                  {:model lower :color [0.2 0.6 0.9]}]})
+              (assoc scene-state :t t)))
+  :render (fn [ctx _] (default-render ctx))
+  :cleanup (fn [_ _] nil)})
+
+(register-scene!
+ :sweep
+ {:init (fn [_]
+          (reset! clear-color [0.02 0.02 0.05 1.0])
+          (reset! cubes [])
+          (clear-point-cloud!)
+          (reset! rig-state {:segments []})
+          (let [{:keys [vertices indices]} (sweep-mesh)]
+            (set-mesh! vertices indices))
+          {:t 0.0})
+  :update (fn [{:keys [time]} scene-state]
+            (let [t (+ (:t scene-state) (:dt time))
+                  twist (* 90.0 (Math/sin (* 0.6 t)))
+                  {:keys [vertices indices]}
+                  (sweep-mesh :segments 90
+                              :ring 18
+                              :length 3.2
+                              :radius 0.22
+                              :amp 0.4
+                              :freq 1.3
+                              :twist twist)]
+              (set-mesh! vertices indices)
+              (assoc scene-state :t t)))
+  :render (fn [ctx _] (default-render ctx))
+  :cleanup (fn [_ _] nil)})
+
+(register-scene!
+ :particles
+ {:init (fn [_]
+          (reset! clear-color [0.01 0.01 0.04 1.0])
+          (reset! cubes [])
+          (reset! rig-state {:segments []})
+          (swap! state assoc :mesh-index-count 0)
+          (let [particles (init-particles 400 1.6)
+                {:keys [points colors]} (particles->points particles)]
+            (upload-point-cloud! points colors)
+            {:t 0.0 :particles particles}))
+  :update (fn [{:keys [time]} scene-state]
+            (let [dt (:dt time)
+                  t (+ (:t scene-state) dt)
+                  particles (update-particles (:particles scene-state) dt t)
+                  {:keys [points colors]} (particles->points particles)]
+              (upload-point-cloud! points colors)
+              (assoc scene-state :t t :particles particles)))
+  :render (fn [ctx _] (default-render ctx))
+  :cleanup (fn [_ _] nil)})
+
+(register-scene!
+ :sdf
+ {:init (fn [_]
+          (reset! clear-color [0.02 0.02 0.05 1.0])
+          (reset! cubes [])
+          (clear-point-cloud!)
+          (reset! rig-state {:segments []})
+          (set-mesh-style! {:pos [0.0 0.0 0.0]
+                            :rot [0.0 0.0 0.0]
+                            :scale [1.0 1.0 1.0]
+                            :color [0.7 0.7 0.95]})
+          (let [{:keys [vertices indices]}
+                (marching-tetrahedra sdf-metaballs {:min [-1.4 -1.1 -1.1]
+                                                    :max [1.4 1.1 1.1]
+                                                    :res 36
+                                                    :t 0.0})]
+            (set-mesh! vertices indices))
+          {:t 0.0 :acc 0.0})
+  :update (fn [{:keys [time]} scene-state]
+            (let [scene-state (or scene-state {:t 0.0 :acc 0.0})
+                  dt (:dt time)
+                  t (+ (:t scene-state) dt)
+                  acc (+ (:acc scene-state) dt)]
+              (if (>= acc 0.2)
+                (let [{:keys [vertices indices]}
+                      (marching-tetrahedra sdf-metaballs {:min [-1.4 -1.1 -1.1]
+                                                          :max [1.4 1.1 1.1]
+                                                          :res 36
+                                                          :t t})]
+                  (set-mesh! vertices indices)
+                  (assoc scene-state :t t :acc 0.0))
+                (assoc scene-state :t t :acc acc))))
+  :render (fn [ctx _] (default-render ctx))
+  :cleanup (fn [_ _] nil)})
 
 ;; ---- 热重载 API（面向 REPL） ----------------------------------------
 
@@ -934,6 +1539,62 @@ void main() {
        (GL15/glBufferData GL15/GL_ELEMENT_ARRAY_BUFFER ibuf GL15/GL_STATIC_DRAW)
        (swap! state assoc :index-count (alength indices))))))
 
+(defn set-mesh!
+  "设置通用网格数据。vertices 为包含位置与法线的 float-array，indices 为 int-array。"
+  [vertices indices]
+  (enqueue!
+   (fn []
+     (let [{:keys [mesh-vao mesh-vbo mesh-ebo]} @state
+           vbuf (BufferUtils/createFloatBuffer (alength vertices))
+           ibuf (BufferUtils/createIntBuffer (alength indices))]
+       (.put vbuf vertices)
+       (.flip vbuf)
+       (GL30/glBindVertexArray mesh-vao)
+       (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER mesh-vbo)
+       (GL15/glBufferData GL15/GL_ARRAY_BUFFER vbuf GL15/GL_DYNAMIC_DRAW)
+       (.put ibuf indices)
+       (.flip ibuf)
+       (GL15/glBindBuffer GL15/GL_ELEMENT_ARRAY_BUFFER mesh-ebo)
+       (GL15/glBufferData GL15/GL_ELEMENT_ARRAY_BUFFER ibuf GL15/GL_DYNAMIC_DRAW)
+       (GL30/glBindVertexArray 0)
+       (swap! state assoc :mesh-index-count (alength indices))))))
+
+(defn clear-mesh!
+  "清空通用网格。"
+  []
+  (set-mesh! (float-array []) (int-array [])))
+
+(defn set-mesh-style!
+  "设置网格的位姿与颜色。"
+  [{:keys [pos rot scale color]}]
+  (swap! mesh-style merge
+         (select-keys {:pos pos :rot rot :scale scale :color color}
+                      [:pos :rot :scale :color])))
+
+(defn- upload-point-cloud!
+  [points colors]
+  (let [{:keys [point-vbo]} @state
+        point-count (count points)
+        data (float-array (* point-count 6))]
+    (dotimes [i point-count]
+      (let [[x y z] (nth points i)
+            [r g b] (if (< i (count colors))
+                      (nth colors i)
+                      [1.0 1.0 1.0])
+            base (* i 6)]
+        (aset-float data base (float x))
+        (aset-float data (inc base) (float y))
+        (aset-float data (+ base 2) (float z))
+        (aset-float data (+ base 3) (float r))
+        (aset-float data (+ base 4) (float g))
+        (aset-float data (+ base 5) (float b))))
+    (let [buf (BufferUtils/createFloatBuffer (alength data))]
+      (.put buf data)
+      (.flip buf)
+      (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER point-vbo)
+      (GL15/glBufferData GL15/GL_ARRAY_BUFFER buf GL15/GL_DYNAMIC_DRAW))
+    (swap! state assoc :point-count point-count)))
+
 (defn set-point-cloud!
   "设置点云数据。points 为 [[x y z] ...]，colors 为 [[r g b] ...]。
   若 colors 为空或不足，自动补白色。"
@@ -943,27 +1604,7 @@ void main() {
     (reset! point-cloud-state {:points points :colors colors})
     (enqueue!
      (fn []
-       (let [{:keys [point-vbo]} @state
-             point-count (count points)
-             data (float-array (* point-count 6))]
-         (dotimes [i point-count]
-           (let [[x y z] (nth points i)
-                 [r g b] (if (< i (count colors))
-                           (nth colors i)
-                           [1.0 1.0 1.0])
-                 base (* i 6)]
-             (aset-float data base (float x))
-             (aset-float data (inc base) (float y))
-             (aset-float data (+ base 2) (float z))
-             (aset-float data (+ base 3) (float r))
-             (aset-float data (+ base 4) (float g))
-             (aset-float data (+ base 5) (float b))))
-         (let [buf (BufferUtils/createFloatBuffer (alength data))]
-           (.put buf data)
-           (.flip buf)
-           (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER point-vbo)
-           (GL15/glBufferData GL15/GL_ARRAY_BUFFER buf GL15/GL_DYNAMIC_DRAW))
-         (swap! state assoc :point-count point-count))))))
+       (upload-point-cloud! points colors)))))
 
 (defn clear-point-cloud!
   "清空点云数据。"
@@ -1042,8 +1683,10 @@ void main() {
           (update-time!)
           (let [dt (get-in @app [:time :dt])]
             (update-timeline! dt)
+            (update-transition! dt)
             (update-scene! dt))
           (render-scene!)
+          (render-transition!)
           (GLFW/glfwSwapBuffers window)
           (GLFW/glfwPollEvents)
           (recur)))
