@@ -198,7 +198,7 @@ Just poking the scene and watching it change in real time.
 
 * Kons-9 展示教程
 ** 运行（带 nREPL）
-1- 推荐：=./run.sh hotreload-nrepl=
+- 推荐：./run.sh hotreload-nrepl
 - Intel macOS：=clj -M:natives-intel:hotreload=
 
 ** 快捷键（hotreload 窗口）

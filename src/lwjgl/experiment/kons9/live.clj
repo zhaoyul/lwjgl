@@ -72,8 +72,7 @@
 (comment
 
   (require '[lwjgl.experiment.kons9.api :as api]
-           '[lwjgl.experiment.kons9.dsl :as dsl]
-           )
+           '[lwjgl.experiment.kons9.dsl :as dsl])
 
   (live!
    {:nodes [(dsl/mesh
@@ -87,7 +86,4 @@
              :mesh (-> (api/cube-node)
                        (api/polyhedron->mesh))
              :style {:pos [0 0 0]
-                     :color [0.8 0.5 0.3]})]})
-
-
-  )
+                     :color [0.8 0.5 0.3]})]}))

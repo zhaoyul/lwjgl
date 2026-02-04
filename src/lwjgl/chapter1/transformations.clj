@@ -143,8 +143,7 @@ void main() {
             (delete-if-positive vbo #(GL15/glDeleteBuffers %))
             (delete-if-positive ebo #(GL15/glDeleteBuffers %))
             (delete-if-positive vao #(GL30/glDeleteVertexArrays %))
-            (delete-if-positive tex #(GL11/glDeleteTextures %))
-            )))
+            (delete-if-positive tex #(GL11/glDeleteTextures %)))))
       (finally
         (when (pos? window) (GLFW/glfwDestroyWindow window))
         (GLFW/glfwTerminate)

@@ -31,6 +31,7 @@
   (atom {:size 6.0
          :step 0.5
          :major-step 1.0
+         :y -1.0
          :minor-color [0.18 0.18 0.24]
          :major-color [0.28 0.28 0.34]
          :line-width 1.0}))
@@ -658,10 +659,11 @@ void main() {
 
 (defn- build-grid-vao
   []
-  (let [{:keys [size step major-step minor-color major-color]} @grid-style
+  (let [{:keys [size step major-step minor-color major-color y]} @grid-style
         size (double size)
         step (double step)
         major-step (double major-step)
+        y (double (or y 0.0))
         coords (range (- size) (+ size 1.0e-6) step)
         data (transient [])
         major? (fn [v]
@@ -670,13 +672,13 @@ void main() {
     (doseq [z coords]
       (let [[r g b] (if (major? z) major-color minor-color)]
         (conj! data (float (- size)))
-        (conj! data 0.0)
+        (conj! data (float y))
         (conj! data (float z))
         (conj! data (float r))
         (conj! data (float g))
         (conj! data (float b))
         (conj! data (float size))
-        (conj! data 0.0)
+        (conj! data (float y))
         (conj! data (float z))
         (conj! data (float r))
         (conj! data (float g))
@@ -684,13 +686,13 @@ void main() {
     (doseq [x coords]
       (let [[r g b] (if (major? x) major-color minor-color)]
         (conj! data (float x))
-        (conj! data 0.0)
+        (conj! data (float y))
         (conj! data (float (- size)))
         (conj! data (float r))
         (conj! data (float g))
         (conj! data (float b))
         (conj! data (float x))
-        (conj! data 0.0)
+        (conj! data (float y))
         (conj! data (float size))
         (conj! data (float r))
         (conj! data (float g))
@@ -1376,11 +1378,11 @@ void main() {
         reply))))
 
 (defn set-grid-style!
-  "更新网格样式. 支持的键: :size, :step, :major-step, :minor-color, :major-color, :line-width.
+  "更新网格样式. 支持的键: :size, :step, :major-step, :y, :minor-color, :major-color, :line-width.
   几何变化会在 GL 线程上应用. "
   [style]
-  (let [keys-to-update (select-keys style [:size :step :major-step :minor-color :major-color :line-width])
-        geometry? (some #(contains? keys-to-update %) [:size :step :major-step :minor-color :major-color])]
+  (let [keys-to-update (select-keys style [:size :step :major-step :y :minor-color :major-color :line-width])
+        geometry? (some #(contains? keys-to-update %) [:size :step :major-step :y :minor-color :major-color])]
     (swap! grid-style merge keys-to-update)
     (if geometry?
       (enqueue! rebuild-grid!)

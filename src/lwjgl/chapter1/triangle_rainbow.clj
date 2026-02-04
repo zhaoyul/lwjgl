@@ -124,67 +124,67 @@ void main() {
              (invoke [_ _ button action _]
                (when (= button GLFW/GLFW_MOUSE_BUTTON_LEFT)
                  (reset! dragging? (= action GLFW/GLFW_PRESS))))))
-        (GLFW/glfwSetCursorPosCallback
-         window
-         (reify GLFWCursorPosCallbackI
-           (invoke [_ _ xpos ypos]
-             (reset! cursor-x xpos)
-             (when @dragging?
-               (let [nx (- (* 2.0 (/ xpos (double @width))) 1.0)
-                     ny (- 1.0 (* 2.0 (/ ypos (double @height))))]
-                 (reset! offset [(float nx) (float ny)]))))))
-        (GL20/glUseProgram program)
-        (loop []
-           (when-not (GLFW/glfwWindowShouldClose window)
-             (let [now (GLFW/glfwGetTime)
-                   dt (- now @last-time)
-                   _ (reset! last-time now)
-                   speed (* 1.1 dt)
-                   rot-speed (* 2.0 dt)
-                   [ox oy] @offset
-                   ox (cond-> ox
-                        (= GLFW/GLFW_PRESS (GLFW/glfwGetKey window GLFW/GLFW_KEY_A)) (- speed)
-                        (= GLFW/GLFW_PRESS (GLFW/glfwGetKey window GLFW/GLFW_KEY_D)) (+ speed))
-                   oy (cond-> oy
-                        (= GLFW/GLFW_PRESS (GLFW/glfwGetKey window GLFW/GLFW_KEY_W)) (+ speed)
-                        (= GLFW/GLFW_PRESS (GLFW/glfwGetKey window GLFW/GLFW_KEY_S)) (- speed))
-                   new-angle (cond-> @angle
-                               (= GLFW/GLFW_PRESS (GLFW/glfwGetKey window GLFW/GLFW_KEY_Q)) (+ rot-speed)
-                               (= GLFW/GLFW_PRESS (GLFW/glfwGetKey window GLFW/GLFW_KEY_E)) (- rot-speed))
-                   new-mix (cond-> @mix-factor
-                             (= GLFW/GLFW_PRESS (GLFW/glfwGetKey window GLFW/GLFW_KEY_Z)) (- (* 0.6 dt))
-                             (= GLFW/GLFW_PRESS (GLFW/glfwGetKey window GLFW/GLFW_KEY_X)) (+ (* 0.6 dt)))]
-               (when (= GLFW/GLFW_PRESS (GLFW/glfwGetKey window GLFW/GLFW_KEY_R))
-                 (reset! offset [0.0 0.0])
-                 (reset! angle 0.0)
-                 (reset! mix-factor 0.7))
-               (reset! offset [(float (clamp ox -1.0 1.0))
-                               (float (clamp oy -1.0 1.0))])
-               (reset! angle (float new-angle))
-               (reset! mix-factor (float (clamp new-mix 0.0 1.0)))
-               (reset! hue-shift (float (* 6.283 (/ @cursor-x (double @width)))))
-               (GL11/glClearColor 0.04 0.05 0.08 1.0)
-               (GL11/glClear GL11/GL_COLOR_BUFFER_BIT)
-               (when (<= 0 offset-loc)
-                 (let [[tx ty] @offset]
-                   (GL20/glUniform2f offset-loc (float tx) (float ty))))
-               (when (<= 0 angle-loc)
-                 (GL20/glUniform1f angle-loc (float @angle)))
-               (when (<= 0 time-loc)
-                 (GL20/glUniform1f time-loc (float now)))
-               (when (<= 0 hue-loc)
-                 (GL20/glUniform1f hue-loc (float @hue-shift)))
-               (when (<= 0 mix-loc)
-                 (GL20/glUniform1f mix-loc (float @mix-factor)))
-               (GL30/glBindVertexArray vao)
-               (GL11/glDrawArrays GL11/GL_TRIANGLES 0 3)
-               (GLFW/glfwSwapBuffers window)
-               (GLFW/glfwPollEvents)
-               (recur))))
-         (finally
-           (delete-if-positive program #(GL20/glDeleteProgram %))
-           (delete-if-positive vbo #(GL15/glDeleteBuffers %))
-           (delete-if-positive vao #(GL30/glDeleteVertexArrays %)))))
+          (GLFW/glfwSetCursorPosCallback
+           window
+           (reify GLFWCursorPosCallbackI
+             (invoke [_ _ xpos ypos]
+               (reset! cursor-x xpos)
+               (when @dragging?
+                 (let [nx (- (* 2.0 (/ xpos (double @width))) 1.0)
+                       ny (- 1.0 (* 2.0 (/ ypos (double @height))))]
+                   (reset! offset [(float nx) (float ny)]))))))
+          (GL20/glUseProgram program)
+          (loop []
+            (when-not (GLFW/glfwWindowShouldClose window)
+              (let [now (GLFW/glfwGetTime)
+                    dt (- now @last-time)
+                    _ (reset! last-time now)
+                    speed (* 1.1 dt)
+                    rot-speed (* 2.0 dt)
+                    [ox oy] @offset
+                    ox (cond-> ox
+                         (= GLFW/GLFW_PRESS (GLFW/glfwGetKey window GLFW/GLFW_KEY_A)) (- speed)
+                         (= GLFW/GLFW_PRESS (GLFW/glfwGetKey window GLFW/GLFW_KEY_D)) (+ speed))
+                    oy (cond-> oy
+                         (= GLFW/GLFW_PRESS (GLFW/glfwGetKey window GLFW/GLFW_KEY_W)) (+ speed)
+                         (= GLFW/GLFW_PRESS (GLFW/glfwGetKey window GLFW/GLFW_KEY_S)) (- speed))
+                    new-angle (cond-> @angle
+                                (= GLFW/GLFW_PRESS (GLFW/glfwGetKey window GLFW/GLFW_KEY_Q)) (+ rot-speed)
+                                (= GLFW/GLFW_PRESS (GLFW/glfwGetKey window GLFW/GLFW_KEY_E)) (- rot-speed))
+                    new-mix (cond-> @mix-factor
+                              (= GLFW/GLFW_PRESS (GLFW/glfwGetKey window GLFW/GLFW_KEY_Z)) (- (* 0.6 dt))
+                              (= GLFW/GLFW_PRESS (GLFW/glfwGetKey window GLFW/GLFW_KEY_X)) (+ (* 0.6 dt)))]
+                (when (= GLFW/GLFW_PRESS (GLFW/glfwGetKey window GLFW/GLFW_KEY_R))
+                  (reset! offset [0.0 0.0])
+                  (reset! angle 0.0)
+                  (reset! mix-factor 0.7))
+                (reset! offset [(float (clamp ox -1.0 1.0))
+                                (float (clamp oy -1.0 1.0))])
+                (reset! angle (float new-angle))
+                (reset! mix-factor (float (clamp new-mix 0.0 1.0)))
+                (reset! hue-shift (float (* 6.283 (/ @cursor-x (double @width)))))
+                (GL11/glClearColor 0.04 0.05 0.08 1.0)
+                (GL11/glClear GL11/GL_COLOR_BUFFER_BIT)
+                (when (<= 0 offset-loc)
+                  (let [[tx ty] @offset]
+                    (GL20/glUniform2f offset-loc (float tx) (float ty))))
+                (when (<= 0 angle-loc)
+                  (GL20/glUniform1f angle-loc (float @angle)))
+                (when (<= 0 time-loc)
+                  (GL20/glUniform1f time-loc (float now)))
+                (when (<= 0 hue-loc)
+                  (GL20/glUniform1f hue-loc (float @hue-shift)))
+                (when (<= 0 mix-loc)
+                  (GL20/glUniform1f mix-loc (float @mix-factor)))
+                (GL30/glBindVertexArray vao)
+                (GL11/glDrawArrays GL11/GL_TRIANGLES 0 3)
+                (GLFW/glfwSwapBuffers window)
+                (GLFW/glfwPollEvents)
+                (recur))))
+          (finally
+            (delete-if-positive program #(GL20/glDeleteProgram %))
+            (delete-if-positive vbo #(GL15/glDeleteBuffers %))
+            (delete-if-positive vao #(GL30/glDeleteVertexArrays %)))))
       (finally
         (when (pos? window) (GLFW/glfwDestroyWindow window))
         (GLFW/glfwTerminate)

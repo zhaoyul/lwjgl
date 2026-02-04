@@ -1051,10 +1051,10 @@
         indices (transient [])]
     (dotimes [i (inc segments)]
       (let [t (/ (double i) segments)
-           x (- (* t length) (* 0.5 length))
-           phase (* 2.0 Math/PI freq t)
-           y (* amp (Math/sin phase))
-           z (* (* 0.5 amp) (Math/cos phase))
+            x (- (* t length) (* 0.5 length))
+            phase (* 2.0 Math/PI freq t)
+            y (* amp (Math/sin phase))
+            z (* (* 0.5 amp) (Math/cos phase))
             taper (if (nil? taper-override)
                     (+ 0.85 (* 0.25 (Math/sin (* 2.0 Math/PI t))))
                     (double taper-override))
