@@ -16,6 +16,34 @@
   [r g b]
   [(float (clamp01 r)) (float (clamp01 g)) (float (clamp01 b))])
 
+(def ^:private rainbow-stops
+  [[1.0 0.0 0.0]
+   [1.0 0.6 0.0]
+   [1.0 1.0 0.0]
+   [0.0 1.0 0.0]
+   [0.0 1.0 1.0]
+   [0.0 0.0 1.0]
+   [0.5 0.0 1.0]])
+
+(defn rainbow-color
+  "根据输入 0-1 值返回彩虹渐变颜色。"
+  [t]
+  (let [t (mod (double t) 1.0)
+        stops rainbow-stops
+        max-idx (dec (count stops))
+        scaled (* t max-idx)
+        idx (int (Math/floor scaled))
+        frac (clamp01 (- scaled idx))
+        idx (min idx max-idx)
+        idx-next (min (inc idx) max-idx)
+        c1 (nth stops idx)
+        c2 (nth stops idx-next)
+        mix (fn [a b]
+              (+ a (* frac (- b a))))]
+    (color3 (mix (nth c1 0) (nth c2 0))
+            (mix (nth c1 1) (nth c2 1))
+            (mix (nth c1 2) (nth c2 2)))))
+
 (defn- ensure-vec3
   "保证返回长度为 3 的向量，缺省值自动补齐。"
   [v default]

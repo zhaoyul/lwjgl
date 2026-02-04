@@ -313,6 +313,7 @@ void main() {
          set-sprite-style!
          set-mesh!
          set-mesh-style!
+         set-wireframe-overlay!
          set-grid-style!
          set-line-segments!
          clear-line-segments!
@@ -1409,6 +1410,8 @@ void main() {
    {:scene :isosurface-particles :duration 8.0}
    {:scene :spring :duration 8.0}
    {:scene :spring-isosurface :duration 8.0}
+   {:scene :sdf-demo :duration 10.0}
+   {:scene :sweep-live :duration 10.0}
    {:scene :ecosystem :duration 10.0}])
 
 (defn start-demo!

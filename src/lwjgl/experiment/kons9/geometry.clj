@@ -1037,16 +1037,8 @@
              [6 7 9]]}))
 
 (defn sweep-mesh
-  "生成沿 X 轴扫掠的管状网格. 返回 {:vertices float-array :indices int-array}.
-  参数:
-    :segments  路径分段
-    :ring      环形分段
-    :length    路径长度
-    :radius    基础半径
-    :amp       路径摆动幅度
-    :freq      摆动频率
-    :twist     扭转角度(度)"
-  [& {:keys [segments ring length radius amp freq twist]
+  "生成沿 X 轴扫掠的管状网格. 可通过 :taper 自定义截面缩放."
+  [& {:keys [segments ring length radius amp freq twist taper-override]
       :or {segments 80 ring 16 length 3.0 radius 0.25 amp 0.35 freq 1.5 twist 0.0}}]
   (let [segments (max 3 (int segments))
         ring (max 6 (int ring))
@@ -1059,11 +1051,13 @@
         indices (transient [])]
     (dotimes [i (inc segments)]
       (let [t (/ (double i) segments)
-            x (- (* t length) (* 0.5 length))
-            phase (* 2.0 Math/PI freq t)
-            y (* amp (Math/sin phase))
-            z (* (* 0.5 amp) (Math/cos phase))
-            taper (+ 0.85 (* 0.25 (Math/sin (* 2.0 Math/PI t))))
+           x (- (* t length) (* 0.5 length))
+           phase (* 2.0 Math/PI freq t)
+           y (* amp (Math/sin phase))
+           z (* (* 0.5 amp) (Math/cos phase))
+            taper (if (nil? taper-override)
+                    (+ 0.85 (* 0.25 (Math/sin (* 2.0 Math/PI t))))
+                    (double taper-override))
             r (* radius taper)
             twist-angle (* twist t)]
         (dotimes [j (inc ring)]

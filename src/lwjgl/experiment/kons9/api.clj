@@ -323,6 +323,42 @@
            t 0.0}}]
   (mesh-from-sdf! ksdf/sdf-metaballs {:min min :max max :res res :t t}))
 
+(defn sphere-sdf
+  "返回球体的 SDF 函数."
+  [center radius]
+  (ksdf/sphere-sdf center radius))
+
+(defn box-sdf
+  "返回盒子的 SDF 函数."
+  [center size]
+  (ksdf/box-sdf center size))
+
+(defn torus-sdf
+  "返回圆环的 SDF 函数."
+  [center major minor]
+  (ksdf/torus-sdf center major minor))
+
+(defn sdf-union
+  "将两个 SDF 取并集，可选平滑半径."
+  ([a b] (ksdf/sdf-union a b))
+  ([a b k] (ksdf/sdf-union a b k)))
+
+(defn sdf-intersect
+  "将两个 SDF 取交集，可选平滑半径."
+  ([a b] (ksdf/sdf-intersect a b))
+  ([a b k] (ksdf/sdf-intersect a b k)))
+
+(defn sdf-difference
+  "从 a 中减去 b，可选平滑半径."
+  ([a b] (ksdf/sdf-difference a b))
+  ([a b k] (ksdf/sdf-difference a b k)))
+
+(defn isosurface-from-sdf!
+  "根据 SDF 生成网格并设置."
+  [sdf & {:as opts}]
+  (let [{:keys [vertices indices]} (apply ksdf/isosurface-from-sdf sdf (mapcat identity opts))]
+    (hot/set-mesh! vertices indices)))
+
 (defn isosurface-from-points!
   "从点集生成等值面网格并设置."
   [points & {:as opts}]

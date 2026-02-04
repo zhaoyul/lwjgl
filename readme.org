@@ -198,7 +198,7 @@ Just poking the scene and watching it change in real time.
 
 * Kons-9 展示教程
 ** 运行（带 nREPL）
-- 推荐：=./run.sh hotreload-nrepl=
+1- 推荐：=./run.sh hotreload-nrepl=
 - Intel macOS：=clj -M:natives-intel:hotreload=
 
 ** 快捷键（hotreload 窗口）
@@ -249,10 +249,15 @@ Just poking the scene and watching it change in real time.
   - :particles（粒子点云）
   - :particle-fields（力场粒子 + 精灵 + 轨迹）
   - :sdf（SDF 等值面）
-  - :spring（弹簧网格）
-  - :spring-isosurface（弹簧网格等值面）
-  - :ecosystem（生态系统）
-  - :live（自定义 live 场景）
+- :spring（弹簧网格）
+- :spring-isosurface（弹簧网格等值面）
+- :ecosystem（生态系统）
+- :live（自定义 live 场景）
+
+** 特别演示：SDF 与可调 Sweep Mesh
+- `:sdf-demo`（`(k/scene! :sdf-demo)` 或通过新快捷键 `Y`）实时展示球/盒/圆环 SDF 的布尔组合，Marching Tetrahedra 网格与彩虹折线，同时可以 `hr/pause!` 观察不同阈值下的形变。
+- `:sweep-live`（`(k/scene! :sweep-live)`）演示可调 `:segments`/`:twist`/`:taper` 的管状 UV sweep，配合 `kgeom/spiral-points` 生成的路径与 `k/rainbow-color` 上色粒子，便于解释 presentation 中“参数即刻更新”的体验。
+- 在默认时间线（按 `0`）已有 `:sdf-demo` 和 `:sweep-live`，建议先让时间线跑到 `:sdf-demo`，暂停观察布尔组合过程，再继续到 `:sweep-live` 展示滑动参数并强调精灵/线段的深度排序。
 
 ** 迁移函数可视化速查
 *** 曲线/点云 -> =k/points!=

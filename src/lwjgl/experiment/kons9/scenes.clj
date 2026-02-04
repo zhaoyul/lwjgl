@@ -49,15 +49,18 @@
 (defn- polyline->line-data
   "折线转线段数据。"
   [points color]
-  (let [[r g b] color]
+  (let [[r g b] (->> color
+                     flatten
+                     (map float)
+                     (take 3))]
     (vec
      (mapcat (fn [[a b]]
                (let [[ax ay az] a
                      [bx by bz] b]
                  [(float ax) (float ay) (float az)
-                  (float r) (float g) (float b)
+                  r g b
                   (float bx) (float by) (float bz)
-                  (float r) (float g) (float b)]))
+                  r g b]))
              (partition 2 1 points)))))
 
 (defn- steer
@@ -1204,4 +1207,88 @@
                          :predators predators
                          :t t)))
       :render (fn [ctx _] (default-render ctx))
-      :cleanup (fn [_ _] nil)}}))
+      :cleanup (fn [_ _] nil)}
+
+    :sdf-demo
+    {:init (fn [_]
+             (set-clear-color! [0.01 0.01 0.04 1.0])
+             (set-cubes! [])
+             (clear-point-cloud!)
+             (clear-line-segments!)
+             (clear-sprites!)
+             (clear-mesh!)
+             {:t 0.0 :res 40})
+     :update (fn [{:keys [time]} scene-state]
+               (let [dt (:dt time)
+                     t (+ (:t scene-state) dt)
+                     sphere (ksdf/sphere-sdf [0.0 (* 0.2 (Math/sin (* 0.8 t))) 0.0]
+                                              (+ 0.6 (* 0.2 (Math/abs (Math/sin (* 0.5 t))))))
+                     box (ksdf/box-sdf [(Math/sin (* 0.35 t)) 0.0 (Math/cos (* 0.4 t))]
+                                        [1.2 1.0 1.2])
+                     torus (ksdf/torus-sdf [0.0 0.3 0.0] 0.7 0.18)
+                     blend (+ 0.1 (* 0.5 (Math/abs (Math/sin (* 0.4 t)))))
+                     union (ksdf/sdf-union sphere torus blend)
+                     carved (ksdf/sdf-difference union box (* 0.25 (Math/abs (Math/cos (* 0.2 t)))))
+                     {:keys [vertices indices]}
+                     (ksdf/marching-tetrahedra carved
+                                               {:min [-1.5 -1.1 -1.5]
+                                                :max [1.5 1.2 1.5]
+                                                :res (:res scene-state)
+                                                :t t})
+                     circle (kgeom/circle-points 1.9 64)
+                     line-data (polyline->line-data circle [0.4 0.8 1.0])
+                     colors (mapv (fn [[_ y _]]
+                                    (kmath/rainbow-color (* 0.25 (+ y 1.0))))
+                                  circle)]
+                 (set-mesh! vertices indices)
+                 (set-mesh-style! {:pos [0.0 0.0 0.0]
+                                   :rot [0.0 0.0 0.0]
+                                   :scale [1.0 1.0 1.0]
+                                   :color [0.35 0.75 0.95]})
+                 (set-line-segments! line-data)
+                 (set-point-cloud! circle :colors colors)
+                 (assoc scene-state :t t)))
+     :render (fn [ctx _] (default-render ctx))
+     :cleanup (fn [_ _]
+                (clear-line-segments!)
+                (clear-point-cloud!))}
+
+    :sweep-live
+    {:init (fn [_]
+             (set-clear-color! [0.02 0.03 0.06 1.0])
+             (set-cubes! [])
+             (clear-sprites!)
+             (clear-line-segments!)
+             (clear-mesh!)
+             (set-mesh-style! {:color [0.65 0.7 0.9]})
+             {:t 0.0})
+     :update (fn [{:keys [time]} scene-state]
+               (let [dt (:dt time)
+                     t (+ (:t scene-state) dt)
+                     diameter (+ 0.8 (* 0.4 (Math/sin (* 0.6 t))))
+                     path (kgeom/spiral-points diameter (+ diameter 1.0) 4.5 4 140)
+                     segments (max 24 (int (+ 32 (* 16 (Math/abs (Math/sin (* 0.4 t)))))))
+                     twist (* 180 (Math/sin (* 0.45 t)))
+                     taper (max 0.5 (+ 0.5 (* 0.3 (Math/sin (* 0.3 t)))))
+                     {:keys [vertices indices]} (kgeom/sweep-mesh
+                                                 :segments segments
+                                                 :ring 18
+                                                 :length 4.8
+                                                 :radius 0.18
+                                                 :amp 0.45
+                                                 :freq 1.1
+                                                 :twist twist
+                                                 :taper taper)
+                     line-data (polyline->line-data path [0.9 0.6 0.3])
+                     colors (let [n (count path)]
+                              (mapv (fn [idx]
+                                      (kmath/rainbow-color (/ idx (double (max 1 (dec n))))))
+                                    (range n)))]
+                 (set-mesh! vertices indices)
+                 (set-line-segments! line-data)
+                 (set-sprites! path :colors colors :sizes (vec (repeat (count path) 10.0)))
+                 (assoc scene-state :t t)))
+     :render (fn [ctx _] (default-render ctx))
+     :cleanup (fn [_ _]
+                (clear-line-segments!)
+                (clear-sprites!))}}))

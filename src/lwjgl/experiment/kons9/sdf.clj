@@ -129,6 +129,90 @@
   (let [field (apply field-from-curves curves (mapcat identity opts))]
     (isosurface-from-field field opts)))
 
+(defn sphere-sdf
+  "生成以 center 为中心、radius 为半径的 SDF。"
+  [center radius]
+  (let [[cx cy cz] (mapv double center)
+        r (double radius)]
+    (fn [x y z _]
+      (sdf-sphere x y z [cx cy cz] r))))
+
+(defn box-sdf
+  "生成轴对齐尺寸为 size 的盒子 SDF."
+  [center size]
+  (let [[cx cy cz] (mapv double center)
+        half (mapv #(Math/abs (/ (double %) 2.0)) size)]
+    (fn [x y z _]
+      (let [px (- x cx)
+            py (- y cy)
+            pz (- z cz)
+            qx (- (Math/abs px) (first half))
+            qy (- (Math/abs py) (second half))
+            qz (- (Math/abs pz) (nth half 2))
+            out-x (max qx 0.0)
+            out-y (max qy 0.0)
+            out-z (max qz 0.0)
+            outside (Math/sqrt (+ (* out-x out-x)
+                                  (* out-y out-y)
+                                  (* out-z out-z)))
+            inside (min (max qx (max qy qz)) 0.0)]
+        (+ outside inside)))))
+
+(defn torus-sdf
+  "生成以 center 为中心的圆环 SDF。major 为主半径，minor 为截面半径。"
+  [center major minor]
+  (let [[cx cy cz] (mapv double center)
+        r1 (double major)
+        r2 (double minor)]
+    (fn [x y z _]
+      (let [px (- x cx)
+            py (- y cy)
+            pz (- z cz)
+            qx (Math/sqrt (+ (* px px) (* pz pz)))
+            dx (- qx r1)]
+        (- (Math/sqrt (+ (* dx dx) (* py py)))
+           r2)))))
+
+(defn translate-sdf
+  "将 SDF 沿 offset 平移."
+  [offset sdf]
+  (let [[ox oy oz] (mapv double offset)]
+    (fn [x y z t]
+      (sdf (- x ox) (- y oy) (- z oz) t))))
+
+(defn sdf-union
+  "返回两个 SDF 的并集, 可选平滑半径."
+  ([a b] (sdf-union a b 0.0))
+  ([a b ^double k]
+   (if (<= k 0.0)
+     (fn [x y z t]
+       (min (a x y z t) (b x y z t)))
+     (fn [x y z t]
+       (smooth-min (a x y z t) (b x y z t) k)))))
+
+(defn sdf-intersect
+  "返回两个 SDF 的交集, 可选平滑半径."
+  ([a b] (sdf-intersect a b 0.0))
+  ([a b ^double k]
+   (fn [x y z t]
+     (- (smooth-min (- (a x y z t)) (- (b x y z t)) k)))))
+
+(defn sdf-difference
+  "从 a 中减去 b, 可选平滑半径."
+  ([a b] (sdf-difference a b 0.0))
+  ([a b ^double k]
+   (fn [x y z t]
+     (- (smooth-min (- (a x y z t)) (b x y z t) k)))))
+
+(defn isosurface-from-sdf
+  "直接从 SDF 生成等值面网格."
+  [sdf & {:keys [min max res t]
+          :or {min [-1.4 -1.1 -1.1]
+               max [1.4 1.1 1.1]
+               res 40
+               t 0.0}}]
+  (marching-tetrahedra sdf {:min min :max max :res res :t t}))
+
 (def ^:private tetra-indices
   [[0 5 1 6]
    [0 1 2 6]
