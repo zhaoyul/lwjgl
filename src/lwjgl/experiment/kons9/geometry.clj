@@ -20,6 +20,84 @@
     0.0
     (/ (double i) (double n))))
 
+(defn- smoothstep
+  "平滑插值."
+  [t]
+  (let [t (double t)]
+    (* t t (- 3.0 (* 2.0 t)))))
+
+(defn- hash2
+  "二维哈希噪声."
+  [x y]
+  (let [v (+ (* 127.1 x) (* 311.7 y))]
+    (- (* 2.0 (- (mod (* (Math/sin v) 43758.5453) 1.0) 0.5)))))
+
+(defn- noise2
+  "二维平滑噪声."
+  [x y]
+  (let [xi (Math/floor (double x))
+        yi (Math/floor (double y))
+        xf (- (double x) xi)
+        yf (- (double y) yi)
+        u (smoothstep xf)
+        v (smoothstep yf)
+        v00 (hash2 xi yi)
+        v10 (hash2 (inc xi) yi)
+        v01 (hash2 xi (inc yi))
+        v11 (hash2 (inc xi) (inc yi))
+        x1 (lerp u v00 v10)
+        x2 (lerp u v01 v11)]
+    (lerp v x1 x2)))
+
+(defn- fbm2
+  "二维分形噪声."
+  [x y octaves lacunarity gain]
+  (loop [i 0
+         amp 1.0
+         freq 1.0
+         sum 0.0]
+    (if (>= i octaves)
+      sum
+      (recur (inc i)
+             (* amp gain)
+             (* freq lacunarity)
+             (+ sum (* amp (noise2 (* x freq) (* y freq))))))))
+
+(defn- vnormalize
+  "向量归一化."
+  [[x y z]]
+  (let [len (Math/sqrt (+ (* x x) (* y y) (* z z)))]
+    (if (<= len 1.0e-6)
+      [0.0 1.0 0.0]
+      [(/ x len) (/ y len) (/ z len)])))
+
+(defn- vadd
+  "向量相加."
+  [[ax ay az] [bx by bz]]
+  [(+ ax bx) (+ ay by) (+ az bz)])
+
+(defn- vsub
+  "向量相减."
+  [[ax ay az] [bx by bz]]
+  [(- ax bx) (- ay by) (- az bz)])
+
+(defn- vscale
+  "向量缩放."
+  [[x y z] s]
+  [(* x s) (* y s) (* z s)])
+
+(defn- vcross
+  "向量叉乘."
+  [[ax ay az] [bx by bz]]
+  [(- (* ay bz) (* az by))
+   (- (* az bx) (* ax bz))
+   (- (* ax by) (* ay bx))])
+
+(defn- vlen
+  "向量长度."
+  [[x y z]]
+  (Math/sqrt (+ (* x x) (* y y) (* z z))))
+
 (defn- gcd
   "最大公约数."
   [a b]
@@ -237,6 +315,115 @@
          [(float (lerp fx lx hx))
           (float (lerp fy ly hy))
           (float (lerp fz lz hz))])))))
+
+(defn heightfield-height-fn
+  "生成高度场高度函数."
+  [& {:keys [amp noise-scale octaves lacunarity gain]
+      :or {amp 0.35 noise-scale 0.6 octaves 4 lacunarity 2.0 gain 0.5}}]
+  (let [amp (double amp)
+        noise-scale (double noise-scale)
+        octaves (int octaves)
+        lacunarity (double lacunarity)
+        gain (double gain)]
+    (fn [x z]
+      (* amp
+         (fbm2 (* x noise-scale)
+               (* z noise-scale)
+               octaves lacunarity gain)))))
+
+(defn heightfield-points
+  "生成高度场表面点云."
+  [width depth seg-x seg-z & {:keys [height-fn amp noise-scale octaves lacunarity gain]
+                              :or {amp 0.35 noise-scale 0.6 octaves 4 lacunarity 2.0 gain 0.5}}]
+  (let [seg-x (max 1 (int seg-x))
+        seg-z (max 1 (int seg-z))
+        half-w (/ (double width) 2.0)
+        half-d (/ (double depth) 2.0)
+        height-fn (or height-fn
+                      (heightfield-height-fn
+                       :amp amp
+                       :noise-scale noise-scale
+                       :octaves octaves
+                       :lacunarity lacunarity
+                       :gain gain))]
+    (vec
+     (for [iz (range (inc seg-z))
+           ix (range (inc seg-x))]
+       (let [fx (/ (double ix) seg-x)
+             fz (/ (double iz) seg-z)
+             x (lerp fx (- half-w) half-w)
+             z (lerp fz (- half-d) half-d)
+             y (height-fn x z)]
+         [(float x) (float y) (float z)])))))
+
+(defn heightfield-mesh
+  "生成高度场网格, 返回 {:vertices :indices :heights}."
+  [width depth seg-x seg-z & {:keys [height-fn amp noise-scale octaves lacunarity gain]
+                              :or {amp 0.35 noise-scale 0.6 octaves 4 lacunarity 2.0 gain 0.5}}]
+  (let [seg-x (max 1 (int seg-x))
+        seg-z (max 1 (int seg-z))
+        nx (inc seg-x)
+        nz (inc seg-z)
+        half-w (/ (double width) 2.0)
+        half-d (/ (double depth) 2.0)
+        height-fn (or height-fn
+                      (heightfield-height-fn
+                       :amp amp
+                       :noise-scale noise-scale
+                       :octaves octaves
+                       :lacunarity lacunarity
+                       :gain gain))
+        heights (vec
+                 (for [iz (range nz)
+                       ix (range nx)]
+                   (let [fx (/ (double ix) seg-x)
+                         fz (/ (double iz) seg-z)
+                         x (lerp fx (- half-w) half-w)
+                         z (lerp fz (- half-d) half-d)]
+                     (height-fn x z))))
+        height-at (fn [ix iz]
+                    (let [ix (min (max ix 0) (dec nx))
+                          iz (min (max iz 0) (dec nz))]
+                      (nth heights (+ ix (* iz nx)))))
+        vertices (transient [])
+        indices (transient [])]
+    (dotimes [iz nz]
+      (dotimes [ix nx]
+        (let [fx (/ (double ix) seg-x)
+              fz (/ (double iz) seg-z)
+              x (lerp fx (- half-w) half-w)
+              z (lerp fz (- half-d) half-d)
+              y (height-at ix iz)
+              hL (height-at (dec ix) iz)
+              hR (height-at (inc ix) iz)
+              hD (height-at ix (dec iz))
+              hU (height-at ix (inc iz))
+              nxv (- hL hR)
+              nzv (- hD hU)
+              [nxv nyv nzv] (vnormalize [nxv 2.0 nzv])]
+          (conj! vertices (float x))
+          (conj! vertices (float y))
+          (conj! vertices (float z))
+          (conj! vertices (float nxv))
+          (conj! vertices (float nyv))
+          (conj! vertices (float nzv)))))
+    (dotimes [iz seg-z]
+      (dotimes [ix seg-x]
+        (let [row-a (* iz nx)
+              row-b (* (inc iz) nx)
+              a (+ row-a ix)
+              b (+ row-b ix)
+              c (+ row-b (inc ix))
+              d (+ row-a (inc ix))]
+          (conj! indices a)
+          (conj! indices b)
+          (conj! indices d)
+          (conj! indices b)
+          (conj! indices c)
+          (conj! indices d))))
+    {:vertices (float-array (persistent! vertices))
+     :indices (int-array (persistent! indices))
+     :heights heights}))
 
 (defn bezier-curve-points
   "生成三次贝塞尔曲线点."
@@ -899,3 +1086,86 @@
           (conj! indices d))))
     {:vertices (float-array (persistent! vertices))
      :indices (int-array (persistent! indices))}))
+
+(defn- tube-mesh-data
+  "根据路径生成管状网格数据."
+  [points ring radius]
+  (let [points (vec points)
+        n (count points)
+        ring (max 3 (int ring))
+        radius (double radius)
+        vertices (transient [])
+        indices (transient [])]
+    (when (>= n 2)
+      (dotimes [i n]
+        (let [p (nth points i)
+              p-prev (nth points (max 0 (dec i)))
+              p-next (nth points (min (dec n) (inc i)))
+              forward (vnormalize (vsub p-next p-prev))
+              up0 [0.0 1.0 0.0]
+              right0 (vcross forward up0)
+              right0 (if (<= (vlen right0) 1.0e-6)
+                       (vcross forward [1.0 0.0 0.0])
+                       right0)
+              right (vnormalize right0)
+              up (vnormalize (vcross right forward))
+              [px py pz] p]
+          (dotimes [j (inc ring)]
+            (let [u (/ (double j) ring)
+                  theta (* 2.0 Math/PI u)
+                  cy (Math/cos theta)
+                  sy (Math/sin theta)
+                  offset (vadd (vscale right cy) (vscale up sy))
+                  [ox oy oz] offset
+                  nxv ox
+                  nyv oy
+                  nzv oz
+                  vx (+ px (* radius ox))
+                  vy (+ py (* radius oy))
+                  vz (+ pz (* radius oz))]
+              (conj! vertices (float vx))
+              (conj! vertices (float vy))
+              (conj! vertices (float vz))
+              (conj! vertices (float nxv))
+              (conj! vertices (float nyv))
+              (conj! vertices (float nzv))))))
+      (dotimes [i (dec n)]
+        (dotimes [j ring]
+          (let [row-a (* i (inc ring))
+                row-b (* (inc i) (inc ring))
+                a (+ row-a j)
+                b (+ row-b j)
+                c (+ row-b (inc j))
+                d (+ row-a (inc j))]
+            (conj! indices a)
+            (conj! indices b)
+            (conj! indices d)
+            (conj! indices b)
+            (conj! indices c)
+            (conj! indices d)))))
+    {:vertices (persistent! vertices)
+     :indices (persistent! indices)
+     :vertex-count (* n (inc ring))}))
+
+(defn tube-mesh
+  "根据路径生成管状网格."
+  [points & {:keys [ring radius] :or {ring 10 radius 0.08}}]
+  (let [{:keys [vertices indices]} (tube-mesh-data points ring radius)]
+    {:vertices (float-array vertices)
+     :indices (int-array indices)}))
+
+(defn tube-meshes
+  "根据多条路径生成合并的管状网格."
+  [paths & {:keys [ring radius] :or {ring 10 radius 0.08}}]
+  (let [verts (transient [])
+        inds (transient [])
+        offset (atom 0)]
+    (doseq [path paths]
+      (let [{:keys [vertices indices vertex-count]} (tube-mesh-data path ring radius)
+            base @offset]
+        (when (seq indices)
+          (doseq [v vertices] (conj! verts (float v)))
+          (doseq [i indices] (conj! inds (+ base i)))
+          (swap! offset + vertex-count))))
+    {:vertices (float-array (persistent! verts))
+     :indices (int-array (persistent! inds))}))

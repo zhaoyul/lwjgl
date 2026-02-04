@@ -31,6 +31,21 @@
       v
       (vscale v (/ max-len len)))))
 
+(defn- clamp-range
+  "限制数值范围."
+  [v lo hi]
+  (max lo (min hi v)))
+
+(defn- wrap-range
+  "按范围循环包裹."
+  [v lo hi]
+  (let [span (- hi lo)]
+    (if (<= span 0.0)
+      lo
+      (let [v (- v lo)
+            w (mod v span)]
+        (+ lo w)))))
+
 (defn- rand-range
   [a b]
   (math/rand-range a b))
@@ -155,6 +170,51 @@
                   :pos pos
                   :vel vel
                   :age (+ age dt)
+                  :trail trail))))
+     particles)))
+
+(defn update-particles-on-heightfield
+  "在高度场表面更新粒子，返回新的粒子集合。"
+  [particles dt {:keys [height-fn
+                        bounds-lo bounds-hi
+                        speed noise-scale drag max-speed
+                        trail-length wrap? height-offset jitter respawn-fn]
+                 :or {speed 0.6 noise-scale 0.6 drag 0.03 max-speed 1.4
+                      trail-length 18 wrap? true height-offset 0.03 jitter 0.0}}]
+  (let [height-fn (or height-fn (fn [_ _] 0.0))
+        [lx _ lz] (or bounds-lo [-2.0 0.0 -2.0])
+        [hx _ hz] (or bounds-hi [2.0 0.0 2.0])
+        dt (double dt)]
+    (mapv
+     (fn [{:keys [pos vel life age] :as p}]
+       (if (and life (>= (double age) (double life)))
+         (if respawn-fn (respawn-fn p) p)
+         (let [[x _ z] (or pos [0.0 0.0 0.0])
+               vel (or vel [0.0 0.0 0.0])
+               sx (* (double noise-scale) x)
+               sz (* (double noise-scale) z)
+               dx (noise3 (+ sx 3.1) 0.0 sz)
+               dz (noise3 sx 0.0 (+ sz 7.2))
+               dir (vnormalize [dx 0.0 dz])
+               vel (vadd vel (vscale dir (* (double speed) dt)))
+               vel (vadd vel (rand-vec (double jitter)))
+               vel (vscale vel (- 1.0 (* (double drag) dt)))
+               vel (vlimit vel (double max-speed))
+               [vx _ vz] vel
+               pos (vadd [x 0.0 z] (vscale [vx 0.0 vz] dt))
+               x (if wrap?
+                   (wrap-range (first pos) lx hx)
+                   (clamp-range (first pos) lx hx))
+               z (if wrap?
+                   (wrap-range (nth pos 2) lz hz)
+                   (clamp-range (nth pos 2) lz hz))
+               y (+ (double height-offset) (double (height-fn x z)))
+               pos [x y z]
+               trail (conj (vec (take-last (max 0 (dec trail-length)) (:trail p))) pos)]
+           (assoc p
+                  :pos pos
+                  :vel [vx 0.0 vz]
+                  :age (+ (double (or age 0.0)) dt)
                   :trail trail))))
      particles)))
 

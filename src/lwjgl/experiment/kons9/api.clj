@@ -320,10 +320,41 @@
   (let [{:keys [vertices indices]} (apply kgeom/sweep-mesh opts)]
     (hot/set-mesh! vertices indices)))
 
+(defn heightfield-points
+  "生成高度场表面点云."
+  [width depth seg-x seg-z & {:as opts}]
+  (apply kgeom/heightfield-points width depth seg-x seg-z (mapcat identity opts)))
+
+(defn heightfield-height-fn
+  "生成高度场高度函数."
+  [& {:as opts}]
+  (apply kgeom/heightfield-height-fn (mapcat identity opts)))
+
+(defn heightfield-mesh
+  "生成高度场网格."
+  [width depth seg-x seg-z & {:as opts}]
+  (apply kgeom/heightfield-mesh width depth seg-x seg-z (mapcat identity opts)))
+
+(defn heightfield!
+  "生成高度场网格并设置."
+  [width depth seg-x seg-z & {:as opts}]
+  (let [{:keys [vertices indices]} (apply kgeom/heightfield-mesh width depth seg-x seg-z (mapcat identity opts))]
+    (hot/set-mesh! vertices indices)))
+
 (defn cube-node
   "创建立方体节点."
   [& {:as opts}]
   (apply kdsl/cube (mapcat identity opts)))
+
+(defn tube-mesh
+  "根据路径生成管状网格."
+  [points & {:as opts}]
+  (apply kgeom/tube-mesh points (mapcat identity opts)))
+
+(defn tube-meshes
+  "根据多条路径生成合并的管状网格."
+  [paths & {:as opts}]
+  (apply kgeom/tube-meshes paths (mapcat identity opts)))
 
 ;; ---- 粒子系统 --------------------------------------------------------------
 
@@ -358,6 +389,11 @@
   "更新粒子集合."
   [particles dt opts]
   (kpart/update-particles-advanced particles dt opts))
+
+(defn update-particles-on-heightfield
+  "在高度场表面更新粒子."
+  [particles dt opts]
+  (kpart/update-particles-on-heightfield particles dt opts))
 
 (defn particles->sprites
   "将粒子转换为精灵数据."

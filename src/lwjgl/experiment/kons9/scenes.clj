@@ -38,6 +38,7 @@
                 clear-point-cloud!
                 set-sprites!
                 clear-sprites!
+                set-sprite-style!
                 upload-point-cloud!
                 set-mesh!
                 clear-mesh!
@@ -142,6 +143,141 @@
       :render (fn [ctx _] (default-render ctx))
       :cleanup (fn [_ _] nil)}
 
+     :heightfield
+     {:init (fn [_]
+              (set-clear-color! [0.02 0.03 0.05 1.0])
+              (set-cubes! [])
+              (clear-point-cloud!)
+              (clear-rig!)
+              (clear-sprites!)
+              (set-mesh-style! {:pos [0.0 -0.4 0.0]
+                                :rot [0.0 0.0 0.0]
+                                :scale [1.0 1.0 1.0]
+                                :color [0.55 0.75 0.6]})
+              (let [{:keys [vertices indices]}
+                    (kgeom/heightfield-mesh 4.0 4.0 80 80 :amp 0.45 :noise-scale 0.8)]
+                (set-mesh! vertices indices))
+              nil)
+      :update (fn [_ scene-state] scene-state)
+      :render (fn [ctx _] (default-render ctx))
+      :cleanup (fn [_ _] nil)}
+
+     :heightfield-particles
+     {:init (fn [_]
+              (set-clear-color! [0.02 0.03 0.05 1.0])
+              (set-cubes! [])
+              (clear-point-cloud!)
+              (clear-line-segments!)
+              (clear-rig!)
+              (set-mesh-style! {:pos [0.0 -0.4 0.0]
+                                :rot [0.0 0.0 0.0]
+                                :scale [1.0 1.0 1.0]
+                                :color [0.55 0.75 0.6]})
+              (let [height-fn (kgeom/heightfield-height-fn :amp 0.45 :noise-scale 0.8)
+                    bounds-lo [-2.0 0.0 -2.0]
+                    bounds-hi [2.0 0.0 2.0]
+                    {:keys [vertices indices]}
+                    (kgeom/heightfield-mesh 4.0 4.0 80 80 :height-fn height-fn)
+                    spawn (fn [& _]
+                            (let [x (kmath/rand-range (first bounds-lo) (first bounds-hi))
+                                  z (kmath/rand-range (nth bounds-lo 2) (nth bounds-hi 2))
+                                  y (height-fn x z)
+                                  size (kmath/rand-range 8.0 14.0)
+                                  life (kmath/rand-range 2.5 5.0)
+                                  color [(float (kmath/clamp01 (+ 0.2 (* 0.6 (rand)))))
+                                         (float (kmath/clamp01 (+ 0.5 (* 0.4 (rand)))))
+                                         (float (kmath/clamp01 (+ 0.2 (* 0.5 (rand)))))
+                                         0.85]]
+                              (kpart/make-particle {:pos [x (+ y 0.03) z]
+                                                    :vel [0.0 0.0 0.0]
+                                                    :life life
+                                                    :color color
+                                                    :size size})))
+                    particles (vec (repeatedly 220 spawn))]
+                (set-mesh! vertices indices)
+                (set-sprite-style! {:size 12.0 :alpha 0.9 :softness 0.6})
+                {:height-fn height-fn
+                 :bounds-lo bounds-lo
+                 :bounds-hi bounds-hi
+                 :respawn spawn
+                 :particles particles}))
+      :update (fn [{:keys [time]} scene-state]
+                (let [dt (:dt time)
+                      particles (kpart/update-particles-on-heightfield
+                                 (:particles scene-state)
+                                 dt
+                                 {:height-fn (:height-fn scene-state)
+                                  :bounds-lo (:bounds-lo scene-state)
+                                  :bounds-hi (:bounds-hi scene-state)
+                                  :speed 0.7
+                                  :noise-scale 0.7
+                                  :trail-length 16
+                                  :respawn-fn (:respawn scene-state)})
+                      {:keys [points colors sizes]} (kpart/particles->sprites particles)
+                      line-data (kpart/particles->trails particles)]
+                  (set-sprites! points :colors colors :sizes sizes)
+                  (set-line-segments! line-data)
+                  (assoc scene-state :particles particles)))
+      :render (fn [ctx _] (default-render ctx))
+      :cleanup (fn [_ _] (clear-line-segments!))}
+
+     :heightfield-sweep
+     {:init (fn [_]
+              (set-clear-color! [0.02 0.03 0.05 1.0])
+              (set-cubes! [])
+              (clear-sprites!)
+              (clear-line-segments!)
+              (clear-rig!)
+              (let [height-fn (kgeom/heightfield-height-fn :amp 0.45 :noise-scale 0.8)
+                    bounds-lo [-2.0 0.0 -2.0]
+                    bounds-hi [2.0 0.0 2.0]
+                    points (kgeom/heightfield-points 4.0 4.0 32 32 :height-fn height-fn)
+                    colors (mapv (fn [[_ y _]] (kmath/color3 (+ 0.2 (* 0.3 (rand))) (+ 0.5 (* 0.4 (max 0.0 y))) 0.6))
+                                 points)
+                    spawn (fn [& _]
+                            (let [x (kmath/rand-range (first bounds-lo) (first bounds-hi))
+                                  z (kmath/rand-range (nth bounds-lo 2) (nth bounds-hi 2))
+                                  y (height-fn x z)
+                                  size (kmath/rand-range 8.0 12.0)
+                                  life (kmath/rand-range 2.5 5.0)]
+                              (kpart/make-particle {:pos [x (+ y 0.02) z]
+                                                    :vel [0.0 0.0 0.0]
+                                                    :life life
+                                                    :color [0.6 0.9 0.8 0.9]
+                                                    :size size})))
+                    particles (vec (repeatedly 180 spawn))]
+                (set-point-cloud! points :colors colors)
+                (set-mesh-style! {:pos [0.0 0.0 0.0]
+                                  :rot [0.0 0.0 0.0]
+                                  :scale [1.0 1.0 1.0]
+                                  :color [0.7 0.85 0.8]})
+                {:height-fn height-fn
+                 :bounds-lo bounds-lo
+                 :bounds-hi bounds-hi
+                 :respawn spawn
+                 :particles particles}))
+      :update (fn [{:keys [time]} scene-state]
+                (let [dt (:dt time)
+                      particles (kpart/update-particles-on-heightfield
+                                 (:particles scene-state)
+                                 dt
+                                 {:height-fn (:height-fn scene-state)
+                                  :bounds-lo (:bounds-lo scene-state)
+                                  :bounds-hi (:bounds-hi scene-state)
+                                  :speed 0.75
+                                  :noise-scale 0.65
+                                  :trail-length 24
+                                  :respawn-fn (:respawn scene-state)})
+                      paths (->> particles
+                                 (map :trail)
+                                 (filter #(>= (count %) 6))
+                                 (take 8))
+                      {:keys [vertices indices]} (kgeom/tube-meshes paths :ring 10 :radius 0.05)]
+                  (set-mesh! vertices indices)
+                  (assoc scene-state :particles particles)))
+      :render (fn [ctx _] (default-render ctx))
+      :cleanup (fn [_ _] nil)}
+
      :particles
      {:init (fn [_]
               (set-clear-color! [0.01 0.01 0.04 1.0])
@@ -205,7 +341,7 @@
                   (set-line-segments! line-data)
                   (assoc scene-state :t t :particles particles)))
       :render (fn [ctx _] (default-render ctx))
-      :cleanup (fn [_ _] (clear-line-segments!))})))
+      :cleanup (fn [_ _] (clear-line-segments!))}
 
      :sdf
      {:init (fn [_]

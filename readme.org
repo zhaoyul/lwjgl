@@ -202,7 +202,8 @@ Just poking the scene and watching it change in real time.
 - Intel macOS：=clj -M:natives-intel:hotreload=
 
 ** 快捷键（hotreload 窗口）
-- 1-7 切换内置场景
+- 1-9 切换内置场景
+- H 切换高度场扫掠
 - 0 启动默认演示时间线
 - P 暂停/恢复
 - M 切换手动播放模式（按住空格播放）
@@ -229,6 +230,9 @@ Just poking the scene and watching it change in real time.
   - :geometry（基础几何/点云/球体）
   - :rig（层级结构 + 关节动画）
   - :sweep（扫掠网格）
+  - :heightfield（高度场/地形）
+  - :heightfield-particles（高度场粒子）
+  - :heightfield-sweep（高度场 + 粒子轨迹扫掠）
   - :particles（粒子点云）
   - :particle-fields（力场粒子 + 精灵 + 轨迹）
   - :sdf（SDF 等值面）
@@ -306,6 +310,30 @@ Just poking the scene and watching it change in real time.
   (k/mesh! vertices indices))
 
 (let [{:keys [vertices indices]} (k/cube-mesh 2.0)]
+  (k/mesh! vertices indices))
+#+end_src
+
+*** 高度场/地形
+#+begin_src clojure
+;; 高度场点云
+(k/points! (k/heightfield-points 4.0 4.0 32 32 :amp 0.4 :noise-scale 0.7))
+
+;; 高度场网格
+(let [{:keys [vertices indices]} (k/heightfield-mesh 4.0 4.0 80 80 :amp 0.45 :noise-scale 0.8)]
+  (k/mesh! vertices indices))
+#+end_src
+
+*** 高度场粒子与扫掠
+#+begin_src clojure
+;; 高度场粒子场景
+(k/scene! :heightfield-particles)
+
+;; 高度场扫掠场景
+(k/scene! :heightfield-sweep)
+
+;; 手动管状扫掠
+(let [path (k/spiral-curve 0.2 2.2 -0.8 4 120)
+      {:keys [vertices indices]} (k/tube-mesh path :ring 12 :radius 0.06)]
   (k/mesh! vertices indices))
 #+end_src
 

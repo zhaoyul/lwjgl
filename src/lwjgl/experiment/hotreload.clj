@@ -1395,6 +1395,7 @@ void main() {
   [{:scene :geometry :duration 6.0}
    {:scene :rig :duration 6.0}
    {:scene :sweep :duration 6.0}
+   {:scene :heightfield :duration 6.0}
    {:scene :particles :duration 6.0}
    {:scene :sdf :duration 8.0}
    {:scene :spring :duration 8.0}

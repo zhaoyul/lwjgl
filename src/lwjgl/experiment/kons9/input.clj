@@ -23,15 +23,18 @@
     (f window key action)))
 
 (defn register-demo-commands!
-  "注册默认快捷键：1-7 切换场景，0 启动演示，P 暂停/恢复。"
+  "注册默认快捷键：1-9 切换场景，0 启动演示，P 暂停/恢复，H 切换高度场扫掠。"
   [register-fn]
   (register-fn GLFW/GLFW_KEY_1 GLFW/GLFW_PRESS :geometry)
   (register-fn GLFW/GLFW_KEY_2 GLFW/GLFW_PRESS :rig)
   (register-fn GLFW/GLFW_KEY_3 GLFW/GLFW_PRESS :sweep)
-  (register-fn GLFW/GLFW_KEY_4 GLFW/GLFW_PRESS :particles)
-  (register-fn GLFW/GLFW_KEY_5 GLFW/GLFW_PRESS :sdf)
-  (register-fn GLFW/GLFW_KEY_6 GLFW/GLFW_PRESS :spring)
-  (register-fn GLFW/GLFW_KEY_7 GLFW/GLFW_PRESS :ecosystem)
+  (register-fn GLFW/GLFW_KEY_4 GLFW/GLFW_PRESS :heightfield)
+  (register-fn GLFW/GLFW_KEY_5 GLFW/GLFW_PRESS :particles)
+  (register-fn GLFW/GLFW_KEY_6 GLFW/GLFW_PRESS :sdf)
+  (register-fn GLFW/GLFW_KEY_7 GLFW/GLFW_PRESS :spring)
+  (register-fn GLFW/GLFW_KEY_8 GLFW/GLFW_PRESS :ecosystem)
+  (register-fn GLFW/GLFW_KEY_9 GLFW/GLFW_PRESS :heightfield-particles)
+  (register-fn GLFW/GLFW_KEY_H GLFW/GLFW_PRESS :heightfield-sweep)
   (register-fn GLFW/GLFW_KEY_0 GLFW/GLFW_PRESS :demo)
   (register-fn GLFW/GLFW_KEY_P GLFW/GLFW_PRESS :pause)
   :ok)
