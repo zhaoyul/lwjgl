@@ -21,12 +21,12 @@
 
 (defonce cmd-chan (async/chan 128))
 (defonce render-fn (atom nil))
-(defonce clear-color (atom [0.2 0.3 0.3 1.0]))
+(defonce clear-color (atom [0.94 0.95 0.97 1.0]))
 (defonce axis-style
   (atom {:length 1.0
          :arrow-length 0.12
          :arrow-radius 0.05
-         :line-width 2.0}))
+         :shaft-radius 0.003}))
 (defonce grid-style
   (atom {:size 6.0
          :step 0.5
@@ -35,6 +35,31 @@
          :minor-color [0.18 0.18 0.24]
          :major-color [0.28 0.28 0.34]
          :line-width 1.0}))
+(defonce lighting-style
+  (atom {:ambient [0.14 0.14 0.16]
+         :specular-strength 0.35
+         :shininess 32.0
+         :lights [{:id :key
+                   :pos [2.2 2.0 1.8]
+                   :color [1.0 0.98 0.95]
+                   :intensity 1.0
+                   :enabled? true}
+                  {:id :fill
+                   :pos [-2.4 1.4 1.6]
+                   :color [0.85 0.9 1.0]
+                   :intensity 0.55
+                   :enabled? true}
+                  {:id :rim
+                   :pos [0.0 2.2 -2.6]
+                   :color [1.0 1.0 1.0]
+                   :intensity 0.35
+                   :enabled? true}
+                  {:id :head
+                   :pos [0.0 0.0 3.0]
+                   :color [1.0 1.0 1.0]
+                   :intensity 0.25
+                   :enabled? false
+                   :follow-camera? true}]}))
 (defonce app
   (atom {:window 0
          :time {:now 0.0 :dt 0.0 :frame 0 :last 0.0}
@@ -288,20 +313,31 @@ void main() {
 in vec3 vNormal;
 in vec3 vPos;
 uniform vec3 uColor;
-uniform vec3 uLightPos;
 uniform vec3 uViewPos;
+uniform vec3 uAmbient;
+uniform float uSpecularStrength;
+uniform float uShininess;
+uniform int uLightCount;
+uniform vec3 uLightPos[4];
+uniform vec3 uLightColor[4];
+uniform float uLightIntensity[4];
 out vec4 FragColor;
 void main() {
     vec3 norm = normalize(vNormal);
-    vec3 lightDir = normalize(uLightPos - vPos);
-    float diff = max(dot(norm, lightDir), 0.0);
     vec3 viewDir = normalize(uViewPos - vPos);
-    vec3 reflectDir = reflect(-lightDir, norm);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
-    vec3 ambient = 0.3 * uColor;
-    vec3 diffuse = diff * uColor;
-    vec3 specular = vec3(0.3) * spec;
-    FragColor = vec4(ambient + diffuse + specular, 1.0);
+    vec3 lighting = uAmbient * uColor;
+    for (int i = 0; i < 4; i++) {
+        if (i >= uLightCount) break;
+        vec3 lightDir = normalize(uLightPos[i] - vPos);
+        float diff = max(dot(norm, lightDir), 0.0);
+        vec3 reflectDir = reflect(-lightDir, norm);
+        float spec = pow(max(dot(viewDir, reflectDir), 0.0), uShininess);
+        vec3 lightCol = uLightColor[i] * uLightIntensity[i];
+        vec3 diffuse = diff * lightCol * uColor;
+        vec3 specular = uSpecularStrength * spec * lightCol;
+        lighting += diffuse + specular;
+    }
+    FragColor = vec4(lighting, 1.0);
 }")
 
 (declare ensure-default-scenes!
@@ -359,7 +395,8 @@ void main() {
    :input (:input @app)
    :flags (:flags @app)
    :params {:clear-color @clear-color
-            :axis-style @axis-style}
+            :axis-style @axis-style
+            :lighting @lighting-style}
    :cubes @cubes})
 
 (defn- current-scene-def
@@ -879,48 +916,154 @@ void main() {
   (apply kgeom/sweep-mesh opts))
 
 (defn- axis-line-vertices
-  [len]
-  (float-array
-   [;; X 轴(红色)
-    0.0 0.0 0.0   1.0 0.0 0.0
-    len 0.0 0.0   1.0 0.0 0.0
-    ;; Y 轴(绿色)
-    0.0 0.0 0.0   0.0 1.0 0.0
-    0.0 len 0.0   0.0 1.0 0.0
-    ;; Z 轴(蓝色)
-    0.0 0.0 0.0   0.0 0.0 1.0
-    0.0 0.0 len   0.0 0.0 1.0]))
-
-(defn- axis-arrow-vertices
-  [len arrow-len arrow-r]
-  (let [x-tip [len 0.0 0.0]
-        x-base [[(- len arrow-len) arrow-r arrow-r]
-                [(- len arrow-len) (- arrow-r) arrow-r]
-                [(- len arrow-len) (- arrow-r) (- arrow-r)]
-                [(- len arrow-len) arrow-r (- arrow-r)]]
-        y-tip [0.0 len 0.0]
-        y-base [[arrow-r (- len arrow-len) arrow-r]
-                [(- arrow-r) (- len arrow-len) arrow-r]
-                [(- arrow-r) (- len arrow-len) (- arrow-r)]
-                [arrow-r (- len arrow-len) (- arrow-r)]]
-        z-tip [0.0 0.0 len]
-        z-base [[arrow-r arrow-r (- len arrow-len)]
-                [(- arrow-r) arrow-r (- len arrow-len)]
-                [(- arrow-r) (- arrow-r) (- len arrow-len)]
-                [arrow-r (- arrow-r) (- len arrow-len)]]
+  [len shaft-radius]
+  ;; 使用长方体代替线段，避免 macOS 核心模式线宽被限制为 1.0
+  (let [r (double (max 0.001 (or shaft-radius 0.02)))
         red [1.0 0.0 0.0]
         green [0.0 1.0 0.0]
         blue [0.0 0.0 1.0]
-        tri (fn [tip base color]
-              [[tip color] [(nth base 0) color] [(nth base 1) color]
-               [tip color] [(nth base 1) color] [(nth base 2) color]
-               [tip color] [(nth base 2) color] [(nth base 3) color]
-               [tip color] [(nth base 3) color] [(nth base 0) color]])]
-    (float-array
-     (flatten
-      (concat (tri x-tip x-base red)
-              (tri y-tip y-base green)
-              (tri z-tip z-base blue))))))
+        data (transient [])
+        push-vertex! (fn [p color]
+                       (conj! data (float (nth p 0)))
+                       (conj! data (float (nth p 1)))
+                       (conj! data (float (nth p 2)))
+                       (conj! data (float (nth color 0)))
+                       (conj! data (float (nth color 1)))
+                       (conj! data (float (nth color 2))))
+        push-tri! (fn [a b c color]
+                    (push-vertex! a color)
+                    (push-vertex! b color)
+                    (push-vertex! c color))
+        box! (fn [xmin xmax ymin ymax zmin zmax color]
+               (let [p000 [xmin ymin zmin]
+                     p001 [xmin ymin zmax]
+                     p010 [xmin ymax zmin]
+                     p011 [xmin ymax zmax]
+                     p100 [xmax ymin zmin]
+                     p101 [xmax ymin zmax]
+                     p110 [xmax ymax zmin]
+                     p111 [xmax ymax zmax]]
+                 ;; +X / -X
+                 (push-tri! p100 p110 p111 color)
+                 (push-tri! p100 p111 p101 color)
+                 (push-tri! p000 p011 p010 color)
+                 (push-tri! p000 p001 p011 color)
+                 ;; +Y / -Y
+                 (push-tri! p010 p110 p111 color)
+                 (push-tri! p010 p111 p011 color)
+                 (push-tri! p000 p101 p100 color)
+                 (push-tri! p000 p001 p101 color)
+                 ;; +Z / -Z
+                 (push-tri! p001 p011 p111 color)
+                 (push-tri! p001 p111 p101 color)
+                 (push-tri! p000 p110 p010 color)
+                 (push-tri! p000 p100 p110 color)))]
+    ;; X 轴(红色)
+    (box! 0.0 (double len) (- r) r (- r) r red)
+    ;; Y 轴(绿色)
+    (box! (- r) r 0.0 (double len) (- r) r green)
+    ;; Z 轴(蓝色)
+    (box! (- r) r (- r) r 0.0 (double len) blue)
+    (float-array (persistent! data))))
+
+(defn- axis-arrow-vertices
+  [len arrow-len arrow-r]
+  ;; 使用圆锥箭头，确保轴向方向清晰
+  (let [segments 16
+        two-pi (* 2.0 Math/PI)
+        red [1.0 0.0 0.0]
+        green [0.0 1.0 0.0]
+        blue [0.0 0.0 1.0]
+        data (transient [])
+        push-vertex! (fn [p color]
+                       (conj! data (float (nth p 0)))
+                       (conj! data (float (nth p 1)))
+                       (conj! data (float (nth p 2)))
+                       (conj! data (float (nth color 0)))
+                       (conj! data (float (nth color 1)))
+                       (conj! data (float (nth color 2))))
+        push-tri! (fn [a b c color]
+                    (push-vertex! a color)
+                    (push-vertex! b color)
+                    (push-vertex! c color))
+        cone-x! (fn [color]
+                  (let [tip [len 0.0 0.0]
+                        base-x (- len arrow-len)]
+                    (doseq [i (range segments)]
+                      (let [a (* two-pi (/ (double i) segments))
+                            b (* two-pi (/ (double (inc i)) segments))
+                            p1 [base-x (* arrow-r (Math/cos a)) (* arrow-r (Math/sin a))]
+                            p2 [base-x (* arrow-r (Math/cos b)) (* arrow-r (Math/sin b))]]
+                        (push-tri! tip p1 p2 color)))))
+        cone-y! (fn [color]
+                  (let [tip [0.0 len 0.0]
+                        base-y (- len arrow-len)]
+                    (doseq [i (range segments)]
+                      (let [a (* two-pi (/ (double i) segments))
+                            b (* two-pi (/ (double (inc i)) segments))
+                            p1 [(* arrow-r (Math/cos a)) base-y (* arrow-r (Math/sin a))]
+                            p2 [(* arrow-r (Math/cos b)) base-y (* arrow-r (Math/sin b))]]
+                        (push-tri! tip p1 p2 color)))))
+        cone-z! (fn [color]
+                  (let [tip [0.0 0.0 len]
+                        base-z (- len arrow-len)]
+                    (doseq [i (range segments)]
+                      (let [a (* two-pi (/ (double i) segments))
+                            b (* two-pi (/ (double (inc i)) segments))
+                            p1 [(* arrow-r (Math/cos a)) (* arrow-r (Math/sin a)) base-z]
+                            p2 [(* arrow-r (Math/cos b)) (* arrow-r (Math/sin b)) base-z]]
+                        (push-tri! tip p1 p2 color)))))]
+    (cone-x! red)
+    (cone-y! green)
+    (cone-z! blue)
+    (float-array (persistent! data))))
+
+(defn- camera-position
+  [{:keys [yaw pitch distance]}]
+  ;; 轨道相机位置，用于高光与头灯计算
+  (let [yaw (double (or yaw 0.0))
+        pitch (double (or pitch 0.0))
+        dist (double (or distance 3.0))
+        cy (Math/cos yaw)
+        sy (Math/sin yaw)
+        cp (Math/cos pitch)
+        sp (Math/sin pitch)]
+    [(* dist sy cp)
+     (* dist sp)
+     (* dist cy cp)]))
+
+(defn- normalize-light
+  [light camera-pos]
+  (let [enabled? (if (contains? light :enabled?) (:enabled? light) true)]
+    (when enabled?
+      (let [pos (if (:follow-camera? light) camera-pos (or (:pos light) [0.0 0.0 0.0]))
+            color (or (:color light) [1.0 1.0 1.0])
+            intensity (double (or (:intensity light) 1.0))]
+        {:pos pos :color color :intensity intensity}))))
+
+(defn- active-lights
+  [camera-pos]
+  (->> (:lights @lighting-style)
+       (map #(normalize-light % camera-pos))
+       (remove nil?)
+       (take 4)
+       (vec)))
+
+(defn- set-uniform-vec3-array!
+  [program base-name values]
+  ;; 逐元素设置数组 uniform，避免假设连续 location
+  (doseq [[idx [x y z]] (map-indexed vector values)]
+    (let [loc (GL20/glGetUniformLocation program (str base-name "[" idx "]"))]
+      (when (<= 0 loc)
+        (GL20/glUniform3f loc (float x) (float y) (float z))))))
+
+(defn- set-uniform-float-array!
+  [program base-name values]
+  ;; 逐元素设置数组 uniform，避免假设连续 location
+  (doseq [[idx v] (map-indexed vector values)]
+    (let [loc (GL20/glGetUniformLocation program (str base-name "[" idx "]"))]
+      (when (<= 0 loc)
+        (GL20/glUniform1f loc (float v))))))
 
 (defn- init-resources!
   []
@@ -932,9 +1075,9 @@ void main() {
         point-program (core/create-program point-vs-source point-fs-source)
         sprite-program (core/create-program sprite-vs-source sprite-fs-source)
         overlay-program (core/create-program overlay-vs-source overlay-fs-source)
-        {:keys [length arrow-length arrow-radius]} @axis-style
+        {:keys [length arrow-length arrow-radius shaft-radius]} @axis-style
         {line-vao :vao line-vbo :vbo line-count :count}
-        (build-axis-vao (axis-line-vertices length))
+        (build-axis-vao (axis-line-vertices length shaft-radius))
         {arrow-vao :vao arrow-vbo :vbo arrow-count :count}
         (build-axis-vao (axis-arrow-vertices length arrow-length arrow-radius))
         {grid-vao :vao grid-vbo :vbo grid-count :count} (build-grid-vao)
@@ -1002,9 +1145,9 @@ void main() {
 (defn- rebuild-axes!
   []
   (let [{:keys [axis-line-vao axis-line-vbo axis-arrow-vao axis-arrow-vbo]} @state
-        {:keys [length arrow-length arrow-radius]} @axis-style
+        {:keys [length arrow-length arrow-radius shaft-radius]} @axis-style
         {line-vao :vao line-vbo :vbo line-count :count}
-        (build-axis-vao (axis-line-vertices length))
+        (build-axis-vao (axis-line-vertices length shaft-radius))
         {arrow-vao :vao arrow-vbo :vbo arrow-count :count}
         (build-axis-vao (axis-arrow-vertices length arrow-length arrow-radius))]
     (delete-if-positive axis-line-vbo #(GL15/glDeleteBuffers %))
@@ -1115,16 +1258,19 @@ void main() {
                  (.translate 0.0 0.0 (float (- (double (or distance 3.0)))))
                  (.rotateX (float pitch))
                  (.rotateY (float yaw)))
+          camera-pos (camera-position {:yaw yaw :pitch pitch :distance distance})
           mat-buf (BufferUtils/createFloatBuffer 16)
           axis-mvp-loc (GL20/glGetUniformLocation axis-program "mvp")
-          line-width (float (:line-width @axis-style))
           ;; Cube shader locations
           cube-proj-loc (GL20/glGetUniformLocation cube-program "projection")
           cube-view-loc (GL20/glGetUniformLocation cube-program "view")
           cube-model-loc (GL20/glGetUniformLocation cube-program "model")
           cube-color-loc (GL20/glGetUniformLocation cube-program "uColor")
-          cube-light-loc (GL20/glGetUniformLocation cube-program "uLightPos")
           cube-viewpos-loc (GL20/glGetUniformLocation cube-program "uViewPos")
+          cube-ambient-loc (GL20/glGetUniformLocation cube-program "uAmbient")
+          cube-specular-loc (GL20/glGetUniformLocation cube-program "uSpecularStrength")
+          cube-shininess-loc (GL20/glGetUniformLocation cube-program "uShininess")
+          cube-light-count-loc (GL20/glGetUniformLocation cube-program "uLightCount")
           sprite-mvp-loc (GL20/glGetUniformLocation sprite-program "mvp")
           sprite-soft-loc (GL20/glGetUniformLocation sprite-program "uSoftness")]
 
@@ -1143,9 +1289,8 @@ void main() {
       (let [mvp (doto (Matrix4f. projection) (.mul view))]
         (GL20/glUseProgram axis-program)
         (upload-mat! mvp mat-buf axis-mvp-loc)
-        (GL11/glLineWidth line-width)
         (GL30/glBindVertexArray axis-line-vao)
-        (GL11/glDrawArrays GL11/GL_LINES 0 axis-line-count)
+        (GL11/glDrawArrays GL11/GL_TRIANGLES 0 axis-line-count)
         (GL30/glBindVertexArray axis-arrow-vao)
         (GL11/glDrawArrays GL11/GL_TRIANGLES 0 axis-arrow-count)
         (GL11/glLineWidth 1.0))
@@ -1194,10 +1339,27 @@ void main() {
         (upload-mat! projection mat-buf cube-proj-loc))
       (when (<= 0 cube-view-loc)
         (upload-mat! view mat-buf cube-view-loc))
-      (when (<= 0 cube-light-loc)
-        (GL20/glUniform3f cube-light-loc 2.0 2.0 2.0))
-      (when (<= 0 cube-viewpos-loc)
-        (GL20/glUniform3f cube-viewpos-loc 0.0 0.0 3.0))
+      (let [{:keys [ambient specular-strength shininess]} @lighting-style
+            lights (active-lights camera-pos)]
+        (when (<= 0 cube-viewpos-loc)
+          (GL20/glUniform3f cube-viewpos-loc
+                            (float (nth camera-pos 0))
+                            (float (nth camera-pos 1))
+                            (float (nth camera-pos 2))))
+        (when (and (<= 0 cube-ambient-loc) ambient)
+          (GL20/glUniform3f cube-ambient-loc
+                            (float (nth ambient 0))
+                            (float (nth ambient 1))
+                            (float (nth ambient 2))))
+        (when (<= 0 cube-specular-loc)
+          (GL20/glUniform1f cube-specular-loc (float (or specular-strength 0.3))))
+        (when (<= 0 cube-shininess-loc)
+          (GL20/glUniform1f cube-shininess-loc (float (or shininess 32.0))))
+        (when (<= 0 cube-light-count-loc)
+          (GL20/glUniform1i cube-light-count-loc (count lights)))
+        (set-uniform-vec3-array! cube-program "uLightPos" (map :pos lights))
+        (set-uniform-vec3-array! cube-program "uLightColor" (map :color lights))
+        (set-uniform-float-array! cube-program "uLightIntensity" (map :intensity lights)))
 
       (GL30/glBindVertexArray cube-vao)
       (doseq [{:keys [pos rot scale color]} @cubes]
@@ -1365,11 +1527,12 @@ void main() {
   :ok)
 
 (defn set-axis-style!
-  "更新坐标轴样式. 支持的键: :line-width, :length, :arrow-length, :arrow-radius.
+  "更新坐标轴样式. 支持的键: :length, :arrow-length, :arrow-radius, :shaft-radius.
+  说明: 轴身使用几何体渲染, 建议用 :shaft-radius 控制粗细.
   几何变化会在 GL 线程上应用. "
   [style]
-  (let [keys-to-update (select-keys style [:line-width :length :arrow-length :arrow-radius])
-        geometry? (some #(contains? keys-to-update %) [:length :arrow-length :arrow-radius])]
+  (let [keys-to-update (select-keys style [:length :arrow-length :arrow-radius :shaft-radius])
+        geometry? (some #(contains? keys-to-update %) [:length :arrow-length :arrow-radius :shaft-radius])]
     (swap! axis-style merge keys-to-update)
     (if geometry?
       (enqueue! rebuild-axes!)
@@ -1389,6 +1552,32 @@ void main() {
       (let [reply (async/promise-chan)]
         (async/put! reply {:ok :no-op})
         reply))))
+
+(defn lighting
+  "获取当前光源配置."
+  []
+  @lighting-style)
+
+(defn set-lighting!
+  "更新光源配置. 支持的键: :ambient, :specular-strength, :shininess, :lights."
+  [style]
+  (let [keys-to-update (select-keys style [:ambient :specular-strength :shininess :lights])]
+    (swap! lighting-style merge keys-to-update))
+  :ok)
+
+(defn set-light!
+  "更新单个光源(按 :id). 参数:
+    id - 光源标识关键字
+    patch - 需要合并的字段."
+  [id patch]
+  (swap! lighting-style update :lights
+         (fn [lights]
+           (mapv (fn [light]
+                   (if (= (:id light) id)
+                     (merge light patch)
+                     light))
+                 lights)))
+  :ok)
 
 (defn set-render!
   "替换渲染函数. 函数签名: (fn [state]), 会覆盖当前场景的渲染. "
@@ -1756,7 +1945,7 @@ void main() {
 
 (comment
   (set-clear-color! 0.5 0.05 0.08 1.0)
-  (set-axis-style! {:line-width 1.0
+  (set-axis-style! {:shaft-radius 0.02
                     :arrow-length 0.02
                     :arrow-radius 0.02})
   (reload-shaders!
@@ -1803,7 +1992,7 @@ void main() {
 ;; (hr/set-clear-color! 0.05 0.05 0.08 1.0)
 ;;
 ;; ;; 调整坐标轴粗细 / 箭头大小
-;; (async/<!! (hr/set-axis-style! {:line-width 4.0
+;; (async/<!! (hr/set-axis-style! {:shaft-radius 0.04
 ;;                                :arrow-length 0.18
 ;;                                :arrow-radius 0.08}))
 ;;

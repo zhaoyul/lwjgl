@@ -12,7 +12,7 @@
 (def ^:const tau (* 2.0 Math/PI))
 (defonce osc-amplitude (atom 0.08))
 (defonce rect-color (atom nil))
-(defonce background-color (atom [0.06 0.06 0.08 1.0]))
+(defonce background-color (atom [0.94 0.95 0.97 1.0]))
 (defonce rotation-speed (atom 1.0))
 (defonce movement-speed (atom 1.0))
 (defonce size-scale (atom 1.0))

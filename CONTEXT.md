@@ -74,6 +74,20 @@ REPL 内：
 - 相机缩放支持滚轮（GLFW scroll 回调），旋转为鼠标拖拽。
 - 若发现旧场景未更新，请重置场景：`(hr/reset-scene!)`。
 
+## 默认光源（建模场景推荐）
+- 采用“三点光 + 弱环境光”：
+  - Key 主光：`[2.2 2.0 1.8]` 强度 1.0
+  - Fill 补光：`[-2.4 1.4 1.6]` 强度 0.55
+  - Rim 轮廓光：`[0.0 2.2 -2.6]` 强度 0.35
+  - Head 头灯：默认关闭，可跟随相机
+  - 环境光：`[0.14 0.14 0.16]`
+- nREPL 动态调整示例：
+  - `(require '[lwjgl.experiment.kons9.api :as kapi] :reload)`
+  - `(kapi/lighting!)` 直接替换整体配置
+  - `(kapi/light! :fill {:intensity 0.3})` 调整单个光源
+  - `(kapi/light! :head {:enabled? true})` 开启头灯
+  - `(kapi/lighting)` 查看当前光源数据
+
 ## 未清理文件
 - `hs_err_pid4975.log`（JVM crash log，非代码）
 - `kons-9-main/`（原参考项目目录）

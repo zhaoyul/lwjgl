@@ -62,6 +62,21 @@
   [style]
   (hot/set-grid-style! style))
 
+(defn lighting
+  "获取当前光源配置."
+  []
+  (hot/lighting))
+
+(defn lighting!
+  "设置光源配置."
+  [style]
+  (hot/set-lighting! style))
+
+(defn light!
+  "更新单个光源(按 :id)."
+  [id patch]
+  (hot/set-light! id patch))
+
 (defn transition!
   "设置过场时长(秒)."
   [duration]
