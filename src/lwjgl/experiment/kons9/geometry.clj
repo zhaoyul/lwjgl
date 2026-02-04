@@ -805,6 +805,19 @@
       (mapv #(/ % (double n))
             (reduce (fn [acc p] (mapv + acc p)) [0.0 0.0 0.0] pts)))))
 
+(defn polyhedron-vertices
+  "返回多面体顶点列表."
+  [poly]
+  (mapv (fn [[x y z]] [(float x) (float y) (float z)]) (:points poly)))
+
+(defn polyhedron-face-centers
+  "返回多面体面中心点列表."
+  [poly]
+  (let [points (:points poly)]
+    (mapv (fn [face]
+            (avg-points (mapv points face)))
+          (:faces poly))))
+
 (defn- edge-key
   [a b]
   (if (< a b) [a b] [b a]))

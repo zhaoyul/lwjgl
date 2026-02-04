@@ -1,6 +1,8 @@
 (ns lwjgl.experiment.kons9.sdf
   (:require [lwjgl.experiment.kons9.math :as math]))
 
+(declare marching-tetrahedra)
+
 (defn- sdf-sphere
   [x y z [cx cy cz] r]
   (let [dx (- x cx)
@@ -39,6 +41,93 @@
         dz (- (f x y (+ z e) t) (f x y (- z e) t))
         len (Math/sqrt (+ (* dx dx) (* dy dy) (* dz dz) 1.0e-9))]
     [(/ dx len) (/ dy len) (/ dz len)]))
+
+(defn- dist2
+  [[x y z] [ax ay az]]
+  (let [dx (- x ax)
+        dy (- y ay)
+        dz (- z az)]
+    (+ (* dx dx) (* dy dy) (* dz dz))))
+
+(defn- segment-distance-sq
+  "点到线段距离平方."
+  [[x y z] [ax ay az] [bx by bz]]
+  (let [abx (- bx ax)
+        aby (- by ay)
+        abz (- bz az)
+        apx (- x ax)
+        apy (- y ay)
+        apz (- z az)
+        ab2 (+ (* abx abx) (* aby aby) (* abz abz) 1.0e-9)
+        t (math/clamp01 (/ (+ (* apx abx) (* apy aby) (* apz abz)) ab2))
+        cx (+ ax (* t abx))
+        cy (+ ay (* t aby))
+        cz (+ az (* t abz))
+        dx (- x cx)
+        dy (- y cy)
+        dz (- z cz)]
+    (+ (* dx dx) (* dy dy) (* dz dz))))
+
+(defn field-from-points
+  "从点集生成标量场函数."
+  [points & {:keys [radius strength] :or {radius 0.35 strength 1.0}}]
+  (let [points (vec points)
+        r (double radius)
+        r2 (* r r)
+        s (double strength)]
+    (fn [x y z _]
+      (let [p [x y z]]
+        (reduce (fn [acc pt]
+                  (let [d2 (dist2 p pt)]
+                    (+ acc (/ (* s r2) (+ r2 d2)))))
+                0.0
+                points)))))
+
+(defn field-from-curves
+  "从曲线点集生成标量场函数."
+  [curves & {:keys [radius strength] :or {radius 0.35 strength 1.0}}]
+  (let [segments (->> curves
+                      (mapcat #(partition 2 1 %))
+                      (vec))
+        r (double radius)
+        r2 (* r r)
+        s (double strength)]
+    (fn [x y z _]
+      (let [p [x y z]]
+        (reduce (fn [acc [a b]]
+                  (let [d2 (segment-distance-sq p a b)]
+                    (+ acc (/ (* s r2) (+ r2 d2)))))
+                0.0
+                segments)))))
+
+(defn field->sdf
+  "将标量场转换为等值面 SDF."
+  [field threshold]
+  (let [threshold (double threshold)]
+    (fn [x y z t]
+      (- threshold (field x y z t)))))
+
+(defn isosurface-from-field
+  "从标量场生成等值面网格."
+  [field {:keys [threshold min max res t]
+          :or {threshold 1.0
+               min [-1.4 -1.1 -1.1]
+               max [1.4 1.1 1.1]
+               res 36
+               t 0.0}}]
+  (marching-tetrahedra (field->sdf field threshold) {:min min :max max :res res :t t}))
+
+(defn isosurface-from-points
+  "从点集生成等值面网格."
+  [points & {:as opts}]
+  (let [field (apply field-from-points points (mapcat identity opts))]
+    (isosurface-from-field field opts)))
+
+(defn isosurface-from-curves
+  "从曲线点集生成等值面网格."
+  [curves & {:as opts}]
+  (let [field (apply field-from-curves curves (mapcat identity opts))]
+    (isosurface-from-field field opts)))
 
 (def ^:private tetra-indices
   [[0 5 1 6]

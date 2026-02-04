@@ -15,6 +15,51 @@
         dz (- bz az)]
     (+ (* dx dx) (* dy dy) (* dz dz))))
 
+(defn- dist2-2d
+  "计算二维点的平方距离。"
+  [[ax az] [bx bz]]
+  (let [dx (- bx ax)
+        dz (- bz az)]
+    (+ (* dx dx) (* dz dz))))
+
+(defn- seg-dist2-2d
+  "点到线段距离平方（XZ 平面）。"
+  [[px pz] [ax az] [bx bz]]
+  (let [abx (- bx ax)
+        abz (- bz az)
+        apx (- px ax)
+        apz (- pz az)
+        ab2 (+ (* abx abx) (* abz abz) 1.0e-9)
+        t (kmath/clamp01 (/ (+ (* apx abx) (* apz abz)) ab2))
+        cx (+ ax (* t abx))
+        cz (+ az (* t abz))
+        dx (- px cx)
+        dz (- pz cz)]
+    (+ (* dx dx) (* dz dz))))
+
+(defn- dist-to-polyline
+  "点到折线的最小距离（XZ 平面）。"
+  [pt curve]
+  (let [segs (partition 2 1 curve)]
+    (Math/sqrt (reduce (fn [m [a b]]
+                         (min m (seg-dist2-2d pt a b)))
+                       Double/POSITIVE_INFINITY
+                       segs))))
+
+(defn- polyline->line-data
+  "折线转线段数据。"
+  [points color]
+  (let [[r g b] color]
+    (vec
+     (mapcat (fn [[a b]]
+               (let [[ax ay az] a
+                     [bx by bz] b]
+                 [(float ax) (float ay) (float az)
+                  (float r) (float g) (float b)
+                  (float bx) (float by) (float bz)
+                  (float r) (float g) (float b)]))
+             (partition 2 1 points)))))
+
 (defn- steer
   "朝目标产生速度向量。"
   [pos target speed]
@@ -43,6 +88,7 @@
                 set-mesh!
                 clear-mesh!
                 set-mesh-style!
+                set-wireframe-overlay!
                 set-mesh-index-count!
                 upload-spring-lines!
                 clear-spring-lines!
@@ -278,6 +324,541 @@
       :render (fn [ctx _] (default-render ctx))
       :cleanup (fn [_ _] nil)}
 
+     :heightfield-animate
+     {:init (fn [_]
+              (set-clear-color! [0.02 0.03 0.05 1.0])
+              (set-cubes! [])
+              (clear-point-cloud!)
+              (clear-sprites!)
+              (clear-line-segments!)
+              (clear-rig!)
+              (set-mesh-style! {:pos [0.0 -0.4 0.0]
+                                :rot [0.0 0.0 0.0]
+                                :scale [1.0 1.0 1.0]
+                                :color [0.55 0.75 0.6]})
+              (let [base-fn (kgeom/heightfield-height-fn :amp 0.25 :noise-scale 0.7)
+                    height-fn (fn [x z]
+                                (+ (base-fn x z)
+                                   (* 0.18 (Math/sin (+ (* 0.9 x) (* 0.7 z))))))
+                    {:keys [vertices indices]}
+                    (kgeom/heightfield-mesh 4.0 4.0 80 80 :height-fn height-fn)]
+                (set-mesh! vertices indices)
+                {:t 0.0 :acc 0.0 :base-fn base-fn}))
+      :update (fn [{:keys [time]} scene-state]
+                (let [dt (:dt time)
+                      t (+ (:t scene-state) dt)
+                      acc (+ (:acc scene-state) dt)]
+                  (if (>= acc 0.2)
+                    (let [base-fn (:base-fn scene-state)
+                          height-fn (fn [x z]
+                                      (+ (base-fn x z)
+                                         (* 0.18 (Math/sin (+ (* 0.9 x) (* 0.7 z) (* 1.2 t))))))
+                          {:keys [vertices indices]}
+                          (kgeom/heightfield-mesh 4.0 4.0 80 80 :height-fn height-fn)]
+                      (set-mesh! vertices indices)
+                      (assoc scene-state :t t :acc 0.0))
+                    (assoc scene-state :t t :acc acc))))
+      :render (fn [ctx _] (default-render ctx))
+      :cleanup (fn [_ _] nil)}
+
+     :resource-growth
+     {:init (fn [_]
+              (set-clear-color! [0.02 0.03 0.05 1.0])
+              (set-cubes! [])
+              (clear-point-cloud!)
+              (clear-sprites!)
+              (clear-line-segments!)
+              (clear-rig!)
+              (let [width 4.0
+                    depth 4.0
+                    height-fn (kgeom/heightfield-height-fn :amp 0.35 :noise-scale 0.85)
+                    {:keys [vertices indices]}
+                    (kgeom/heightfield-mesh width depth 64 64 :height-fn height-fn)
+                    curve-xy (kgeom/sine-curve-points 360 1.0 3.2 1.1 120)
+                    curve-2d (mapv (fn [[x y _]] [x y]) curve-xy)
+                    curve-3d (mapv (fn [[x z]]
+                                     [x (+ (height-fn x z) 0.02) z])
+                                   curve-2d)
+                    line-data (polyline->line-data curve-3d [0.2 0.7 1.0])
+                    points (kgeom/heightfield-points width depth 14 14 :height-fn height-fn)
+                    resource (fn [x z]
+                               (let [d (dist-to-polyline [x z] curve-2d)]
+                                 (kmath/clamp01 (- 1.0 (/ d 1.6)))))
+                    plants (mapv (fn [[x y z]]
+                                   (let [r (resource x z)]
+                                     {:pos [x y z]
+                                      :growth r}))
+                                 points)]
+                (set-mesh-style! {:pos [0.0 -0.35 0.0]
+                                  :rot [0.0 0.0 0.0]
+                                  :scale [1.0 1.0 1.0]
+                                  :color [0.5 0.75 0.55]})
+                (set-mesh! vertices indices)
+                (set-line-segments! line-data)
+                {:height-fn height-fn
+                 :curve-2d curve-2d
+                 :plants plants}))
+      :update (fn [{:keys [time]} scene-state]
+                (let [dt (:dt time)
+                      curve-2d (:curve-2d scene-state)
+                      resource (fn [x z]
+                                 (let [d (dist-to-polyline [x z] curve-2d)]
+                                   (kmath/clamp01 (- 1.0 (/ d 1.6)))))
+                      plants (mapv (fn [{:keys [pos growth] :as p}]
+                                     (let [[x _ z] pos
+                                           target (resource x z)
+                                           g (+ growth (* (- target growth) (min 1.0 (* dt 0.8))))]
+                                       (assoc p :growth g)))
+                                   (:plants scene-state))]
+                  (set-cubes!
+                   (mapv (fn [{:keys [pos growth]}]
+                           (let [s (+ 0.08 (* 0.25 growth))]
+                             {:id (next-cube-id!)
+                              :pos pos
+                              :rot [0.0 0.0 0.0]
+                              :scale [s (+ s (* 1.8 growth)) s]
+                              :color [0.2 (+ 0.4 (* 0.5 growth)) 0.2]}))
+                         plants))
+                  (assoc scene-state :plants plants)))
+      :render (fn [ctx _] (default-render ctx))
+      :cleanup (fn [_ _] (clear-line-segments!))}
+
+     :surface-particles
+     {:init (fn [_]
+              (set-clear-color! [0.01 0.02 0.04 1.0])
+              (set-cubes! [])
+              (clear-point-cloud!)
+              (clear-line-segments!)
+              (clear-rig!)
+              (let [radius 1.6
+                    height-fn (fn [x z]
+                                (let [r2 (- (* radius radius) (+ (* x x) (* z z)))]
+                                  (if (pos? r2) (Math/sqrt r2) 0.0)))
+                    bounds-lo [(- radius) 0.0 (- radius)]
+                    bounds-hi [radius 0.0 radius]
+                    {:keys [vertices indices]} (kgeom/uv-sphere 28 40)
+                    spawn (fn [& _]
+                            (let [x (kmath/rand-range (first bounds-lo) (first bounds-hi))
+                                  z (kmath/rand-range (nth bounds-lo 2) (nth bounds-hi 2))
+                                  y (height-fn x z)
+                                  size (kmath/rand-range 8.0 13.0)
+                                  life (kmath/rand-range 2.5 4.5)
+                                  color [0.5 0.9 0.95 0.85]]
+                              (kpart/make-particle {:pos [x (+ y 0.02) z]
+                                                    :vel [0.0 0.0 0.0]
+                                                    :life life
+                                                    :color color
+                                                    :size size})))
+                    particles (vec (repeatedly 180 spawn))]
+                (set-mesh-style! {:pos [0.0 0.0 0.0]
+                                  :rot [0.0 0.0 0.0]
+                                  :scale [1.0 1.0 1.0]
+                                  :color [0.3 0.4 0.55]})
+                (set-mesh! vertices indices)
+                (set-sprite-style! {:size 10.0 :alpha 0.9 :softness 0.7})
+                {:height-fn height-fn
+                 :bounds-lo bounds-lo
+                 :bounds-hi bounds-hi
+                 :respawn spawn
+                 :particles particles}))
+      :update (fn [{:keys [time]} scene-state]
+                (let [dt (:dt time)
+                      particles (kpart/update-particles-on-heightfield
+                                 (:particles scene-state)
+                                 dt
+                                 {:height-fn (:height-fn scene-state)
+                                  :bounds-lo (:bounds-lo scene-state)
+                                  :bounds-hi (:bounds-hi scene-state)
+                                  :speed 0.6
+                                  :noise-scale 1.1
+                                  :wrap? false
+                                  :height-offset 0.02
+                                  :trail-length 14
+                                  :respawn-fn (:respawn scene-state)})
+                      {:keys [points colors sizes]} (kpart/particles->sprites particles)
+                      line-data (kpart/particles->trails particles)]
+                  (set-sprites! points :colors colors :sizes sizes)
+                  (set-line-segments! line-data)
+                  (assoc scene-state :particles particles)))
+      :render (fn [ctx _] (default-render ctx))
+      :cleanup (fn [_ _] (clear-line-segments!))}
+
+     :polyhedron-particles
+     {:init (fn [_]
+              (set-clear-color! [0.01 0.02 0.04 1.0])
+              (set-cubes! [])
+              (clear-point-cloud!)
+              (clear-line-segments!)
+              (clear-rig!)
+              (let [poly (kgeom/icosahedron-polyhedron 2.2)
+                    sources (kgeom/polyhedron-face-centers poly)
+                    {:keys [vertices indices]} (kgeom/polyhedron-mesh poly)
+                    spawn (fn [& _]
+                            (first (kpart/emit-from-points
+                                    [(rand-nth sources)]
+                                    :direction-fn (fn [p] p)
+                                    :speed-range [0.5 1.1]
+                                    :life-range [2.5 4.5]
+                                    :size-range [9.0 16.0]
+                                    :jitter 0.25)))
+                    particles (vec (repeatedly (count sources) spawn))]
+                (set-mesh-style! {:pos [0.0 0.0 0.0]
+                                  :rot [0.0 0.0 0.0]
+                                  :scale [1.0 1.0 1.0]
+                                  :color [0.25 0.4 0.65]})
+                (set-mesh! vertices indices)
+                (set-sprite-style! {:size 12.0 :alpha 0.85 :softness 0.6})
+                {:sources sources
+                 :respawn spawn
+                 :particles particles}))
+      :update (fn [{:keys [time]} scene-state]
+                (let [dt (:dt time)
+                      fields [(kpart/make-noise-field 0.8 0.4)
+                              (kpart/make-vortex-field [0.0 0.0 0.0] 0.7)]
+                      particles (kpart/update-particles-advanced
+                                 (:particles scene-state)
+                                 dt
+                                 {:fields fields
+                                  :ground-y -2.2
+                                  :trail-length 18
+                                  :respawn-fn (:respawn scene-state)})
+                      {:keys [points colors sizes]} (kpart/particles->sprites particles)
+                      line-data (kpart/particles->trails particles)]
+                  (set-sprites! points :colors colors :sizes sizes)
+                  (set-line-segments! line-data)
+                  (assoc scene-state :particles particles)))
+      :render (fn [ctx _] (default-render ctx))
+      :cleanup (fn [_ _] (clear-line-segments!))}
+
+     :polyhedron-vertices
+     {:init (fn [_]
+              (set-clear-color! [0.01 0.02 0.04 1.0])
+              (set-cubes! [])
+              (clear-point-cloud!)
+              (clear-line-segments!)
+              (clear-rig!)
+              (let [poly (kgeom/dodecahedron-polyhedron 2.4)
+                    sources (kgeom/polyhedron-vertices poly)
+                    colors (mapv (fn [[x y z]]
+                                   [(float (kmath/clamp01 (+ 0.5 (* 0.4 x))))
+                                    (float (kmath/clamp01 (+ 0.5 (* 0.4 y))))
+                                    (float (kmath/clamp01 (+ 0.5 (* 0.4 z))))
+                                    0.85])
+                                 sources)
+                    {:keys [vertices indices]} (kgeom/polyhedron-mesh poly)
+                    source-data (mapv (fn [p c] {:pos p :color c}) sources colors)
+                    spawn (fn [& _]
+                            (let [{:keys [pos color]} (rand-nth source-data)]
+                              (kpart/make-particle {:pos pos
+                                                    :vel [0.0 0.0 0.0]
+                                                    :life (kmath/rand-range 2.0 4.0)
+                                                    :color color
+                                                    :size (kmath/rand-range 9.0 15.0)})))
+                    particles (vec (repeatedly 140 spawn))]
+                (set-mesh-style! {:pos [0.0 0.0 0.0]
+                                  :rot [0.0 0.0 0.0]
+                                  :scale [1.0 1.0 1.0]
+                                  :color [0.25 0.35 0.55]})
+                (set-mesh! vertices indices)
+                (set-sprite-style! {:size 12.0 :alpha 0.85 :softness 0.6})
+                {:respawn spawn
+                 :particles particles}))
+      :update (fn [{:keys [time]} scene-state]
+                (let [dt (:dt time)
+                      fields [(kpart/make-noise-field 0.8 0.35)]
+                      particles (kpart/update-particles-advanced
+                                 (:particles scene-state)
+                                 dt
+                                 {:fields fields
+                                  :ground-y -2.2
+                                  :trail-length 18
+                                  :respawn-fn (:respawn scene-state)})
+                      {:keys [points colors sizes]} (kpart/particles->sprites particles)
+                      line-data (kpart/particles->trails particles)]
+                  (set-sprites! points :colors colors :sizes sizes)
+                  (set-line-segments! line-data)
+                  (assoc scene-state :particles particles)))
+      :render (fn [ctx _] (default-render ctx))
+      :cleanup (fn [_ _] (clear-line-segments!))}
+
+     :polyhedron-face-centers
+     {:init (fn [_]
+              (set-clear-color! [0.01 0.02 0.04 1.0])
+              (set-cubes! [])
+              (clear-point-cloud!)
+              (clear-line-segments!)
+              (clear-rig!)
+              (let [poly (kgeom/icosahedron-polyhedron 2.2)
+                    sources (kgeom/polyhedron-face-centers poly)
+                    colors (mapv (fn [[x y z]]
+                                   [(float (kmath/clamp01 (+ 0.5 (* 0.5 x))))
+                                    (float (kmath/clamp01 (+ 0.5 (* 0.5 y))))
+                                    (float (kmath/clamp01 (+ 0.5 (* 0.5 z))))
+                                    0.85])
+                                 sources)
+                    {:keys [vertices indices]} (kgeom/polyhedron-mesh poly)
+                    source-data (mapv (fn [p c] {:pos p :color c}) sources colors)
+                    spawn (fn [& _]
+                            (let [{:keys [pos color]} (rand-nth source-data)]
+                              (kpart/make-particle {:pos pos
+                                                    :vel [0.0 0.0 0.0]
+                                                    :life (kmath/rand-range 2.0 4.0)
+                                                    :color color
+                                                    :size (kmath/rand-range 9.0 15.0)})))
+                    particles (vec (repeatedly 200 spawn))]
+                (set-mesh-style! {:pos [0.0 0.0 0.0]
+                                  :rot [0.0 0.0 0.0]
+                                  :scale [1.0 1.0 1.0]
+                                  :color [0.2 0.35 0.6]})
+                (set-mesh! vertices indices)
+                (set-sprite-style! {:size 12.0 :alpha 0.85 :softness 0.6})
+                {:respawn spawn
+                 :particles particles}))
+      :update (fn [{:keys [time]} scene-state]
+                (let [dt (:dt time)
+                      fields [(kpart/make-vortex-field [0.0 0.0 0.0] 0.6)]
+                      particles (kpart/update-particles-advanced
+                                 (:particles scene-state)
+                                 dt
+                                 {:fields fields
+                                  :ground-y -2.2
+                                  :trail-length 18
+                                  :respawn-fn (:respawn scene-state)})
+                      {:keys [points colors sizes]} (kpart/particles->sprites particles)
+                      line-data (kpart/particles->trails particles)]
+                  (set-sprites! points :colors colors :sizes sizes)
+                  (set-line-segments! line-data)
+                  (assoc scene-state :particles particles)))
+      :render (fn [ctx _] (default-render ctx))
+      :cleanup (fn [_ _] (clear-line-segments!))}
+
+     :polyhedron-refine
+     {:init (fn [_]
+              (set-clear-color! [0.02 0.02 0.04 1.0])
+              (set-cubes! [])
+              (clear-point-cloud!)
+              (clear-sprites!)
+              (clear-line-segments!)
+              (clear-rig!)
+              (set-wireframe-overlay! {:enabled? true
+                                       :line-width 1.0
+                                       :color [0.1 0.1 0.15]})
+              (set-mesh-style! {:pos [0.0 0.0 0.0]
+                                :rot [0.0 0.0 0.0]
+                                :scale [1.0 1.0 1.0]
+                                :color [0.7 0.75 0.85]})
+              (let [poly (kgeom/cube-polyhedron 2.0)
+                    refined (kgeom/refine-polyhedron poly 2)
+                    {:keys [vertices indices]} (kgeom/polyhedron-mesh refined)]
+                (set-mesh! vertices indices))
+              nil)
+      :update (fn [_ scene-state] scene-state)
+      :render (fn [ctx _] (default-render ctx))
+      :cleanup (fn [_ _] (set-wireframe-overlay! {:enabled? false}))}
+
+     :polyhedron-fractal
+     {:init (fn [_]
+              (set-clear-color! [0.02 0.02 0.04 1.0])
+              (set-cubes! [])
+              (clear-point-cloud!)
+              (clear-sprites!)
+              (clear-line-segments!)
+              (clear-rig!)
+              (set-wireframe-overlay! {:enabled? false})
+              (set-mesh-style! {:pos [0.0 0.0 0.0]
+                                :rot [0.0 0.0 0.0]
+                                :scale [1.0 1.0 1.0]
+                                :color [0.75 0.7 0.55]})
+              (let [poly (kgeom/cube-polyhedron 2.0)
+                    fractal (kgeom/fractalize-polyhedron poly 3 0.35)
+                    {:keys [vertices indices]} (kgeom/polyhedron-mesh fractal)]
+                (set-mesh! vertices indices))
+              nil)
+      :update (fn [_ scene-state] scene-state)
+      :render (fn [ctx _] (default-render ctx))
+      :cleanup (fn [_ _] nil)}
+
+     :cut-cube
+     {:init (fn [_]
+              (set-clear-color! [0.02 0.02 0.04 1.0])
+              (set-cubes! [])
+              (clear-point-cloud!)
+              (clear-sprites!)
+              (clear-line-segments!)
+              (clear-rig!)
+              (set-wireframe-overlay! {:enabled? true
+                                       :line-width 1.0
+                                       :color [0.12 0.12 0.15]})
+              (set-mesh-style! {:pos [0.0 0.0 0.0]
+                                :rot [0.0 0.0 0.0]
+                                :scale [1.0 1.0 1.0]
+                                :color [0.65 0.78 0.9]})
+              (let [poly (kgeom/cut-cube-polyhedron 2.0)
+                    {:keys [vertices indices]} (kgeom/polyhedron-mesh poly)]
+                (set-mesh! vertices indices))
+              nil)
+      :update (fn [_ scene-state] scene-state)
+      :render (fn [ctx _] (default-render ctx))
+      :cleanup (fn [_ _] (set-wireframe-overlay! {:enabled? false}))}
+
+     :box
+     {:init (fn [_]
+              (set-clear-color! [0.02 0.02 0.04 1.0])
+              (set-cubes! [])
+              (clear-point-cloud!)
+              (clear-sprites!)
+              (clear-line-segments!)
+              (clear-rig!)
+              (set-wireframe-overlay! {:enabled? true
+                                       :line-width 1.0
+                                       :color [0.12 0.12 0.15]})
+              (set-mesh-style! {:pos [0.0 0.0 0.0]
+                                :rot [0.0 0.0 0.0]
+                                :scale [1.0 1.0 1.0]
+                                :color [0.85 0.72 0.55]})
+              (let [poly (kgeom/box-polyhedron 2.4 1.4 1.0)
+                    {:keys [vertices indices]} (kgeom/polyhedron-mesh poly)]
+                (set-mesh! vertices indices))
+              nil)
+      :update (fn [_ scene-state] scene-state)
+      :render (fn [ctx _] (default-render ctx))
+      :cleanup (fn [_ _] (set-wireframe-overlay! {:enabled? false}))}
+
+     :isosurface-points
+     {:init (fn [_]
+              (set-clear-color! [0.02 0.02 0.05 1.0])
+              (set-cubes! [])
+              (clear-rig!)
+              (clear-sprites!)
+              (clear-line-segments!)
+              (set-wireframe-overlay! {:enabled? false})
+              (set-mesh-style! {:pos [0.0 0.0 0.0]
+                                :rot [0.0 0.0 0.0]
+                                :scale [1.0 1.0 1.0]
+                                :color [0.7 0.8 0.95]})
+              (let [points (kgeom/random-points 16 [-1.0 -0.6 -1.0] [1.0 0.6 1.0])
+                    colors (mapv (fn [[x y z]]
+                                   [(float (kmath/clamp01 (+ 0.5 (* 0.4 x))))
+                                    (float (kmath/clamp01 (+ 0.5 (* 0.4 y))))
+                                    (float (kmath/clamp01 (+ 0.5 (* 0.4 z))))])
+                                 points)
+                    {:keys [vertices indices]}
+                    (ksdf/isosurface-from-points points {:radius 0.35
+                                                         :threshold 1.0
+                                                         :min [-1.4 -1.0 -1.4]
+                                                         :max [1.4 1.0 1.4]
+                                                         :res 32})]
+                (set-point-cloud! points :colors colors)
+                (set-mesh! vertices indices)
+                {:t 0.0 :acc 0.0 :points points}))
+      :update (fn [{:keys [time]} scene-state]
+                (let [dt (:dt time)
+                      t (+ (:t scene-state) dt)
+                      acc (+ (:acc scene-state) dt)]
+                  (if (>= acc 0.3)
+                    (let [threshold (+ 0.9 (* 0.4 (Math/sin (* 0.7 t))))
+                          {:keys [vertices indices]}
+                          (ksdf/isosurface-from-points (:points scene-state)
+                                                       {:radius 0.35
+                                                        :threshold threshold
+                                                        :min [-1.4 -1.0 -1.4]
+                                                        :max [1.4 1.0 1.4]
+                                                        :res 32})]
+                      (set-mesh! vertices indices)
+                      (assoc scene-state :t t :acc 0.0))
+                    (assoc scene-state :t t :acc acc))))
+      :render (fn [ctx _] (default-render ctx))
+      :cleanup (fn [_ _] nil)}
+
+     :isosurface-curves
+     {:init (fn [_]
+              (set-clear-color! [0.02 0.02 0.05 1.0])
+              (set-cubes! [])
+              (clear-point-cloud!)
+              (clear-rig!)
+              (clear-sprites!)
+              (set-mesh-style! {:pos [0.0 0.0 0.0]
+                                :rot [0.0 0.0 0.0]
+                                :scale [1.0 1.0 1.0]
+                                :color [0.7 0.7 0.95]})
+              (let [curve (kgeom/sine-curve-points 360 1.0 2.2 1.0 120)
+                    {:keys [vertices indices]}
+                    (ksdf/isosurface-from-curves [curve]
+                                                 {:radius 0.25
+                                                  :threshold 1.0
+                                                  :min [-2.0 -1.2 -1.2]
+                                                  :max [2.0 1.2 1.2]
+                                                  :res 32})]
+                (set-mesh! vertices indices)
+                {:t 0.0 :acc 0.0 :curve curve}))
+      :update (fn [{:keys [time]} scene-state]
+                (let [dt (:dt time)
+                      t (+ (:t scene-state) dt)
+                      acc (+ (:acc scene-state) dt)]
+                  (if (>= acc 0.25)
+                    (let [threshold (+ 0.8 (* 0.4 (Math/sin (* 0.8 t))))
+                          {:keys [vertices indices]}
+                          (ksdf/isosurface-from-curves [(:curve scene-state)]
+                                                       {:radius 0.25
+                                                        :threshold threshold
+                                                        :min [-2.0 -1.2 -1.2]
+                                                        :max [2.0 1.2 1.2]
+                                                        :res 32})]
+                      (set-mesh! vertices indices)
+                      (assoc scene-state :t t :acc 0.0))
+                    (assoc scene-state :t t :acc acc))))
+      :render (fn [ctx _] (default-render ctx))
+      :cleanup (fn [_ _] nil)}
+
+     :isosurface-particles
+     {:init (fn [_]
+              (set-clear-color! [0.02 0.02 0.05 1.0])
+              (set-cubes! [])
+              (clear-point-cloud!)
+              (clear-rig!)
+              (clear-sprites!)
+              (set-mesh-style! {:pos [0.0 0.0 0.0]
+                                :rot [0.0 0.0 0.0]
+                                :scale [1.0 1.0 1.0]
+                                :color [0.7 0.7 0.95]})
+              (let [sources (kgeom/circle-points 1.6 48)
+                    spawn (fn [& _]
+                            (first (kpart/emit-from-points
+                                    [(rand-nth sources)]
+                                    :tangent? true
+                                    :speed-range [0.4 0.9]
+                                    :life-range [2.0 4.0]
+                                    :size-range [8.0 12.0]
+                                    :jitter 0.2)))
+                    particles (vec (repeatedly 140 spawn))]
+                {:t 0.0 :acc 0.0 :particles particles :respawn spawn}))
+      :update (fn [{:keys [time]} scene-state]
+                (let [dt (:dt time)
+                      t (+ (:t scene-state) dt)
+                      acc (+ (:acc scene-state) dt)
+                      fields [(kpart/make-noise-field 0.7 0.5)]
+                      particles (kpart/update-particles-advanced
+                                 (:particles scene-state)
+                                 dt
+                                 {:fields fields
+                                  :ground-y -1.2
+                                  :trail-length 20
+                                  :respawn-fn (:respawn scene-state)})]
+                  (if (>= acc 0.3)
+                    (let [curves (->> particles (map :trail) (filter #(>= (count %) 6)) (take 12))
+                          {:keys [vertices indices]}
+                          (ksdf/isosurface-from-curves curves
+                                                       {:radius 0.22
+                                                        :threshold 0.9
+                                                        :min [-2.0 -1.2 -2.0]
+                                                        :max [2.0 1.2 2.0]
+                                                        :res 30})]
+                      (set-mesh! vertices indices)
+                      (assoc scene-state :t t :acc 0.0 :particles particles))
+                    (assoc scene-state :t t :acc acc :particles particles))))
+      :render (fn [ctx _] (default-render ctx))
+      :cleanup (fn [_ _] nil)}
+
      :particles
      {:init (fn [_]
               (set-clear-color! [0.01 0.01 0.04 1.0])
@@ -406,6 +987,73 @@
                   (assoc scene-state :nodes nodes)))
       :render (fn [ctx _] (default-render ctx))
       :cleanup (fn [_ _] nil)}
+
+     :spring-isosurface
+     {:init (fn [_]
+              (set-clear-color! [0.02 0.02 0.05 1.0])
+              (set-cubes! [])
+              (clear-rig!)
+              (clear-sprites!)
+              (clear-line-segments!)
+              (set-mesh-style! {:pos [0.0 0.0 0.0]
+                                :rot [0.0 0.0 0.0]
+                                :scale [1.0 1.0 1.0]
+                                :color [0.7 0.75 0.9]})
+              (let [{:keys [nodes springs]} (kspring/make-spring-grid 8 8 0.35)
+                    points (mapv :pos nodes)
+                    colors (mapv (fn [{:keys [fixed?]}]
+                                   (if fixed? [1.0 0.85 0.2] [0.7 0.75 0.9]))
+                                 nodes)
+                    lines (kspring/spring-lines nodes springs)
+                    curves (->> springs
+                                (map (fn [[i j _]]
+                                       [(get-in nodes [i :pos])
+                                        (get-in nodes [j :pos])]))
+                                (take 80)
+                                (vec))
+                    {:keys [vertices indices]}
+                    (ksdf/isosurface-from-curves curves
+                                                 {:radius 0.18
+                                                  :threshold 0.9
+                                                  :min [-1.6 -0.6 -1.6]
+                                                  :max [1.6 1.2 1.6]
+                                                  :res 26})]
+                (set-point-cloud! points :colors colors)
+                (set-line-segments! lines)
+                (set-mesh! vertices indices)
+                {:nodes nodes :springs springs :acc 0.0}))
+      :update (fn [{:keys [time]} scene-state]
+                (let [dt (:dt time)
+                      acc (+ (:acc scene-state) dt)
+                      nodes (kspring/update-spring-grid (:nodes scene-state) (:springs scene-state) dt)
+                      points (mapv :pos nodes)
+                      colors (mapv (fn [{:keys [fixed?]}]
+                                     (if fixed? [1.0 0.85 0.2] [0.7 0.75 0.9]))
+                                   nodes)
+                      lines (kspring/spring-lines nodes (:springs scene-state))]
+                  (set-point-cloud! points :colors colors)
+                  (set-line-segments! lines)
+                  (if (>= acc 0.35)
+                    (let [curves (->> (:springs scene-state)
+                                      (map (fn [[i j _]]
+                                             [(get-in nodes [i :pos])
+                                              (get-in nodes [j :pos])]))
+                                      (take 80)
+                                      (vec))
+                          {:keys [vertices indices]}
+                          (ksdf/isosurface-from-curves curves
+                                                       {:radius 0.18
+                                                        :threshold 0.9
+                                                        :min [-1.6 -0.6 -1.6]
+                                                        :max [1.6 1.2 1.6]
+                                                        :res 26})]
+                      (set-mesh! vertices indices)
+                      (assoc scene-state :nodes nodes :acc 0.0))
+                    (assoc scene-state :nodes nodes :acc acc))))
+      :render (fn [ctx _] (default-render ctx))
+      :cleanup (fn [_ _]
+                 (clear-point-cloud!)
+                 (clear-line-segments!))}
 
      :ecosystem
      {:init (fn [_]

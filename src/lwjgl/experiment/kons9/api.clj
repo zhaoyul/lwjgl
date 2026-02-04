@@ -123,6 +123,11 @@
   [style]
   (hot/set-mesh-style! style))
 
+(defn wireframe-overlay!
+  "设置线框叠加样式."
+  [style]
+  (hot/set-wireframe-overlay! style))
+
 (defn line-segments!
   "设置线段数据。line-data 为 [x y z r g b ...] 序列."
   [line-data]
@@ -268,6 +273,16 @@
   [poly]
   (kgeom/polyhedron-mesh poly))
 
+(defn polyhedron-vertices
+  "返回多面体顶点列表."
+  [poly]
+  (kgeom/polyhedron-vertices poly))
+
+(defn polyhedron-face-centers
+  "返回多面体面中心点列表."
+  [poly]
+  (kgeom/polyhedron-face-centers poly))
+
 (defn refine-polyhedron
   "细分多面体."
   [poly levels]
@@ -307,6 +322,18 @@
            res 36
            t 0.0}}]
   (mesh-from-sdf! ksdf/sdf-metaballs {:min min :max max :res res :t t}))
+
+(defn isosurface-from-points!
+  "从点集生成等值面网格并设置."
+  [points & {:as opts}]
+  (let [{:keys [vertices indices]} (apply ksdf/isosurface-from-points points (mapcat identity opts))]
+    (hot/set-mesh! vertices indices)))
+
+(defn isosurface-from-curves!
+  "从曲线点集生成等值面网格并设置."
+  [curves & {:as opts}]
+  (let [{:keys [vertices indices]} (apply ksdf/isosurface-from-curves curves (mapcat identity opts))]
+    (hot/set-mesh! vertices indices)))
 
 (defn sphere-mesh!
   "生成 UV 球体网格并设置."

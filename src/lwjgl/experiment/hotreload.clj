@@ -1276,6 +1276,7 @@ void main() {
    :set-mesh! set-mesh!
    :clear-mesh! clear-mesh!
    :set-mesh-style! set-mesh-style!
+   :set-wireframe-overlay! set-wireframe-overlay!
    :set-mesh-index-count! (fn [n] (swap! state assoc :mesh-index-count n))
    :upload-spring-lines! upload-spring-lines!
    :clear-spring-lines! clear-spring-lines!
@@ -1396,9 +1397,18 @@ void main() {
    {:scene :rig :duration 6.0}
    {:scene :sweep :duration 6.0}
    {:scene :heightfield :duration 6.0}
-   {:scene :particles :duration 6.0}
-   {:scene :sdf :duration 8.0}
+   {:scene :resource-growth :duration 6.0}
+   {:scene :heightfield-sweep :duration 6.0}
+   {:scene :surface-particles :duration 6.0}
+   {:scene :polyhedron-refine :duration 6.0}
+   {:scene :polyhedron-fractal :duration 6.0}
+   {:scene :cut-cube :duration 6.0}
+   {:scene :box :duration 6.0}
+   {:scene :isosurface-points :duration 8.0}
+   {:scene :isosurface-curves :duration 8.0}
+   {:scene :isosurface-particles :duration 8.0}
    {:scene :spring :duration 8.0}
+   {:scene :spring-isosurface :duration 8.0}
    {:scene :ecosystem :duration 10.0}])
 
 (defn start-demo!

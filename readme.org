@@ -203,7 +203,7 @@ Just poking the scene and watching it change in real time.
 
 ** 快捷键（hotreload 窗口）
 - 1-9 切换内置场景
-- H 切换高度场扫掠
+- H/J/K/L/U/I/M/N/R/F/C/B/T/O/Y 切换扩展场景
 - 0 启动默认演示时间线
 - P 暂停/恢复
 - M 切换手动播放模式（按住空格播放）
@@ -233,10 +233,24 @@ Just poking the scene and watching it change in real time.
   - :heightfield（高度场/地形）
   - :heightfield-particles（高度场粒子）
   - :heightfield-sweep（高度场 + 粒子轨迹扫掠）
+  - :heightfield-animate（高度场动态起伏）
+  - :resource-growth（资源曲线驱动的生长）
+  - :surface-particles（曲面爬行粒子）
+  - :polyhedron-particles（多面体粒子源）
+  - :polyhedron-vertices（多面体顶点粒子）
+  - :polyhedron-face-centers（多面体面中心粒子）
+  - :polyhedron-refine（多面体细分 + 线框叠加）
+  - :polyhedron-fractal（多面体分型）
+  - :cut-cube（切角立方体）
+  - :box（盒子多面体）
+  - :isosurface-points（点集等值面）
+  - :isosurface-curves（曲线等值面）
+  - :isosurface-particles（粒子轨迹等值面）
   - :particles（粒子点云）
   - :particle-fields（力场粒子 + 精灵 + 轨迹）
   - :sdf（SDF 等值面）
   - :spring（弹簧网格）
+  - :spring-isosurface（弹簧网格等值面）
   - :ecosystem（生态系统）
   - :live（自定义 live 场景）
 
@@ -299,6 +313,9 @@ Just poking the scene and watching it change in real time.
 (let [poly (k/cut-cube-polyhedron 2.0)
       {:keys [vertices indices]} (k/polyhedron->mesh poly)]
   (k/mesh! vertices indices))
+
+;; 线框叠加（细分网格更清晰）
+(k/wireframe-overlay! {:enabled? true :line-width 1.0 :color [0.1 0.1 0.15]})
 #+end_src
 
 *** 直接网格 -> =k/mesh!=
@@ -331,6 +348,30 @@ Just poking the scene and watching it change in real time.
 ;; 高度场扫掠场景
 (k/scene! :heightfield-sweep)
 
+;; 高度场动态起伏
+(k/scene! :heightfield-animate)
+
+;; 资源曲线驱动的生长
+(k/scene! :resource-growth)
+
+;; 曲面爬行粒子
+(k/scene! :surface-particles)
+
+;; 多面体粒子源
+(k/scene! :polyhedron-particles)
+
+;; 多面体顶点/面中心粒子
+(k/scene! :polyhedron-vertices)
+(k/scene! :polyhedron-face-centers)
+
+;; 曲线/粒子轨迹等值面
+(k/scene! :isosurface-points)
+(k/scene! :isosurface-curves)
+(k/scene! :isosurface-particles)
+
+;; 弹簧网格等值面
+(k/scene! :spring-isosurface)
+
 ;; 手动管状扫掠
 (let [path (k/spiral-curve 0.2 2.2 -0.8 4 120)
       {:keys [vertices indices]} (k/tube-mesh path :ring 12 :radius 0.06)]
@@ -345,6 +386,16 @@ Just poking the scene and watching it change in real time.
 *** SDF/等值面
 #+begin_src clojure
 (k/metaballs!)  ;; 默认参数
+
+;; 点集等值面
+(k/isosurface-from-points!
+ (k/random-points 12 [-1 -0.6 -1] [1 0.6 1])
+ :radius 0.35 :threshold 1.0 :res 32)
+
+;; 曲线等值面
+(k/isosurface-from-curves!
+ [(k/sine-curve 360 1.0 2.2 1.0 120)]
+ :radius 0.25 :threshold 1.0 :res 32)
 #+end_src
 
 *** 精灵（透明排序）
