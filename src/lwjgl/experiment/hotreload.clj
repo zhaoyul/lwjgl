@@ -314,6 +314,8 @@ void main() {
          set-mesh!
          set-mesh-style!
          set-grid-style!
+         set-line-segments!
+         clear-line-segments!
          clear-spring-lines!
          clear-mesh!)
 
@@ -1277,6 +1279,8 @@ void main() {
    :set-mesh-index-count! (fn [n] (swap! state assoc :mesh-index-count n))
    :upload-spring-lines! upload-spring-lines!
    :clear-spring-lines! clear-spring-lines!
+   :set-line-segments! set-line-segments!
+   :clear-line-segments! clear-line-segments!
    :set-rig-segments! (fn [segments] (reset! rig-state {:segments segments}))
    :clear-rig! (fn [] (reset! rig-state {:segments []}))
    :default-render default-render})
@@ -1515,6 +1519,18 @@ void main() {
 (defn- clear-spring-lines!
   []
   (upload-spring-lines! []))
+
+(defn set-line-segments!
+  "设置通用线段数据。line-data 为 [x y z r g b ...] 序列。"
+  [line-data]
+  (enqueue!
+   (fn []
+     (upload-spring-lines! line-data))))
+
+(defn clear-line-segments!
+  "清空通用线段数据。"
+  []
+  (set-line-segments! []))
 
 (defn- upload-point-cloud!
   [points colors]

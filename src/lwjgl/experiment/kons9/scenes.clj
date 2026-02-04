@@ -36,6 +36,8 @@
                 next-cube-id!
                 set-point-cloud!
                 clear-point-cloud!
+                set-sprites!
+                clear-sprites!
                 upload-point-cloud!
                 set-mesh!
                 clear-mesh!
@@ -43,6 +45,8 @@
                 set-mesh-index-count!
                 upload-spring-lines!
                 clear-spring-lines!
+                set-line-segments!
+                clear-line-segments!
                 set-rig-segments!
                 clear-rig!
                 default-render]} api]
@@ -157,6 +161,51 @@
                   (assoc scene-state :t t :particles particles)))
       :render (fn [ctx _] (default-render ctx))
       :cleanup (fn [_ _] nil)}
+
+     :particle-fields
+     {:init (fn [_]
+              (set-clear-color! [0.01 0.01 0.04 1.0])
+              (set-cubes! [])
+              (clear-rig!)
+              (clear-point-cloud!)
+              (clear-sprites!)
+              (clear-mesh!)
+              (clear-line-segments!)
+              (let [sources (kgeom/circle-points 2.2 64)
+                    spawn (fn [_]
+                            (first (kpart/emit-from-points
+                                    [(rand-nth sources)]
+                                    :tangent? true
+                                    :speed-range [0.4 1.0]
+                                    :life-range [2.0 4.0]
+                                    :size-range [10.0 18.0]
+                                    :jitter 0.2)))
+                    particles (mapv spawn sources)]
+                {:t 0.0
+                 :sources sources
+                 :particles particles
+                 :respawn spawn}))
+      :update (fn [{:keys [time]} scene-state]
+                (let [dt (:dt time)
+                      t (+ (:t scene-state) dt)
+                      fields [(kpart/make-gravity-field 0.15)
+                              (kpart/make-attractor-field [0.0 0.0 0.0] 1.1)
+                              (kpart/make-vortex-field [0.0 0.0 0.0] 0.9)
+                              (kpart/make-noise-field 0.6 0.5)]
+                      particles (kpart/update-particles-advanced
+                                 (:particles scene-state)
+                                 dt
+                                 {:fields fields
+                                  :ground-y -1.2
+                                  :trail-length 20
+                                  :respawn-fn (:respawn scene-state)})
+                      {:keys [points colors sizes]} (kpart/particles->sprites particles)
+                      line-data (kpart/particles->trails particles)]
+                  (set-sprites! points :colors colors :sizes sizes)
+                  (set-line-segments! line-data)
+                  (assoc scene-state :t t :particles particles)))
+      :render (fn [ctx _] (default-render ctx))
+      :cleanup (fn [_ _] (clear-line-segments!))})))
 
      :sdf
      {:init (fn [_]

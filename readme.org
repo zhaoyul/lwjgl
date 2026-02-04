@@ -230,6 +230,7 @@ Just poking the scene and watching it change in real time.
   - :rig（层级结构 + 关节动画）
   - :sweep（扫掠网格）
   - :particles（粒子点云）
+  - :particle-fields（力场粒子 + 精灵 + 轨迹）
   - :sdf（SDF 等值面）
   - :spring（弹簧网格）
   - :ecosystem（生态系统）

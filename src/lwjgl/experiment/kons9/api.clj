@@ -2,6 +2,7 @@
   "面向 REPL 的 kons-9 风格接口封装."
   (:require [lwjgl.experiment.hotreload :as hot]
             [lwjgl.experiment.kons9.geometry :as kgeom]
+            [lwjgl.experiment.kons9.particles :as kpart]
             [lwjgl.experiment.kons9.sdf :as ksdf]
             [lwjgl.experiment.kons9.dsl :as kdsl]
             [lwjgl.experiment.kons9.live :as klive]))
@@ -121,6 +122,16 @@
   "设置通用网格样式."
   [style]
   (hot/set-mesh-style! style))
+
+(defn line-segments!
+  "设置线段数据。line-data 为 [x y z r g b ...] 序列."
+  [line-data]
+  (hot/set-line-segments! line-data))
+
+(defn clear-line-segments!
+  "清空线段数据."
+  []
+  (hot/clear-line-segments!))
 
 (defn uv-sphere
   "生成 UV 球体网格."
@@ -313,6 +324,50 @@
   "创建立方体节点."
   [& {:as opts}]
   (apply kdsl/cube (mapcat identity opts)))
+
+;; ---- 粒子系统 --------------------------------------------------------------
+
+(defn gravity-field
+  "创建重力场."
+  [g]
+  (kpart/make-gravity-field g))
+
+(defn attractor-field
+  "创建吸引场."
+  [center strength]
+  (kpart/make-attractor-field center strength))
+
+(defn vortex-field
+  "创建旋涡场."
+  ([center strength]
+   (kpart/make-vortex-field center strength))
+  ([center axis strength]
+   (kpart/make-vortex-field center axis strength)))
+
+(defn noise-field
+  "创建噪声场."
+  [scale strength]
+  (kpart/make-noise-field scale strength))
+
+(defn emit-particles
+  "从点集发射粒子."
+  [points & {:as opts}]
+  (apply kpart/emit-from-points points (mapcat identity opts)))
+
+(defn update-particles-adv
+  "更新粒子集合."
+  [particles dt opts]
+  (kpart/update-particles-advanced particles dt opts))
+
+(defn particles->sprites
+  "将粒子转换为精灵数据."
+  [particles]
+  (kpart/particles->sprites particles))
+
+(defn particles->trails
+  "将粒子轨迹转换为线段数据."
+  [particles]
+  (kpart/particles->trails particles))
 
 (defn points-node
   "创建点云节点."
