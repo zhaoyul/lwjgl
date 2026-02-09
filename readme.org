@@ -209,6 +209,77 @@ Just poking the scene and watching it change in real time.
 - M 切换手动播放模式（按住空格播放）
 - D 重置当前场景
 
+** 菜单与按钮（kons-9 UI）
+- 菜单默认显示在左上角，右上角按钮用于快速控制。
+- 菜单打开时，按条目左侧的字母键可直接执行/进入；如需使用全局快捷键可先按 =TAB= 隐藏菜单。
+
+*** 菜单导航
+- =TAB=：切换菜单显示；如果在子菜单则回到根菜单。
+- =←=：返回上一级菜单。
+- 鼠标左键点击条目进入/执行。
+
+*** 顶部按钮
+- =Menu=：显示/隐藏菜单
+- =Demo=：启动默认演示时间线
+- =Pause/Resume=：暂停/继续时间线
+- =Info=：显示/隐藏信息面板
+
+*** 菜单结构（按键 -> 功能）
+**** Scene (=S=)
+- =N= New Scene：清空对象并回到 baseline
+- =E= Export OBJ File：未实现
+- =U= Export USD File：未实现
+- =I= Initialize Scene：重置当前场景
+- =Q= Quit Scene：关闭窗口
+
+**** Edit (=E=)
+- =BS= Delete：清空对象
+- =S= Show：显示所有对象
+- =H= Hide：隐藏所有对象
+
+**** Create (=C=)
+***** Create Curve (=C=)
+- =L= Line Curve
+- =R= Rectangle Curve
+- =S= Square Curve
+- =C= Circle Curve
+- =A= Arc Curve
+- =N= Sine Curve
+- =P= Spiral Curve
+
+***** Create Polyhedron (=P=)
+- =T= Tetrahedron
+- =C= Cube
+- =O= Octahedron
+- =D= Dodecahedron
+- =I= Icosahedron
+- =S= Sphere
+
+**** Inspect (=I=)
+- =R= Reset Camera
+- =F= Frame Selection（当前等同重置相机）
+- =I= Inspector（信息面板）
+- =S= Shapes（信息面板）
+- =M= Motions（信息面板）
+
+**** Display (=D=)
+- =`= Toggle Lighting
+- =1= Toggle Filled Display
+- =2= Toggle Wireframe Display
+- =3= Toggle Point Display
+- =4= Toggle Backface Culling
+- =5= Toggle Smooth Shading
+- =6= Toggle Ground Plane Display
+- =7= Toggle World Axes Display
+- =8= Set Bright Theme
+- =9= Set Dark Theme
+
+**** Interactive Mode (=M=)
+- 进入交互模式后隐藏 UI，按 =ESC= 退出
+
+**** Context (=X=)
+- =T= Transform Selection：未实现
+
 ** 连接 REPL 与加载
 #+begin_src clojure
 (require 'lwjgl.experiment.kons9.dsl :reload)

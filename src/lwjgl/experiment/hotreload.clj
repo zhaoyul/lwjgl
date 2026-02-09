@@ -9,7 +9,8 @@
             [lwjgl.experiment.kons9.runtime :as krt]
             [lwjgl.experiment.kons9.scenes :as kscenes]
             [lwjgl.experiment.kons9.sdf :as ksdf]
-            [lwjgl.experiment.kons9.spring :as kspring])
+            [lwjgl.experiment.kons9.spring :as kspring]
+            [lwjgl.experiment.kons9.ui :as kui])
   (:import (org.lwjgl BufferUtils)
            (org.lwjgl.glfw GLFW GLFWCursorPosCallbackI GLFWFramebufferSizeCallbackI
                            GLFWKeyCallbackI GLFWMouseButtonCallbackI GLFWScrollCallbackI
@@ -72,7 +73,8 @@
                  :dragging? false :last-x 0.0 :last-y 0.0}
          :flags {:paused? false
                  :manual-play? false
-                 :playing? true}}))
+                 :playing? true
+                 :ui-interactive? false}}))
 
 ;; 立方体状态 - 每个立方体包含 :pos [x y z], :rot [rx ry rz], :scale [sx sy sz], :color [r g b]
 (defonce cubes (atom []))
@@ -95,6 +97,24 @@
   (atom {:enabled? false
          :line-width 1.2
          :color [0.08 0.08 0.1]}))
+
+(defonce mesh-data
+  (atom {:base nil
+         :smooth nil}))
+
+(defonce display-state
+  (atom {:display-filled? true
+         :display-wireframe? false
+         :display-points? false
+         :smooth-shading? false
+         :backface-cull? false
+         :show-grid? true
+         :show-axes? true
+         :show-cubes? true
+         :show-mesh? true
+         :show-points? true
+         :show-lines? true
+         :lighting? true}))
 
 (defonce state
   (atom {:program 0
@@ -141,7 +161,25 @@
          ;; 过场覆盖层
          :overlay-program 0
          :overlay-vao 0
-         :overlay-vbo 0}))
+         :overlay-vbo 0
+         ;; UI 覆盖层
+         :ui-rect-program 0
+         :ui-rect-vao 0
+         :ui-rect-vbo 0
+         :ui-rect-buffer nil
+         :ui-rect-viewport-loc -1
+         :ui-rect-color-loc -1
+         :ui-text-program 0
+         :ui-text-vao 0
+         :ui-text-vbo 0
+         :ui-text-tex 0
+         :ui-text-tex-w 0
+         :ui-text-tex-h 0
+         :ui-text-bytes nil
+         :ui-text-buffer nil
+         :ui-text-vertex-buffer nil
+         :ui-text-viewport-loc -1
+         :ui-text-color-loc -1}))
 
 (defonce vs-source
   (atom
@@ -238,6 +276,24 @@ void main() {
 }")
 
 (def ^:private overlay-fs-source
+  "#version 330 core
+uniform vec4 uColor;
+out vec4 FragColor;
+void main() {
+    FragColor = uColor;
+}")
+
+(def ^:private ui-rect-vs-source
+  "#version 330 core
+layout (location = 0) in vec2 aPos;
+uniform vec2 uViewport;
+void main() {
+    vec2 ndc = vec2((aPos.x / uViewport.x) * 2.0 - 1.0,
+                    1.0 - (aPos.y / uViewport.y) * 2.0);
+    gl_Position = vec4(ndc, 0.0, 1.0);
+}")
+
+(def ^:private ui-rect-fs-source
   "#version 330 core
 uniform vec4 uColor;
 out vec4 FragColor;
@@ -352,10 +408,15 @@ void main() {
          set-mesh-style!
          set-wireframe-overlay!
          set-grid-style!
+         interactive-mode?
+         set-interactive-mode!
+         info-lines
+         apply-mesh-shading!
          set-line-segments!
          clear-line-segments!
          clear-spring-lines!
-         clear-mesh!)
+         clear-mesh!
+         clear-rig!)
 
 (defn enqueue!
   "将一个函数加入队列在 OpenGL/主线程上运行. 返回一个 promise-chan,
@@ -548,6 +609,75 @@ void main() {
         (GL30/glBindVertexArray 0)
         (GL11/glDisable GL11/GL_BLEND)
         (GL11/glEnable GL11/GL_DEPTH_TEST)))))
+
+(declare update-ui-rect-buffer! ensure-ui-texture!)
+
+(defn- render-ui-rects!
+  [rects win-w win-h]
+  (when (seq rects)
+    (let [{:keys [ui-rect-program ui-rect-vao ui-rect-vbo ui-rect-buffer
+                  ui-rect-viewport-loc ui-rect-color-loc]} @state]
+      (GL11/glDisable GL11/GL_DEPTH_TEST)
+      (GL11/glEnable GL11/GL_BLEND)
+      (GL11/glBlendFunc GL11/GL_SRC_ALPHA GL11/GL_ONE_MINUS_SRC_ALPHA)
+      (GL20/glUseProgram ui-rect-program)
+      (when (<= 0 ui-rect-viewport-loc)
+        (GL20/glUniform2f ui-rect-viewport-loc (float win-w) (float win-h)))
+      (GL30/glBindVertexArray ui-rect-vao)
+      (doseq [{:keys [x y w h color]} rects]
+        (let [[r g b a] (or color [1.0 1.0 1.0 1.0])]
+          (when (<= 0 ui-rect-color-loc)
+            (GL20/glUniform4f ui-rect-color-loc (float r) (float g) (float b) (float a)))
+          (update-ui-rect-buffer! ui-rect-buffer (float x) (float y) (float w) (float h))
+          (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER ui-rect-vbo)
+          (GL15/glBufferSubData GL15/GL_ARRAY_BUFFER 0 ui-rect-buffer)
+          (GL11/glDrawArrays GL11/GL_TRIANGLES 0 6)))
+      (GL30/glBindVertexArray 0)
+      (GL11/glDisable GL11/GL_BLEND)
+      (GL11/glEnable GL11/GL_DEPTH_TEST))))
+
+(defn- render-ui-text!
+  [texts win-w win-h text-color]
+  (when (seq texts)
+    (ensure-ui-texture! win-w win-h)
+    (let [{:keys [ui-text-program ui-text-vao ui-text-tex ui-text-tex-w ui-text-tex-h
+                  ui-text-bytes ui-text-buffer ui-text-viewport-loc ui-text-color-loc]} @state
+          [r g b] (or text-color [0.1 0.1 0.1])]
+      (core/clear-text-buffer! ui-text-bytes)
+      (doseq [{:keys [x y text]} texts]
+        (core/draw-string! ui-text-bytes ui-text-tex-w ui-text-tex-h (int x) (int y) (str text)))
+      (.clear ui-text-buffer)
+      (.put ui-text-buffer ui-text-bytes 0 (* ui-text-tex-w ui-text-tex-h))
+      (.flip ui-text-buffer)
+      (GL11/glBindTexture GL11/GL_TEXTURE_2D ui-text-tex)
+      (GL11/glTexSubImage2D GL11/GL_TEXTURE_2D 0 0 0 ui-text-tex-w ui-text-tex-h
+                            GL11/GL_RED GL11/GL_UNSIGNED_BYTE ui-text-buffer)
+      (GL11/glDisable GL11/GL_DEPTH_TEST)
+      (GL11/glEnable GL11/GL_BLEND)
+      (GL11/glBlendFunc GL11/GL_SRC_ALPHA GL11/GL_ONE_MINUS_SRC_ALPHA)
+      (GL20/glUseProgram ui-text-program)
+      (when (<= 0 ui-text-viewport-loc)
+        (GL20/glUniform2f ui-text-viewport-loc (float win-w) (float win-h)))
+      (when (<= 0 ui-text-color-loc)
+        (GL20/glUniform3f ui-text-color-loc (float r) (float g) (float b)))
+      (GL13/glActiveTexture GL13/GL_TEXTURE0)
+      (GL11/glBindTexture GL11/GL_TEXTURE_2D ui-text-tex)
+      (GL30/glBindVertexArray ui-text-vao)
+      (GL11/glDrawArrays GL11/GL_TRIANGLES 0 6)
+      (GL30/glBindVertexArray 0)
+      (GL11/glDisable GL11/GL_BLEND)
+      (GL11/glEnable GL11/GL_DEPTH_TEST))))
+
+(defn- render-ui!
+  []
+  (when-not (interactive-mode?)
+    (let [{:keys [win-width win-height]} (:input @app)]
+      (when (and (pos? win-width) (pos? win-height))
+        (when (kui/info-visible?)
+          (kui/set-info-lines! (info-lines)))
+        (let [{:keys [rects texts text-color]} (kui/draw-commands win-width win-height)]
+          (render-ui-rects! rects win-width win-height)
+          (render-ui-text! texts win-width win-height text-color))))))
 
 ;; ---- OpenGL 辅助函数 -----------------------------------------------------------
 
@@ -791,6 +921,76 @@ void main() {
     (GL20/glEnableVertexAttribArray 0)
     (GL30/glBindVertexArray 0)
     {:vao vao :vbo vbo}))
+
+(defn- build-ui-rect-vao
+  []
+  (let [vao (GL30/glGenVertexArrays)
+        vbo (GL15/glGenBuffers)
+        stride (* 2 Float/BYTES)]
+    (GL30/glBindVertexArray vao)
+    (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER vbo)
+    (GL15/glBufferData GL15/GL_ARRAY_BUFFER (* 6 2 Float/BYTES) GL15/GL_STREAM_DRAW)
+    (GL20/glVertexAttribPointer 0 2 GL11/GL_FLOAT false stride 0)
+    (GL20/glEnableVertexAttribArray 0)
+    (GL30/glBindVertexArray 0)
+    {:vao vao :vbo vbo}))
+
+(defn- update-ui-rect-buffer!
+  [^java.nio.FloatBuffer buf x y w h]
+  (.clear buf)
+  (.put buf (float-array
+             [x y
+              (+ x w) y
+              (+ x w) (+ y h)
+              (+ x w) (+ y h)
+              x (+ y h)
+              x y]))
+  (.flip buf)
+  buf)
+
+(defn- update-ui-text-quad!
+  [win-w win-h]
+  (let [{:keys [ui-text-vbo ui-text-vertex-buffer ui-text-tex-w ui-text-tex-h]} @state
+        tex-w (max 1 ui-text-tex-w)
+        tex-h (max 1 ui-text-tex-h)
+        u-right (float (/ win-w (double tex-w)))
+        v-bottom (float (/ win-h (double tex-h)))]
+    (.clear ui-text-vertex-buffer)
+    (.put ui-text-vertex-buffer (float-array
+                                 [0.0 0.0 0.0 0.0
+                                  (float win-w) 0.0 u-right 0.0
+                                  (float win-w) (float win-h) u-right v-bottom
+                                  (float win-w) (float win-h) u-right v-bottom
+                                  0.0 (float win-h) 0.0 v-bottom
+                                  0.0 0.0 0.0 0.0]))
+    (.flip ui-text-vertex-buffer)
+    (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER ui-text-vbo)
+    (GL15/glBufferSubData GL15/GL_ARRAY_BUFFER 0 ui-text-vertex-buffer)))
+
+(defn- ensure-ui-texture!
+  [win-w win-h]
+  (when (and (pos? win-w) (pos? win-h))
+    (let [{:keys [ui-text-tex ui-text-tex-w ui-text-tex-h]} @state
+          need-resize? (or (zero? ui-text-tex)
+                           (< ui-text-tex-w win-w)
+                           (< ui-text-tex-h win-h))
+          tex-w (max ui-text-tex-w win-w)
+          tex-h (max ui-text-tex-h win-h)]
+      (when need-resize?
+        (when (pos? ui-text-tex)
+          (GL11/glDeleteTextures ui-text-tex))
+        (let [tex (core/create-overlay-texture tex-w tex-h)
+              bytes (byte-array (* tex-w tex-h))
+              buffer (BufferUtils/createByteBuffer (* tex-w tex-h))]
+          (swap! state assoc
+                 :ui-text-tex tex
+                 :ui-text-tex-w tex-w
+                 :ui-text-tex-h tex-h
+                 :ui-text-bytes bytes
+                 :ui-text-buffer buffer)
+          (update-ui-text-quad! win-w win-h)))
+      (when (and (pos? ui-text-tex) (not need-resize?))
+        (update-ui-text-quad! win-w win-h)))))
 
 (defn- build-mesh-vao
   []
@@ -1075,6 +1275,14 @@ void main() {
         point-program (core/create-program point-vs-source point-fs-source)
         sprite-program (core/create-program sprite-vs-source sprite-fs-source)
         overlay-program (core/create-program overlay-vs-source overlay-fs-source)
+        ui-rect-program (core/create-program ui-rect-vs-source ui-rect-fs-source)
+        ui-text-program (core/create-program (core/slurp-resource "shaders/overlay.vert")
+                                             (core/slurp-resource "shaders/overlay.frag"))
+        ui-rect-viewport-loc (GL20/glGetUniformLocation ui-rect-program "uViewport")
+        ui-rect-color-loc (GL20/glGetUniformLocation ui-rect-program "uColor")
+        ui-text-viewport-loc (GL20/glGetUniformLocation ui-text-program "uViewport")
+        ui-text-color-loc (GL20/glGetUniformLocation ui-text-program "uTextColor")
+        ui-text-sampler-loc (GL20/glGetUniformLocation ui-text-program "uText")
         {:keys [length arrow-length arrow-radius shaft-radius]} @axis-style
         {line-vao :vao line-vbo :vbo line-count :count}
         (build-axis-vao (axis-line-vertices length shaft-radius))
@@ -1086,12 +1294,19 @@ void main() {
         {point-vao :vao point-vbo :vbo} (build-point-vao)
         {sprite-vao :vao sprite-vbo :vbo} (build-sprite-vao)
         {overlay-vao :vao overlay-vbo :vbo} (build-overlay-vao)
+        {ui-rect-vao :vao ui-rect-vbo :vbo} (build-ui-rect-vao)
+        {ui-text-vao :vao ui-text-vbo :vbo} (core/create-overlay-quad)
+        ui-rect-buffer (BufferUtils/createFloatBuffer (* 6 2))
+        ui-text-vertex-buffer (BufferUtils/createFloatBuffer (* 6 4))
         {mesh-vao :vao mesh-vbo :vbo mesh-ebo :ebo} (build-mesh-vao)
         {spring-vao :vao spring-vbo :vbo} (build-spring-vao)
         {cube-vao :vao cube-vbo :vbo cube-count :count} (create-cube-vao)]
     (GL20/glUseProgram program)
     (when (<= 0 tex-loc)
       (GL20/glUniform1i tex-loc 0))
+    (GL20/glUseProgram ui-text-program)
+    (when (<= 0 ui-text-sampler-loc)
+      (GL20/glUniform1i ui-text-sampler-loc 0))
     (swap! state assoc
            :program program
            :vao vao
@@ -1133,7 +1348,22 @@ void main() {
            :spring-count 0
            :overlay-program overlay-program
            :overlay-vao overlay-vao
-           :overlay-vbo overlay-vbo)
+           :overlay-vbo overlay-vbo
+           :ui-rect-program ui-rect-program
+           :ui-rect-vao ui-rect-vao
+           :ui-rect-vbo ui-rect-vbo
+           :ui-rect-buffer ui-rect-buffer
+           :ui-rect-viewport-loc ui-rect-viewport-loc
+           :ui-rect-color-loc ui-rect-color-loc
+           :ui-text-program ui-text-program
+           :ui-text-vao ui-text-vao
+           :ui-text-vbo ui-text-vbo
+           :ui-text-vertex-buffer ui-text-vertex-buffer
+           :ui-text-viewport-loc ui-text-viewport-loc
+           :ui-text-color-loc ui-text-color-loc)
+    (let [win-w (or (get-in @app [:input :win-width]) 0)
+          win-h (or (get-in @app [:input :win-height]) 0)]
+      (ensure-ui-texture! win-w win-h))
     ;; 使用一个默认立方体初始化
     (when (empty? @cubes)
       (reset! cubes [{:id (swap! next-cube-id inc)
@@ -1182,6 +1412,8 @@ void main() {
                 point-program point-vao point-vbo
                 sprite-program sprite-vao sprite-vbo
                 overlay-program overlay-vao overlay-vbo
+                ui-rect-program ui-rect-vao ui-rect-vbo
+                ui-text-program ui-text-vao ui-text-vbo ui-text-tex
                 mesh-vao mesh-vbo mesh-ebo
                 spring-vao spring-vbo]} @state]
     (delete-if-positive program #(GL20/glDeleteProgram %))
@@ -1218,7 +1450,15 @@ void main() {
     ;; 清理覆盖层资源
     (delete-if-positive overlay-program #(GL20/glDeleteProgram %))
     (delete-if-positive overlay-vbo #(GL15/glDeleteBuffers %))
-    (delete-if-positive overlay-vao #(GL30/glDeleteVertexArrays %)))
+    (delete-if-positive overlay-vao #(GL30/glDeleteVertexArrays %))
+    ;; 清理 UI 资源
+    (delete-if-positive ui-rect-program #(GL20/glDeleteProgram %))
+    (delete-if-positive ui-rect-vbo #(GL15/glDeleteBuffers %))
+    (delete-if-positive ui-rect-vao #(GL30/glDeleteVertexArrays %))
+    (delete-if-positive ui-text-program #(GL20/glDeleteProgram %))
+    (delete-if-positive ui-text-vbo #(GL15/glDeleteBuffers %))
+    (delete-if-positive ui-text-vao #(GL30/glDeleteVertexArrays %))
+    (delete-if-positive ui-text-tex #(GL11/glDeleteTextures %)))
   (reset! state {:program 0 :vao 0 :vbo 0 :ebo 0 :tex 0 :index-count 0
                  :axis-program 0
                  :axis-line-vao 0 :axis-line-vbo 0 :axis-line-count 0
@@ -1228,7 +1468,31 @@ void main() {
                  :sprite-program 0 :sprite-vao 0 :sprite-vbo 0 :sprite-count 0
                  :mesh-vao 0 :mesh-vbo 0 :mesh-ebo 0 :mesh-index-count 0
                  :spring-vao 0 :spring-vbo 0 :spring-count 0
-                 :overlay-program 0 :overlay-vao 0 :overlay-vbo 0}))
+                 :overlay-program 0 :overlay-vao 0 :overlay-vbo 0
+                 :ui-rect-program 0 :ui-rect-vao 0 :ui-rect-vbo 0
+                 :ui-rect-buffer nil :ui-rect-viewport-loc -1 :ui-rect-color-loc -1
+                 :ui-text-program 0 :ui-text-vao 0 :ui-text-vbo 0
+                 :ui-text-tex 0 :ui-text-tex-w 0 :ui-text-tex-h 0
+                 :ui-text-bytes nil :ui-text-buffer nil :ui-text-vertex-buffer nil
+                 :ui-text-viewport-loc -1 :ui-text-color-loc -1}))
+
+(defn- render-mode->gl
+  "将渲染模式映射为 OpenGL 多边形模式。"
+  [mode]
+  (case mode
+    :wire GL11/GL_LINE
+    :point GL11/GL_POINT
+    GL11/GL_FILL))
+
+(defn- with-polygon-mode
+  "在指定多边形模式下执行绘制。"
+  [mode f]
+  (let [gl-mode (render-mode->gl mode)]
+    (GL11/glPolygonMode GL11/GL_FRONT_AND_BACK gl-mode)
+    (try
+      (f)
+      (finally
+        (GL11/glPolygonMode GL11/GL_FRONT_AND_BACK GL11/GL_FILL)))))
 
 (defn- default-render
   [ctx]
@@ -1244,6 +1508,11 @@ void main() {
         {:keys [fb-width fb-height]} (:input ctx)
         [r g b a] @clear-color]
     (GL11/glEnable GL11/GL_DEPTH_TEST)
+    (if (:backface-cull? @display-state)
+      (do
+        (GL11/glEnable GL11/GL_CULL_FACE)
+        (GL11/glCullFace GL11/GL_BACK))
+      (GL11/glDisable GL11/GL_CULL_FACE))
     (GL11/glPointSize 8.0)
     (GL11/glClearColor r g b a)
     (GL11/glClear (bit-or GL11/GL_COLOR_BUFFER_BIT GL11/GL_DEPTH_BUFFER_BIT))
@@ -1275,28 +1544,30 @@ void main() {
           sprite-soft-loc (GL20/glGetUniformLocation sprite-program "uSoftness")]
 
       ;; Draw grid
-      (let [mvp (doto (Matrix4f. projection) (.mul view))
-            grid-width (:line-width @grid-style)]
-        (when (pos? grid-count)
-          (GL20/glUseProgram axis-program)
-          (upload-mat! mvp mat-buf axis-mvp-loc)
-          (GL11/glLineWidth (float grid-width))
-          (GL30/glBindVertexArray grid-vao)
-          (GL11/glDrawArrays GL11/GL_LINES 0 grid-count)
-          (GL11/glLineWidth 1.0)))
+      (when (:show-grid? @display-state)
+        (let [mvp (doto (Matrix4f. projection) (.mul view))
+              grid-width (:line-width @grid-style)]
+          (when (pos? grid-count)
+            (GL20/glUseProgram axis-program)
+            (upload-mat! mvp mat-buf axis-mvp-loc)
+            (GL11/glLineWidth (float grid-width))
+            (GL30/glBindVertexArray grid-vao)
+            (GL11/glDrawArrays GL11/GL_LINES 0 grid-count)
+            (GL11/glLineWidth 1.0))))
 
       ;; Draw axes
-      (let [mvp (doto (Matrix4f. projection) (.mul view))]
-        (GL20/glUseProgram axis-program)
-        (upload-mat! mvp mat-buf axis-mvp-loc)
-        (GL30/glBindVertexArray axis-line-vao)
-        (GL11/glDrawArrays GL11/GL_TRIANGLES 0 axis-line-count)
-        (GL30/glBindVertexArray axis-arrow-vao)
-        (GL11/glDrawArrays GL11/GL_TRIANGLES 0 axis-arrow-count)
-        (GL11/glLineWidth 1.0))
+      (when (:show-axes? @display-state)
+        (let [mvp (doto (Matrix4f. projection) (.mul view))]
+          (GL20/glUseProgram axis-program)
+          (upload-mat! mvp mat-buf axis-mvp-loc)
+          (GL30/glBindVertexArray axis-line-vao)
+          (GL11/glDrawArrays GL11/GL_TRIANGLES 0 axis-line-count)
+          (GL30/glBindVertexArray axis-arrow-vao)
+          (GL11/glDrawArrays GL11/GL_TRIANGLES 0 axis-arrow-count)
+          (GL11/glLineWidth 1.0)))
 
       ;; Draw spring lines
-      (when (pos? spring-count)
+      (when (and (:show-lines? @display-state) (pos? spring-count))
         (let [mvp (doto (Matrix4f. projection) (.mul view))]
           (GL20/glUseProgram axis-program)
           (upload-mat! mvp mat-buf axis-mvp-loc)
@@ -1306,7 +1577,7 @@ void main() {
           (GL11/glLineWidth 1.0)))
 
       ;; Draw point cloud
-      (when (pos? point-count)
+      (when (and (:show-points? @display-state) (pos? point-count))
         (let [mvp (doto (Matrix4f. projection) (.mul view))
               point-mvp-loc (GL20/glGetUniformLocation point-program "mvp")]
           (GL20/glUseProgram point-program)
@@ -1315,95 +1586,110 @@ void main() {
           (GL11/glDrawArrays GL11/GL_POINTS 0 point-count)))
 
       ;; Draw sprites (透明排序后绘制)
-      (let [sprite-count (upload-sprites! view)]
-        (when (pos? sprite-count)
-          (let [mvp (doto (Matrix4f. projection) (.mul view))
-                softness (float (:softness @sprite-style))]
-            (GL11/glEnable GL32/GL_PROGRAM_POINT_SIZE)
-            (GL11/glEnable GL11/GL_BLEND)
-            (GL11/glBlendFunc GL11/GL_SRC_ALPHA GL11/GL_ONE_MINUS_SRC_ALPHA)
-            (GL11/glDepthMask false)
-            (GL20/glUseProgram sprite-program)
-            (upload-mat! mvp mat-buf sprite-mvp-loc)
-            (when (<= 0 sprite-soft-loc)
-              (GL20/glUniform1f sprite-soft-loc softness))
-            (GL30/glBindVertexArray sprite-vao)
-            (GL11/glDrawArrays GL11/GL_POINTS 0 sprite-count)
-            (GL30/glBindVertexArray 0)
-            (GL11/glDepthMask true)
-            (GL11/glDisable GL11/GL_BLEND))))
+      (when (:show-points? @display-state)
+        (let [sprite-count (upload-sprites! view)]
+          (when (pos? sprite-count)
+            (let [mvp (doto (Matrix4f. projection) (.mul view))
+                  softness (float (:softness @sprite-style))]
+              (GL11/glEnable GL32/GL_PROGRAM_POINT_SIZE)
+              (GL11/glEnable GL11/GL_BLEND)
+              (GL11/glBlendFunc GL11/GL_SRC_ALPHA GL11/GL_ONE_MINUS_SRC_ALPHA)
+              (GL11/glDepthMask false)
+              (GL20/glUseProgram sprite-program)
+              (upload-mat! mvp mat-buf sprite-mvp-loc)
+              (when (<= 0 sprite-soft-loc)
+                (GL20/glUniform1f sprite-soft-loc softness))
+              (GL30/glBindVertexArray sprite-vao)
+              (GL11/glDrawArrays GL11/GL_POINTS 0 sprite-count)
+              (GL30/glBindVertexArray 0)
+              (GL11/glDepthMask true)
+              (GL11/glDisable GL11/GL_BLEND)))))
 
-      ;; Draw cubes
-      (GL20/glUseProgram cube-program)
-      (when (<= 0 cube-proj-loc)
-        (upload-mat! projection mat-buf cube-proj-loc))
-      (when (<= 0 cube-view-loc)
-        (upload-mat! view mat-buf cube-view-loc))
-      (let [{:keys [ambient specular-strength shininess]} @lighting-style
-            lights (active-lights camera-pos)]
-        (when (<= 0 cube-viewpos-loc)
-          (GL20/glUniform3f cube-viewpos-loc
-                            (float (nth camera-pos 0))
-                            (float (nth camera-pos 1))
-                            (float (nth camera-pos 2))))
-        (when (and (<= 0 cube-ambient-loc) ambient)
-          (GL20/glUniform3f cube-ambient-loc
-                            (float (nth ambient 0))
-                            (float (nth ambient 1))
-                            (float (nth ambient 2))))
-        (when (<= 0 cube-specular-loc)
-          (GL20/glUniform1f cube-specular-loc (float (or specular-strength 0.3))))
-        (when (<= 0 cube-shininess-loc)
-          (GL20/glUniform1f cube-shininess-loc (float (or shininess 32.0))))
-        (when (<= 0 cube-light-count-loc)
-          (GL20/glUniform1i cube-light-count-loc (count lights)))
-        (set-uniform-vec3-array! cube-program "uLightPos" (map :pos lights))
-        (set-uniform-vec3-array! cube-program "uLightColor" (map :color lights))
-        (set-uniform-float-array! cube-program "uLightIntensity" (map :intensity lights)))
+      (letfn [(draw-geometry! [mode]
+                (with-polygon-mode mode
+                  (fn []
+                    ;; Draw cubes
+                    (when (:show-cubes? @display-state)
+                      (GL20/glUseProgram cube-program)
+                      (when (<= 0 cube-proj-loc)
+                        (upload-mat! projection mat-buf cube-proj-loc))
+                      (when (<= 0 cube-view-loc)
+                        (upload-mat! view mat-buf cube-view-loc))
+                      (let [{:keys [ambient specular-strength shininess]} @lighting-style
+                            lighting? (:lighting? @display-state)
+                            ambient (if lighting? ambient [1.0 1.0 1.0])
+                            specular-strength (if lighting? specular-strength 0.0)
+                            shininess (if lighting? shininess 1.0)
+                            lights (if lighting? (active-lights camera-pos) [])]
+                        (when (<= 0 cube-viewpos-loc)
+                          (GL20/glUniform3f cube-viewpos-loc
+                                            (float (nth camera-pos 0))
+                                            (float (nth camera-pos 1))
+                                            (float (nth camera-pos 2))))
+                        (when (and (<= 0 cube-ambient-loc) ambient)
+                          (GL20/glUniform3f cube-ambient-loc
+                                            (float (nth ambient 0))
+                                            (float (nth ambient 1))
+                                            (float (nth ambient 2))))
+                        (when (<= 0 cube-specular-loc)
+                          (GL20/glUniform1f cube-specular-loc (float (or specular-strength 0.0))))
+                        (when (<= 0 cube-shininess-loc)
+                          (GL20/glUniform1f cube-shininess-loc (float (or shininess 1.0))))
+                        (when (<= 0 cube-light-count-loc)
+                          (GL20/glUniform1i cube-light-count-loc (count lights)))
+                        (set-uniform-vec3-array! cube-program "uLightPos" (map :pos lights))
+                        (set-uniform-vec3-array! cube-program "uLightColor" (map :color lights))
+                        (set-uniform-float-array! cube-program "uLightIntensity" (map :intensity lights)))
 
-      (GL30/glBindVertexArray cube-vao)
-      (doseq [{:keys [pos rot scale color]} @cubes]
-        (let [model (compose-transform pos rot scale)]
-          (when (<= 0 cube-model-loc)
-            (upload-mat! model mat-buf cube-model-loc))
-          (when (<= 0 cube-color-loc)
-            (GL20/glUniform3f cube-color-loc (float (nth color 0)) (float (nth color 1)) (float (nth color 2))))
-          (GL11/glDrawArrays GL11/GL_TRIANGLES 0 cube-vertex-count)))
+                      (GL30/glBindVertexArray cube-vao)
+                      (doseq [{:keys [pos rot scale color]} @cubes]
+                        (let [model (compose-transform pos rot scale)]
+                          (when (<= 0 cube-model-loc)
+                            (upload-mat! model mat-buf cube-model-loc))
+                          (when (<= 0 cube-color-loc)
+                            (GL20/glUniform3f cube-color-loc (float (nth color 0)) (float (nth color 1)) (float (nth color 2))))
+                          (GL11/glDrawArrays GL11/GL_TRIANGLES 0 cube-vertex-count)))
 
-      ;; Draw rig segments
-      (when (seq (:segments @rig-state))
-        (doseq [{:keys [model color]} (:segments @rig-state)]
-          (when (<= 0 cube-model-loc)
-            (upload-mat! model mat-buf cube-model-loc))
-          (when (<= 0 cube-color-loc)
-            (GL20/glUniform3f cube-color-loc (float (nth color 0)) (float (nth color 1)) (float (nth color 2))))
-          (GL11/glDrawArrays GL11/GL_TRIANGLES 0 cube-vertex-count)))
+                      ;; Draw rig segments
+                      (when (seq (:segments @rig-state))
+                        (doseq [{:keys [model color]} (:segments @rig-state)]
+                          (when (<= 0 cube-model-loc)
+                            (upload-mat! model mat-buf cube-model-loc))
+                          (when (<= 0 cube-color-loc)
+                            (GL20/glUniform3f cube-color-loc (float (nth color 0)) (float (nth color 1)) (float (nth color 2))))
+                          (GL11/glDrawArrays GL11/GL_TRIANGLES 0 cube-vertex-count))))
 
-      ;; Draw generic mesh (e.g. sphere)
-      (when (pos? mesh-index-count)
-        (let [{:keys [pos rot scale color]} @mesh-style
-              model (compose-transform pos rot scale)]
-          (when (<= 0 cube-model-loc)
-            (upload-mat! model mat-buf cube-model-loc))
-          (when (<= 0 cube-color-loc)
-            (GL20/glUniform3f cube-color-loc (float (nth color 0)) (float (nth color 1)) (float (nth color 2))))
-          (GL30/glBindVertexArray mesh-vao)
-          (GL11/glDrawElements GL11/GL_TRIANGLES mesh-index-count GL11/GL_UNSIGNED_INT 0)
-          (when (:enabled? @wireframe-overlay)
-            (let [{:keys [line-width color]} @wireframe-overlay
-                  [wr wg wb] color]
-              (GL11/glEnable GL11/GL_POLYGON_OFFSET_LINE)
-              (GL11/glPolygonOffset -1.0 -1.0)
-              (GL11/glPolygonMode GL11/GL_FRONT_AND_BACK GL11/GL_LINE)
-              (GL11/glLineWidth (float line-width))
-              (when (<= 0 cube-model-loc)
-                (upload-mat! model mat-buf cube-model-loc))
-              (when (<= 0 cube-color-loc)
-                (GL20/glUniform3f cube-color-loc (float wr) (float wg) (float wb)))
-              (GL11/glDrawElements GL11/GL_TRIANGLES mesh-index-count GL11/GL_UNSIGNED_INT 0)
-              (GL11/glPolygonMode GL11/GL_FRONT_AND_BACK GL11/GL_FILL)
-              (GL11/glDisable GL11/GL_POLYGON_OFFSET_LINE)
-              (GL11/glLineWidth 1.0)))))
+                    ;; Draw generic mesh (e.g. sphere)
+                    (when (and (:show-mesh? @display-state) (pos? mesh-index-count))
+                      (let [{:keys [pos rot scale color]} @mesh-style
+                            model (compose-transform pos rot scale)]
+                        (when (<= 0 cube-model-loc)
+                          (upload-mat! model mat-buf cube-model-loc))
+                        (when (<= 0 cube-color-loc)
+                          (GL20/glUniform3f cube-color-loc (float (nth color 0)) (float (nth color 1)) (float (nth color 2))))
+                        (GL30/glBindVertexArray mesh-vao)
+                        (GL11/glDrawElements GL11/GL_TRIANGLES mesh-index-count GL11/GL_UNSIGNED_INT 0)
+                        (when (and (= mode :fill) (:enabled? @wireframe-overlay))
+                          (let [{:keys [line-width color]} @wireframe-overlay
+                                [wr wg wb] color]
+                            (GL11/glEnable GL11/GL_POLYGON_OFFSET_LINE)
+                            (GL11/glPolygonOffset -1.0 -1.0)
+                            (GL11/glPolygonMode GL11/GL_FRONT_AND_BACK GL11/GL_LINE)
+                            (GL11/glLineWidth (float line-width))
+                            (when (<= 0 cube-model-loc)
+                              (upload-mat! model mat-buf cube-model-loc))
+                            (when (<= 0 cube-color-loc)
+                              (GL20/glUniform3f cube-color-loc (float wr) (float wg) (float wb)))
+                            (GL11/glDrawElements GL11/GL_TRIANGLES mesh-index-count GL11/GL_UNSIGNED_INT 0)
+                            (GL11/glPolygonMode GL11/GL_FRONT_AND_BACK GL11/GL_FILL)
+                            (GL11/glDisable GL11/GL_POLYGON_OFFSET_LINE)
+                            (GL11/glLineWidth 1.0))))))))]
+        (when (:display-filled? @display-state)
+          (draw-geometry! :fill))
+        (when (:display-wireframe? @display-state)
+          (draw-geometry! :wire))
+        (when (:display-points? @display-state)
+          (draw-geometry! :point)))
 
       ;; 绘制原始四边形(在立方体后方, 作为参考)
       (let [mvp (doto (Matrix4f.)
@@ -1630,6 +1916,369 @@ void main() {
                                                 (pause!))))
        (register-command! key action (fn [_ _ _] (set-scene! cmd)))))))
 
+(defn- demo-command-specs
+  "收集默认演示命令的键位映射。"
+  []
+  (let [specs (atom [])]
+    (kinput/register-demo-commands!
+     (fn [key action cmd]
+       (swap! specs conj {:key key :action action :cmd cmd})))
+    @specs))
+
+(defn- command-label
+  "生成命令在菜单中的显示标题。"
+  [cmd]
+  (case cmd
+    :demo "Demo"
+    :pause "Pause / Resume"
+    (kui/format-title cmd)))
+
+(defn- command-action
+  "返回命令对应的执行函数。"
+  [cmd]
+  (case cmd
+    :demo (fn [] (start-demo!))
+    :pause (fn []
+             (if (get-in @app [:flags :paused?])
+               (resume!)
+               (pause!)))
+    (fn [] (set-scene! cmd))))
+
+(defn- reset-camera!
+  "重置相机视角。"
+  []
+  (swap! app assoc :camera {:yaw 0.0 :pitch 0.0 :distance 3.0})
+  :ok)
+
+(defn- clear-objects!
+  "清空当前场景中可见对象。"
+  []
+  (remove-all-cubes!)
+  (clear-mesh!)
+  (clear-point-cloud!)
+  (clear-line-segments!)
+  (clear-sprites!)
+  (clear-rig!)
+  :ok)
+
+(defn- line-data-from-points
+  "将折线点转换为线段数据。"
+  [points color]
+  (let [[r g b] (map float (take 3 (or color [0.9 0.6 0.2])))]
+    (vec
+     (mapcat (fn [[a b]]
+               (let [[ax ay az] a
+                     [bx by bz] b]
+                 [(float ax) (float ay) (float az)
+                  r g b
+                  (float bx) (float by) (float bz)
+                  r g b]))
+             (partition 2 1 points)))))
+
+(defn- set-curve!
+  "设置曲线线段。"
+  [points]
+  (let [line-data (line-data-from-points points [0.9 0.6 0.2])]
+    (swap! display-state assoc :show-lines? true)
+    (set-line-segments! line-data))
+  :ok)
+
+(defn- set-mesh-from!
+  "设置网格并更新显示样式。"
+  [mesh]
+  (let [{:keys [vertices indices]} mesh
+        color [0.25 0.65 0.9]]
+    (set-mesh! vertices indices)
+    (set-mesh-style! {:pos [0.0 0.0 0.0]
+                      :rot [0.0 0.0 0.0]
+                      :scale [1.0 1.0 1.0]
+                      :color color}))
+  :ok)
+
+(defn- toggle-display!
+  "切换显示状态。"
+  [k]
+  (swap! display-state update k not)
+  :ok)
+
+(defn- set-render-mode!
+  "设置多边形显示模式。"
+  [mode]
+  (swap! display-state assoc
+         :display-filled? (= mode :fill)
+         :display-wireframe? (= mode :wire)
+         :display-points? (= mode :point))
+  :ok)
+
+(defn- toggle-smooth-shading!
+  "切换平滑着色并刷新网格法线。"
+  []
+  (swap! display-state update :smooth-shading? not)
+  (apply-mesh-shading!)
+  :ok)
+
+(defn- set-objects-visible!
+  "批量设置对象显示状态。"
+  [visible?]
+  (swap! display-state merge
+         {:show-cubes? visible?
+          :show-mesh? visible?
+          :show-points? visible?
+          :show-lines? visible?})
+  :ok)
+
+(defn- show-all!
+  "显示所有对象。"
+  []
+  (set-objects-visible! true))
+
+(defn- hide-all!
+  "隐藏所有对象。"
+  []
+  (set-objects-visible! false))
+
+(defn- set-theme-bright!
+  "切换为明亮主题。"
+  []
+  (set-clear-color! 0.94 0.95 0.97 1.0)
+  (set-grid-style! {:minor-color [0.18 0.18 0.24]
+                    :major-color [0.28 0.28 0.34]})
+  (set-lighting! {:ambient [0.14 0.14 0.16]
+                  :specular-strength 0.35
+                  :shininess 32.0})
+  :ok)
+
+(defn- set-theme-dark!
+  "切换为暗色主题。"
+  []
+  (set-clear-color! 0.05 0.05 0.08 1.0)
+  (set-grid-style! {:minor-color [0.1 0.1 0.14]
+                    :major-color [0.2 0.2 0.26]})
+  (set-lighting! {:ambient [0.1 0.1 0.12]
+                  :specular-strength 0.25
+                  :shininess 24.0})
+  :ok)
+
+(defn- info-lines
+  "生成信息面板内容。"
+  []
+  [(str "Scene: " (current-scene))
+   (str "Paused: " (get-in @app [:flags :paused?]))
+   (str "Manual: " (get-in @app [:flags :manual-play?]))
+   (str "Cubes: " (cube-count))
+   (str "Mesh: " (if (pos? (:mesh-index-count @state)) "On" "Off"))
+   (str "Points: " (count (:points @point-cloud-state)))
+   (str "Lines: " (:spring-count @state))])
+
+(defn- shapes-lines
+  "生成形状概览。"
+  []
+  [(str "Cubes: " (cube-count))
+   (str "Mesh: " (if (pos? (:mesh-index-count @state)) "On" "Off"))
+   (str "Points: " (count (:points @point-cloud-state)))
+   (str "Lines: " (:spring-count @state))])
+
+(defn- motions-lines
+  "生成时间线信息。"
+  []
+  (let [{:keys [enabled? items index elapsed]} (:timeline @app)]
+    [(str "Timeline: " (if enabled? "On" "Off"))
+     (str "Items: " (count items))
+     (str "Index: " index)
+     (str "Elapsed: " (format "%.2f" (double elapsed)))]))
+
+(defn- show-info!
+  "显示信息面板。"
+  [title lines]
+  (kui/set-info! title lines))
+
+(defn- toggle-info!
+  "切换信息面板。"
+  []
+  (kui/toggle-info!))
+
+(defn- set-interactive-mode!
+  "设置交互模式。进入后隐藏 UI，按 ESC 退出。"
+  [enabled?]
+  (swap! app assoc-in [:flags :ui-interactive?] (boolean enabled?))
+  (if enabled?
+    (do
+      (kui/hide-menu!)
+      (kui/clear-info!))
+    (kui/show-menu!))
+  :ok)
+
+(defn- interactive-mode?
+  "判断是否处于交互模式。"
+  []
+  (get-in @app [:flags :ui-interactive?]))
+
+(defn- show-inspector!
+  "显示综合信息。"
+  []
+  (show-info! "Inspector" (info-lines)))
+
+(defn- show-shapes!
+  "显示形状信息。"
+  []
+  (show-info! "Shapes" (shapes-lines)))
+
+(defn- show-motions!
+  "显示时间线信息。"
+  []
+  (show-info! "Motions" (motions-lines)))
+
+(defn- request-exit!
+  "请求关闭窗口。"
+  []
+  (when-let [win (:window @app)]
+    (GLFW/glfwSetWindowShouldClose win true))
+  :ok)
+
+(defn- show-unimplemented!
+  "显示未实现提示。"
+  [title]
+  (show-info! title ["该功能尚未实现。"])
+  :ok)
+
+(defn- new-scene!
+  "创建新场景并清空当前对象。"
+  []
+  (stop-demo!)
+  (set-scene! :baseline)
+  (clear-objects!)
+  :ok)
+
+(defn- frame-selection!
+  "当前版本没有选择集，先重置相机。"
+  []
+  (reset-camera!))
+
+(defn- init-ui!
+  "初始化菜单与按钮。"
+  []
+  (let [scene-table (kui/make-command-table
+                     "Scene"
+                     [(kui/command-entry GLFW/GLFW_KEY_N "New Scene" (fn [] (new-scene!)))
+                      (kui/command-entry GLFW/GLFW_KEY_E "Export OBJ File"
+                                         (fn [] (show-unimplemented! "Export OBJ File")))
+                      (kui/command-entry GLFW/GLFW_KEY_U "Export USD File"
+                                         (fn [] (show-unimplemented! "Export USD File")))
+                      (kui/command-entry GLFW/GLFW_KEY_I "Initialize Scene" (fn [] (reset-scene!)))
+                      (kui/command-entry GLFW/GLFW_KEY_Q "Quit Scene" (fn [] (request-exit!)))])
+
+        edit-table (kui/make-command-table
+                    "Edit"
+                    [(kui/command-entry GLFW/GLFW_KEY_BACKSPACE "Delete" (fn [] (clear-objects!)))
+                     (kui/command-entry GLFW/GLFW_KEY_S "Show" (fn [] (show-all!)))
+                     (kui/command-entry GLFW/GLFW_KEY_H "Hide" (fn [] (hide-all!)))])
+
+        curve-table (kui/make-command-table
+                     "Create Curve"
+                     [(kui/command-entry GLFW/GLFW_KEY_L "Line Curve"
+                                         (fn [] (set-curve! (kgeom/line-points [0.0 0.0 0.0]
+                                                                               [2.0 0.0 0.0]
+                                                                               16))))
+                      (kui/command-entry GLFW/GLFW_KEY_R "Rectangle Curve"
+                                         (fn [] (set-curve! (kgeom/rectangle-points 2.0 1.0 32))))
+                      (kui/command-entry GLFW/GLFW_KEY_S "Square Curve"
+                                         (fn [] (set-curve! (kgeom/square-points 1.5 32))))
+                      (kui/command-entry GLFW/GLFW_KEY_C "Circle Curve"
+                                         (fn [] (set-curve! (kgeom/circle-points 2.0 48))))
+                      (kui/command-entry GLFW/GLFW_KEY_A "Arc Curve"
+                                         (fn [] (set-curve! (kgeom/arc-points 2.0 0.0 90.0 24))))
+                      (kui/command-entry GLFW/GLFW_KEY_N "Sine Curve"
+                                         (fn [] (set-curve! (kgeom/sine-curve-points 360.0 1.0 2.0 1.0 64))))
+                      (kui/command-entry GLFW/GLFW_KEY_P "Spiral Curve"
+                                         (fn [] (set-curve! (kgeom/spiral-points 0.4 2.0 -1.0 4 96))))])
+
+        poly-table (kui/make-command-table
+                    "Create Polyhedron"
+                    [(kui/command-entry GLFW/GLFW_KEY_T "Tetrahedron"
+                                        (fn [] (set-mesh-from! (kgeom/tetrahedron-mesh 2.0))))
+                     (kui/command-entry GLFW/GLFW_KEY_C "Cube"
+                                        (fn [] (set-mesh-from! (kgeom/cube-mesh 2.0))))
+                     (kui/command-entry GLFW/GLFW_KEY_O "Octahedron"
+                                        (fn [] (set-mesh-from! (kgeom/octahedron-mesh 2.0))))
+                     (kui/command-entry GLFW/GLFW_KEY_D "Dodecahedron"
+                                        (fn [] (set-mesh-from! (kgeom/dodecahedron-mesh 2.0))))
+                     (kui/command-entry GLFW/GLFW_KEY_I "Icosahedron"
+                                        (fn [] (set-mesh-from! (kgeom/icosahedron-mesh 2.0))))
+                     (kui/command-entry GLFW/GLFW_KEY_S "Sphere"
+                                        (fn [] (set-mesh-from! (kgeom/uv-sphere 24 24))))])
+
+        create-table (kui/make-command-table
+                      "Create"
+                      [(kui/subtable-entry GLFW/GLFW_KEY_C "Create Curve" curve-table)
+                       (kui/subtable-entry GLFW/GLFW_KEY_P "Create Polyhedron" poly-table)])
+
+        inspect-table (kui/make-command-table
+                       "Inspect"
+                       [(kui/command-entry GLFW/GLFW_KEY_R "Reset Camera" (fn [] (reset-camera!)))
+                        (kui/command-entry GLFW/GLFW_KEY_F "Frame Selection" (fn [] (frame-selection!)))
+                        (kui/command-entry GLFW/GLFW_KEY_I "Inspector" (fn [] (show-inspector!)))
+                        (kui/command-entry GLFW/GLFW_KEY_S "Shapes" (fn [] (show-shapes!)))
+                        (kui/command-entry GLFW/GLFW_KEY_M "Motions" (fn [] (show-motions!)))])
+
+        display-table (kui/make-command-table
+                       "Display"
+                       [(kui/command-entry GLFW/GLFW_KEY_GRAVE_ACCENT "Toggle Lighting"
+                                           (fn [] (toggle-display! :lighting?)))
+                        (kui/command-entry GLFW/GLFW_KEY_1 "Toggle Filled Display"
+                                           (fn [] (toggle-display! :display-filled?)))
+                        (kui/command-entry GLFW/GLFW_KEY_2 "Toggle Wireframe Display"
+                                           (fn [] (toggle-display! :display-wireframe?)))
+                        (kui/command-entry GLFW/GLFW_KEY_3 "Toggle Point Display"
+                                           (fn [] (toggle-display! :display-points?)))
+                        (kui/command-entry GLFW/GLFW_KEY_4 "Toggle Backface Culling"
+                                           (fn [] (toggle-display! :backface-cull?)))
+                        (kui/command-entry GLFW/GLFW_KEY_5 "Toggle Smooth Shading"
+                                           (fn [] (toggle-smooth-shading!)))
+                        (kui/command-entry GLFW/GLFW_KEY_6 "Toggle Ground Plane Display"
+                                           (fn [] (toggle-display! :show-grid?)))
+                        (kui/command-entry GLFW/GLFW_KEY_7 "Toggle World Axes Display"
+                                           (fn [] (toggle-display! :show-axes?)))
+                        (kui/command-entry GLFW/GLFW_KEY_8 "Set Bright Theme"
+                                           (fn [] (set-theme-bright!)))
+                        (kui/command-entry GLFW/GLFW_KEY_9 "Set Dark Theme"
+                                           (fn [] (set-theme-dark!)))])
+
+        context-table (kui/make-command-table
+                       "Context"
+                       [(kui/command-entry GLFW/GLFW_KEY_T "Transform Selection"
+                                           (fn [] (show-unimplemented! "Transform Selection")))])
+
+        root (kui/make-command-table
+              "kons-9"
+              [(kui/subtable-entry GLFW/GLFW_KEY_S "Scene" scene-table)
+               (kui/subtable-entry GLFW/GLFW_KEY_E "Edit" edit-table)
+               (kui/subtable-entry GLFW/GLFW_KEY_C "Create" create-table)
+               (kui/subtable-entry GLFW/GLFW_KEY_I "Inspect" inspect-table)
+               (kui/subtable-entry GLFW/GLFW_KEY_D "Display" display-table)
+               (kui/command-entry GLFW/GLFW_KEY_M "Interactive Mode (ESC to exit)"
+                                  (fn [] (set-interactive-mode! true)))
+               (kui/subtable-entry GLFW/GLFW_KEY_X "Context" context-table)])
+
+        buttons [{:id :menu
+                  :label "Menu"
+                  :action (fn [] (kui/toggle-menu!))}
+                 {:id :demo
+                  :label "Demo"
+                  :action (fn [] (start-demo!))}
+                 {:id :pause
+                  :label (fn []
+                           (if (get-in @app [:flags :paused?]) "Resume" "Pause"))
+                  :action (fn []
+                            (if (get-in @app [:flags :paused?])
+                              (resume!)
+                              (pause!)))}
+                 {:id :info
+                  :label "Info"
+                  :action (fn [] (toggle-info!))}]]
+    (kui/set-menu! root)
+    (kui/set-buttons! buttons)
+    :ok))
+
 (defn reload-shaders!
   "在 GL 线程上重新加载着色器. 接受新的顶点/片段着色器源码字符串.
   传入 nil 表示保持现有的不变.
@@ -1670,8 +2319,49 @@ void main() {
        (GL15/glBufferData GL15/GL_ELEMENT_ARRAY_BUFFER ibuf GL15/GL_STATIC_DRAW)
        (swap! state assoc :index-count (alength indices))))))
 
-(defn set-mesh!
-  "设置通用网格数据. vertices 为包含位置与法线的 float-array, indices 为 int-array. "
+(defn- normalize3
+  [x y z]
+  (let [len (Math/sqrt (+ (* x x) (* y y) (* z z)))]
+    (if (<= len 1.0e-9)
+      [0.0 0.0 0.0]
+      [(/ x len) (/ y len) (/ z len)])))
+
+(defn- smooth-vertices
+  "根据位置合并法线，生成平滑着色顶点数据。"
+  [^floats vertices]
+  (let [count (quot (alength vertices) 6)
+        acc (transient {})
+        out (float-array (alength vertices))]
+    (dotimes [i count]
+      (let [base (* i 6)
+            x (aget vertices base)
+            y (aget vertices (inc base))
+            z (aget vertices (+ base 2))
+            nx (aget vertices (+ base 3))
+            ny (aget vertices (+ base 4))
+            nz (aget vertices (+ base 5))
+            key [x y z]
+            [sx sy sz] (get acc key [0.0 0.0 0.0])]
+        (assoc! acc key [(+ sx nx) (+ sy ny) (+ sz nz)])))
+    (let [acc (persistent! acc)
+          normals (reduce-kv (fn [m k [sx sy sz]]
+                               (assoc m k (normalize3 sx sy sz)))
+                             {} acc)]
+      (dotimes [i count]
+        (let [base (* i 6)
+              x (aget vertices base)
+              y (aget vertices (inc base))
+              z (aget vertices (+ base 2))
+              [nx ny nz] (get normals [x y z] [0.0 0.0 0.0])]
+          (aset-float out base (float x))
+          (aset-float out (inc base) (float y))
+          (aset-float out (+ base 2) (float z))
+          (aset-float out (+ base 3) (float nx))
+          (aset-float out (+ base 4) (float ny))
+          (aset-float out (+ base 5) (float nz)))))
+    out))
+
+(defn- upload-mesh!
   [vertices indices]
   (enqueue!
    (fn []
@@ -1690,10 +2380,29 @@ void main() {
        (GL30/glBindVertexArray 0)
        (swap! state assoc :mesh-index-count (alength indices))))))
 
+(defn- apply-mesh-shading!
+  []
+  (when-let [{:keys [vertices indices]} (:base @mesh-data)]
+    (let [smooth? (:smooth-shading? @display-state)
+          smooth (when smooth? (or (get-in @mesh-data [:smooth :vertices])
+                                   (smooth-vertices vertices)))
+          vertices (if smooth? smooth vertices)]
+      (when (and smooth? (nil? (get-in @mesh-data [:smooth :vertices])))
+        (swap! mesh-data assoc :smooth {:vertices smooth :indices indices}))
+      (upload-mesh! vertices indices))))
+
+(defn set-mesh!
+  "设置通用网格数据. vertices 为包含位置与法线的 float-array, indices 为 int-array. "
+  [vertices indices]
+  (swap! mesh-data assoc :base {:vertices vertices :indices indices}
+         :smooth nil)
+  (apply-mesh-shading!))
+
 (defn clear-mesh!
   "清空通用网格. "
   []
-  (set-mesh! (float-array []) (int-array [])))
+  (swap! mesh-data assoc :base nil :smooth nil)
+  (upload-mesh! (float-array []) (int-array [])))
 
 (defn set-mesh-style!
   "设置网格的位姿与颜色. "
@@ -1854,25 +2563,45 @@ void main() {
        window
        (reify GLFWKeyCallbackI
          (invoke [_ win key _ action _]
-           (kinput/handle-key win key action))))
+           (cond
+             (and (interactive-mode?) (= key GLFW/GLFW_KEY_ESCAPE) (= action GLFW/GLFW_PRESS))
+             (set-interactive-mode! false)
+
+             (interactive-mode?)
+             (kinput/handle-key win key action)
+
+             (kui/handle-key! key action)
+             nil
+
+             :else
+             (kinput/handle-key win key action)))))
       (GLFW/glfwSetMouseButtonCallback
        window
        (reify GLFWMouseButtonCallbackI
          (invoke [_ win button action _]
            (when (= button GLFW/GLFW_MOUSE_BUTTON_LEFT)
-             (if (= action GLFW/GLFW_PRESS)
-               (let [xbuf (BufferUtils/createDoubleBuffer 1)
-                     ybuf (BufferUtils/createDoubleBuffer 1)]
-                 (GLFW/glfwGetCursorPos win xbuf ybuf)
-                 (swap! app assoc-in [:input :dragging?] true)
-                 (swap! app assoc-in [:input :last-x] (.get xbuf 0))
-                 (swap! app assoc-in [:input :last-y] (.get ybuf 0)))
-               (swap! app assoc-in [:input :dragging?] false))))))
+             (let [xbuf (BufferUtils/createDoubleBuffer 1)
+                   ybuf (BufferUtils/createDoubleBuffer 1)]
+               (GLFW/glfwGetCursorPos win xbuf ybuf)
+               (let [x (.get xbuf 0)
+                     y (.get ybuf 0)
+                     win-w (get-in @app [:input :win-width])
+                     win-h (get-in @app [:input :win-height])
+                     handled? (when-not (interactive-mode?)
+                                (kui/handle-mouse-press! x y button action win-w win-h))]
+                 (swap! app assoc-in [:input :last-x] x)
+                 (swap! app assoc-in [:input :last-y] y)
+                 (cond
+                   handled? (swap! app assoc-in [:input :dragging?] false)
+                   (= action GLFW/GLFW_PRESS) (swap! app assoc-in [:input :dragging?] true)
+                   (= action GLFW/GLFW_RELEASE) (swap! app assoc-in [:input :dragging?] false))))))))
       (GLFW/glfwSetCursorPosCallback
        window
        (reify GLFWCursorPosCallbackI
          (invoke [_ _ xpos ypos]
-           (let [{:keys [dragging? last-x last-y]} (:input @app)]
+           (let [{:keys [dragging? last-x last-y win-width win-height]} (:input @app)]
+             (when-not (interactive-mode?)
+               (kui/handle-mouse-move! xpos ypos win-width win-height))
              (when (or dragging? (zero? last-x))
                (let [dx (- xpos last-x)
                      dy (- ypos last-y)]
@@ -1895,6 +2624,7 @@ void main() {
       (init-resources!)
       (ensure-default-scenes!)
       (register-demo-commands!)
+      (init-ui!)
       (register-command! GLFW/GLFW_KEY_M GLFW/GLFW_PRESS
                          (fn [_ _ _]
                            (set-manual-play!
@@ -1913,10 +2643,11 @@ void main() {
       (apply-scene! :baseline)
       (reset! render-fn nil)
       (set-key-handler!
-       (fn [win key action]
+       (fn [_ key action]
          (when (and (= key GLFW/GLFW_KEY_ESCAPE)
-                    (= action GLFW/GLFW_PRESS))
-           (GLFW/glfwSetWindowShouldClose win true))))
+                    (= action GLFW/GLFW_PRESS)
+                    (interactive-mode?))
+           (set-interactive-mode! false))))
       (loop []
         (when-not (GLFW/glfwWindowShouldClose window)
           (drain-commands!)
@@ -1926,6 +2657,7 @@ void main() {
             (update-transition! dt)
             (update-scene! dt))
           (render-scene!)
+          (render-ui!)
           (render-transition!)
           (GLFW/glfwSwapBuffers window)
           (GLFW/glfwPollEvents)
