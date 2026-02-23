@@ -1,0 +1,408 @@
+#+TITLE: Kons-9 × Clojure/LWJGL 实战手册
+#+AUTHOR: Codex
+#+DATE: 2026-02-08
+#+OPTIONS: toc:2 num:t
+
+* 前言
+本书面向希望用 Clojure + LWJGL 复刻/扩展 kons-9 思路的开发者.
+目标是:
+1) 系统化覆盖 kons-9 的全部内容模块(Kernel, Plugins, Graphics, API, Demos).
+2) 明确 Clojure 版本的实现方式与现有缺口.
+3) 引导读者最终完成一个基于 kons 风格工作流的 3D 打砖块(Breakout).
+
+本书以当前代码仓库为准, 已去除历史文档中的重复与不准确统计.
+
+* 快速索引
+- kons-9 主仓库: ~kons-9-main~
+- Clojure 实现代码: ~src/lwjgl/experiment/kons9~
+- 场景入口: ~src/lwjgl/experiment/kons9/scenes.clj~
+- REPL API: ~src/lwjgl/experiment/kons9/api.clj~
+- 展示场景: ~src/lwjgl/experiment/kons9/showcase.clj~
+
+* 运行与 REPL 快速上手
+- 启动热重载 REPL: ~./run.sh hotreload-nrepl~
+- 切换场景:
+  - ~(require '[lwjgl.experiment.kons9.api :as api])~
+  - ~(api/scene! :showcase-primitives)~
+- 查看已注册场景:
+  - ~(api/scene-list)~
+
+* 1. kons-9 总览
+kons-9 的定位是"3D IDE", 强调:
+- REPL 驱动
+- 场景即数据
+- 可扩展插件式能力
+
+Clojure 实现侧对应的核心目标:
+- 热重载 + REPL 驱动(~src/lwjgl/experiment/hotreload.clj~)
+- 场景生命周期(~init/update/render/cleanup~)
+- 轻量 DSL 与函数式数据流(~src/lwjgl/experiment/kons9/dsl.clj~)
+
+* 2. Kernel(内核)
+*kons-9 核心类层级(来自 doc/kernel-overview.md)*
+- ITEM
+  - SCENE
+  - SCENE-ITEM
+    - SHAPE
+      - GROUP
+      - POINT-CLOUD
+        - POLYGON
+        - POLYHEDRON
+    - MOTION
+      - MOTION-GROUP
+      - ANIMATOR
+        - SHAPE-ANIMATOR
+  - TRANSFORM / TRANSFORM-OPERATOR 体系
+
+*Clojure 侧实现方式(函数式)*
+- Scene 管理: ~src/lwjgl/experiment/kons9/runtime.clj~
+- 场景注册/切换: ~src/lwjgl/experiment/hotreload.clj~
+- 场景数据组织: ~src/lwjgl/experiment/kons9/scenes.clj~
+- 变换矩阵: ~src/lwjgl/experiment/kons9/math.clj~
+
+*关键差异*
+- kons-9: 基于 CLOS 的对象层级 + 动态多态
+- Clojure: 数据 + 函数, 生命周期由 hotreload 运行时统一驱动
+
+*缺口*
+- 细粒度的 Shape/Motion 对象体系(目前偏场景级脚本化)
+- Scene graph 与 Motion graph 的可视化编辑/遍历接口
+
+* 3. API 结构(kons-9)
+*API 章节框架(来自 src/api/api.lisp)*
+- Introduction / Points / Color / Matrix
+- Shape / Group / Scene
+- Command Table / Top-level
+
+*Clojure 对应入口*
+- 顶层 REPL API: ~src/lwjgl/experiment/kons9/api.clj~
+- 场景控制: ~scene!~ / ~scene-list~ / ~timeline!~ / ~start-demo!~
+- 渲染控制: ~clear-color!~ / ~lighting!~ / ~mesh!~ / ~points!~
+
+*缺口*
+- API 文档自动生成体系(PAX 等价物)
+- Command table 的完整 UI 层(目前仅键盘事件)
+
+* 4. Points / Color / Matrix
+*kons-9 内容*
+- Points: 专用 single-float 向量与点运算
+- Color: 颜色插值与操作
+- Matrix: 矩阵与变换
+
+*Clojure 实现*
+- 向量/颜色/矩阵: ~src/lwjgl/experiment/kons9/math.clj~
+- 变换矩阵生成: ~compose-transform~ / ~chain-transform~
+
+*缺口*
+- 无专用向量类型(目前使用普通 vector)
+- 缺少可交换的矩阵/点类型协议
+
+* 5. Shape / Polyhedron / Point-Cloud
+*kons-9*
+- Shape / Group / Point-Cloud / Polyhedron 层级
+
+*Clojure 实现*
+- 通用网格上传: ~src/lwjgl/experiment/hotreload.clj~ 中 ~set-mesh!~
+- 多面体转换: ~src/lwjgl/experiment/kons9/geometry.clj~ 的 ~polyhedron-mesh~
+- 面数据转换: ~mesh-from-faces~(~geometry.clj~)
+
+*注意*
+- ~set-mesh!~ 需要三角化后的 ~float-array~ 顶点与 ~int-array~ 索引.
+- ~{:vertices :faces}~ 需通过 ~mesh-from-faces~ 转换.
+
+*缺口*
+- Shape/Group 的可组合层级结构
+- Polyhedron/Point-Cloud 的统一抽象层
+
+* 6. 曲线系统(Parametric / Procedural Curves)
+*kons-9 插件*
+- ~parametric-curve.lisp~
+- ~procedural-curve.lisp~
+
+*Clojure 实现*
+- ~src/lwjgl/experiment/kons9/geometry/curves.clj~
+  - Bezier / Catmull-Rom / Circle / Helix / Spiral
+
+*缺口*
+- NURBS / B-spline 等高级曲线
+- 曲线编辑与 UI 控制点交互
+
+* 7. Sweep Mesh / UV Mesh
+*kons-9 插件*
+- ~sweep-mesh.lisp~
+- ~uv-mesh.lisp~
+
+*Clojure 实现*
+- Sweep: ~src/lwjgl/experiment/kons9/geometry/sweep.clj~
+- UV: ~src/lwjgl/experiment/kons9/geometry.clj~ 的 ~uv-sphere~
+
+*缺口*
+- UV mesh 的完整参数化集合(plane/cylinder/torus 等)
+- Sweep-mesh-group 相关批量管理能力
+
+* 8. Subdivision / Superquadric
+*kons-9 插件*
+- ~subdiv-mesh.lisp~
+- ~smooth-subdiv-mesh.lisp~
+- ~refine-subdiv-mesh.lisp~
+- ~fractal-subdiv-mesh.lisp~
+- ~superquadric.lisp~
+
+*Clojure 实现*
+- ~src/lwjgl/experiment/kons9/geometry/subdiv.clj~
+  - Catmull-Clark / Loop
+- ~src/lwjgl/experiment/kons9/geometry/primitives.clj~
+  - Superquadric
+
+*缺口*
+- Smooth/refine/fractal subdiv 的策略
+- Subdiv 的可视化编辑与参数管理
+
+* 9. Heightfield / Scalar Field / Isosurface
+*kons-9 插件*
+- ~heightfield.lisp~
+- ~scalar-field.lisp~
+- ~sdf.lisp~
+- ~isosurface.lisp~
+
+*Clojure 实现*
+- Heightfield: ~src/lwjgl/experiment/kons9/geometry.clj~
+- SDF/Isosurface: ~src/lwjgl/experiment/kons9/sdf.clj~
+- REPL 接口: ~src/lwjgl/experiment/kons9/api.clj~
+
+*缺口*
+- 标量场组合器与可视化调参 UI
+- Isosurface 的多分辨率/缓存策略
+
+* 10. Particle / Force Field / Sprite
+*kons-9 插件*
+- ~particle.lisp~
+- ~force-field.lisp~
+- ~sprite.lisp~
+
+*Clojure 实现*
+- 粒子系统与力场: ~src/lwjgl/experiment/kons9/particles.clj~
+- Sprite 渲染: ~src/lwjgl/experiment/hotreload.clj~ 的 ~set-sprites!~
+
+*缺口*
+- Sprite 相关 API 的完整封装与示例
+- 粒子缓存池, Emitter 分类
+
+* 11. Boid / L-System / Growth
+*kons-9 插件*
+- ~boid-system.lisp~
+- ~l-system.lisp~
+- ~growth.lisp~
+
+*Clojure 实现*
+- Boid: ~src/lwjgl/experiment/kons9/animation/boid.clj~
+- L-System: ~src/lwjgl/experiment/kons9/animation/lsystem.clj~
+
+*缺口*
+- Growth 插件(生长模型, 资源分配)
+
+* 12. IO / Data Interop
+*kons-9 插件*
+- ~obj.lisp~ / ~stl.lisp~ / ~usd.lisp~
+
+*Clojure 实现*
+- OBJ: ~src/lwjgl/experiment/kons9/io/obj.clj~
+- STL: ~src/lwjgl/experiment/kons9/io/stl.clj~
+
+*缺口*
+- USD 导入/导出
+- MTL 材质支持
+
+* 13. UI / Interactor / Object Picking
+*kons-9 Kernel/Graphics*
+- ~interactor.lisp~ / ~object-picking.lisp~
+- ~graphics/glfw/*~, ~graphics/opengl/ui-widgets.lisp~
+
+*Clojure 实现*
+- 键盘命令: ~src/lwjgl/experiment/kons9/input.clj~
+
+*缺口*
+- 鼠标拾取/射线选择
+- Gizmo(旋转/位移/缩放)
+- UI 组件与属性面板
+
+* 14. Graphics / Text / Rendering
+*kons-9*
+- OpenGL 渲染器
+- OpenGL2/3 Text 支持
+
+*Clojure 实现*
+- 渲染主循环: ~src/lwjgl/experiment/hotreload.clj~
+- 主要依赖 LWJGL + OpenGL
+
+*缺口*
+- 文本渲染
+- UI 叠加层
+- 后处理管线
+
+* 15. Demos 对照(kons-9-main/test)
+| kons-9 demo                     | 主题          | Clojure 线索                               | 状态 |
+|---------------------------------+---------------+--------------------------------------------+------|
+| demo-kernel.lisp                | 核心几何/场景 | ~:geometry~/~scenes.clj~                   | 部分 |
+| demo-parametric-curve.lisp      | 参数化曲线    | ~geometry/curves.clj~ / ~:showcase-curves~ | ✅  |
+| demo-procedural-curve.lisp      | 程序化曲线    | ~geometry/curves.clj~ 部分函数             | 部分 |
+| demo-uv-mesh.lisp               | UV Mesh       | ~uv-sphere~                                | 部分 |
+| demo-sweep-mesh.lisp            | Sweep Mesh    | ~geometry/sweep.clj~ / ~:showcase-sweep~   | ✅  |
+| demo-superquadric.lisp          | Superquadric  | ~geometry/primitives.clj~                  | ✅  |
+| demo-heightfield.lisp           | Heightfield   | ~geometry.clj~ / ~:heightfield~            | ✅  |
+| demo-particle.lisp              | Particle      | ~particles.clj~ / ~:particles~             | ✅  |
+| demo-boid-system.lisp           | Boid          | ~animation/boid.clj~ / ~:showcase-boids~   | ✅  |
+| demo-sdf.lisp                   | SDF           | ~sdf.clj~ / ~:sdf~                         | ✅  |
+| demo-isosurface.lisp            | Isosurface    | ~sdf.clj~ / ~:isosurface-*~                | ✅  |
+| demo-animation.lisp             | Animation     | ~dsl.clj~(时间函数)                        | 部分 |
+| demo-flex-animator.lisp         | Flex Animator | 无                                         | ❌  |
+| demo-growth.lisp                | Growth        | 无                                         | ❌  |
+| demo-interactor.lisp            | 交互系统      | 无                                         | ❌  |
+| demo-object-picking.lisp        | 拾取          | 无                                         | ❌  |
+| demo-sprite.lisp                | Sprite        | 渲染支持但无独立 demo                      | 部分 |
+| demo-ui.lisp                    | UI            | 无                                         | ❌  |
+| demo-fractal-2d-mandelbrot.lisp | 分形          | 无                                         | ❌  |
+| demo-transactions.lisp          | 事务系统      | 无                                         | ❌  |
+| demo-misc.lisp                  | 杂项          | 部分                                       | 部分 |
+
+* 16. 插件对照表(核心缺口汇总)
+| kons-9 插件                  | Clojure 模块                | 状态 | 备注                |
+|------------------------------+-----------------------------+------+---------------------|
+| boid-system                  | ~animation/boid.clj~        | ✅  | 行为模型齐备        |
+| l-system                     | ~animation/lsystem.clj~     | ✅  | 路径生成齐备        |
+| sweep-mesh                   | ~geometry/sweep.clj~        | ✅  | 扫掠/旋转/管道      |
+| subdiv-mesh                  | ~geometry/subdiv.clj~       | ✅  | Catmull-Clark/Loop  |
+| superquadric                 | ~geometry/primitives.clj~   | ✅  | 基础实现            |
+| heightfield                  | ~geometry.clj~              | ✅  | 噪声高度场          |
+| sdf / isosurface             | ~sdf.clj~                   | ✅  | Marching Tetrahedra |
+| particle / force-field       | ~particles.clj~             | ✅  | 基础力场            |
+| obj / stl                    | ~io/obj.clj~ / ~io/stl.clj~ | ✅  | 读写完成            |
+| uv-mesh                      | ~geometry.clj~              | 部分 | 仅 UV sphere        |
+| procedural-curve             | ~geometry/curves.clj~       | 部分 | 仅部分函数          |
+| sprite                       | ~hotreload.clj~             | 部分 | 缺 API 与 demo      |
+| growth                       | 无                          | ❌  | 待实现              |
+| instancer-shape              | 无                          | ❌  | 待实现              |
+| outline                      | 无                          | ❌  | 待实现              |
+| channel                      | 无                          | ❌  | 待实现              |
+| manager-group                | 无                          | ❌  | 待实现              |
+| molecule                     | 无                          | ❌  | 待实现              |
+| usd                          | 无                          | ❌  | 待实现              |
+| smooth/refine/fractal subdiv | 无                          | ❌  | 待实现              |
+| sweep-mesh-group             | 无                          | ❌  | 待实现              |
+
+* 17. Showcase(展示场景)
+~src/lwjgl/experiment/kons9/showcase.clj~ 提供独立展示场景与时间线.
+
+*可用场景*
+- ~:showcase-basics~
+- ~:showcase-curves~
+- ~:showcase-subdiv~
+- ~:showcase-sweep~
+- ~:showcase-nature~
+
+*说明*
+- ~showcase.clj~ 的场景与 ~scenes.clj~ 中的 ~:showcase-primitives/:showcase-lsystem/:showcase-boids~ 不同.
+- 以 ~api/scene-list~ 为准查看当前注册列表.
+
+*运行方式*
+#+BEGIN_SRC clojure
+(require '[lwjgl.experiment.kons9.showcase :as showcase]
+         '[lwjgl.experiment.hotreload :as hot])
+
+;; 注册 showcase 场景
+(doseq [[k scene] (showcase/all-showcase-scenes)]
+  (hot/register-scene! k scene))
+
+(showcase/list-demos)
+(showcase/run-demo :showcase-curves)
+(showcase/run-all-demos)
+#+END_SRC
+
+** 小场景展示方法
+通用方式: `(api/scene! :场景-key)`.
+快捷键仅在窗口获得焦点时有效.
+
+| 场景 key | 展示方法 | 快捷键 | 简述 |
+|----------+-----------------------------+--------+------------------|
+| `:geometry` | `(api/scene! :geometry)` | 1 | 基础几何/点云/网格 |
+| `:rig` | `(api/scene! :rig)` | 2 | 关节/骨架段 |
+| `:sweep` | `(api/scene! :sweep)` | 3 | 扫掠网格基础 |
+| `:heightfield` | `(api/scene! :heightfield)` | 4 | 噪声高度场 |
+| `:particles` | `(api/scene! :particles)` | 5 | 基础粒子系统 |
+| `:sdf` | `(api/scene! :sdf)` | 6 | SDF 基础示例 |
+| `:spring` | `(api/scene! :spring)` | 7 | 弹簧系统 |
+| `:ecosystem` | `(api/scene! :ecosystem)` | 8 | 生态/群体示例 |
+| `:heightfield-particles` | `(api/scene! :heightfield-particles)` | 9 | 高度场粒子流动 |
+| `:surface-particles` | `(api/scene! :surface-particles)` | K | 球面粒子 |
+| `:heightfield-sweep` | `(api/scene! :heightfield-sweep)` | H | 高度场 + 扫掠曲线 |
+| `:heightfield-animate` | `(api/scene! :heightfield-animate)` | J | 动态高度场 |
+| `:polyhedron-particles` | `(api/scene! :polyhedron-particles)` | L | 多面体表面粒子 |
+| `:polyhedron-vertices` | `(api/scene! :polyhedron-vertices)` | U | 多面体顶点展示 |
+| `:polyhedron-face-centers` | `(api/scene! :polyhedron-face-centers)` | I | 多面体面中心 |
+| `:polyhedron-refine` | `(api/scene! :polyhedron-refine)` | R | 多面体细分 |
+| `:polyhedron-fractal` | `(api/scene! :polyhedron-fractal)` | F | 多面体分形 |
+| `:cut-cube` | `(api/scene! :cut-cube)` | C | 切割立方体 |
+| `:box` | `(api/scene! :box)` | B | 盒体多面体 |
+| `:resource-growth` | `(api/scene! :resource-growth)` | T | 资源曲线驱动生长 |
+| `:isosurface-points` | `(api/scene! :isosurface-points)` | O | 点场等值面 |
+| `:isosurface-curves` | `(api/scene! :isosurface-curves)` | M | 曲线场等值面 |
+| `:isosurface-particles` | `(api/scene! :isosurface-particles)` | N | 粒子场等值面 |
+| `:spring-isosurface` | `(api/scene! :spring-isosurface)` | Y | 弹簧等值面 |
+| `:particle-fields` | `(api/scene! :particle-fields)` | — | 复合力场粒子 |
+| `:sdf-demo` | `(api/scene! :sdf-demo)` | — | SDF 综合演示 |
+| `:sweep-live` | `(api/scene! :sweep-live)` | — | 扫掠实时变化 |
+| `:showcase-primitives` | `(api/scene! :showcase-primitives)` | — | 基础几何轮播 |
+| `:showcase-subdiv` | `(api/scene! :showcase-subdiv)` | — | 细分轮播 |
+| `:showcase-sweep` | `(api/scene! :showcase-sweep)` | — | 扫掠轮播 |
+| `:showcase-lsystem` | `(api/scene! :showcase-lsystem)` | — | L-System 轮播 |
+| `:showcase-boids` | `(api/scene! :showcase-boids)` | — | Boids 轮播 |
+
+时间线控制:
+- `0`: 启动默认演示时间线
+- `P`: 暂停/恢复
+
+* 18. Breakout(3D 打砖块)目标设计
+*目标*
+- 以 kons 风格(REPL + scene data)实现一个 3D Breakout.
+
+*核心模块拆解*
+1) 游戏状态
+- Ball / Paddle / Bricks / Score / Lives
+
+2) 碰撞与物理
+- AABB vs Sphere
+- 反射法线(Y 方向反弹, 侧面偏转)
+- 速度上限/最小速度
+
+3) 渲染
+- Paddle/Bricks: Box mesh
+- Ball: Sphere mesh
+- HUD: 文本渲染(当前缺口)
+
+4) 输入
+- 键盘左右 / 鼠标控制
+
+5) 关卡
+- 可配置砖块阵列
+
+*需要新增/补全的基础能力*
+- 文本渲染(Score / Lives)
+- 2D/3D 碰撞检测模块
+- 资源加载(关卡配置 JSON/EDN)
+
+*建议的实现顺序*
+1) 纯逻辑: 在 REPL 中跑碰撞/反射
+2) 渲染: ball + paddle + bricks 静态显示
+3) 帧循环: 让球运动并反弹
+4) 输入: 控制 paddle
+5) UI: 分数与生命
+
+* 19. 路线图(下一步缺口)
+- [ ] Object Picking + Interactor
+- [ ] UI Widgets + Text Rendering
+- [ ] Growth / Channel / Manager-Group
+- [ ] USD 导入/导出
+- [ ] 事务/撤销系统
+
+* 附录: Clojure 侧主要入口
+- 交互快捷键映射: ~src/lwjgl/experiment/kons9/input.clj~

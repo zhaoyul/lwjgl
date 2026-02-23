@@ -788,6 +788,12 @@
   [{:keys [points faces]}]
   (polyhedron->mesh points faces))
 
+(defn mesh-from-faces
+  "将顶点/面数据转换为可渲染的三角形网格。
+  返回 {:vertices float-array :indices int-array}，法线按面计算。"
+  [vertices faces]
+  (polyhedron-mesh {:points vertices :faces faces}))
+
 (defn- face-normal
   [points face]
   (if (< (count face) 3)

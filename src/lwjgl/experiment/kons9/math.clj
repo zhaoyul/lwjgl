@@ -1,5 +1,120 @@
 (ns lwjgl.experiment.kons9.math
+  "核心数学工具函数"
   (:import (org.joml Matrix4f)))
+
+;; ============================================
+;; 常量
+;; ============================================
+
+(def PI Math/PI)
+(def TAU (* 2.0 Math/PI))
+
+;; ============================================
+;; 基础数学
+;; ============================================
+
+(defn clamp
+  "将值限制在 [min, max] 范围内"
+  [v min-val max-val]
+  (max (double min-val) (min (double max-val) (double v))))
+
+(defn lerp
+  "线性插值"
+  [a b t]
+  (+ a (* (- b a) t)))
+
+(defn radians
+  "角度转弧度"
+  [deg]
+  (Math/toRadians (double deg)))
+
+;; ============================================
+;; 向量运算 (3D)
+;; ============================================
+
+(defn vadd
+  "向量加法 (支持多参数)"
+  ([a] a)
+  ([a b]
+   (let [[ax ay az] a [bx by bz] b]
+     [(+ ax bx) (+ ay by) (+ az bz)]))
+  ([a b & more]
+   (reduce vadd (vadd a b) more)))
+
+(defn vsub
+  "向量减法"
+  [[ax ay az] [bx by bz]]
+  [(- ax bx) (- ay by) (- az bz)])
+
+(defn vmul
+  "向量逐分量相乘"
+  [[ax ay az] [bx by bz]]
+  [(* ax bx) (* ay by) (* az bz)])
+
+(defn vmul
+  "向量标量乘法"
+  [[x y z] s]
+  [(* x s) (* y s) (* z s)])
+
+(defn vdiv
+  "向量标量除法"
+  [[x y z] d]
+  (if (zero? d)
+    [0.0 0.0 0.0]
+    [(/ x d) (/ y d) (/ z d)]))
+
+(defn dot
+  "向量点积"
+  [[ax ay az] [bx by bz]]
+  (+ (* ax bx) (* ay by) (* az bz)))
+
+(defn cross
+  "向量叉积"
+  [[ax ay az] [bx by bz]]
+  [(- (* ay bz) (* az by))
+   (- (* az bx) (* ax bz))
+   (- (* ax by) (* ay bx))])
+
+(defn len-sq
+  "向量长度平方"
+  [[x y z]]
+  (+ (* x x) (* y y) (* z z)))
+
+(defn len
+  "向量长度"
+  [v]
+  (Math/sqrt (len-sq v)))
+
+(defn normal
+  "向量归一化"
+  [v]
+  (let [l (len v)]
+    (if (< l 0.0001)
+      [0.0 1.0 0.0]
+      (vdiv v l))))
+
+(defn dist
+  "两点距离"
+  [a b]
+  (len (vsub a b)))
+
+(defn dist-sq
+  "两点距离平方"
+  [a b]
+  (len-sq (vsub a b)))
+
+;; ============================================
+;; 实用函数
+;; ============================================
+
+(defn wrap
+  "循环包裹值"
+  [v min-val max-val]
+  (let [range (- max-val min-val)]
+    (if (<= range 0)
+      min-val
+      (let [wrapped (mod (- v min-val) range)]
+        (+ min-val (if (< wrapped 0) (+ wrapped range) wrapped))))))
 
 (defn clamp01
   "将数值限制在 0-1 范围内。"

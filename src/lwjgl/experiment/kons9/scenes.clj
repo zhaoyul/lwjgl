@@ -3,7 +3,14 @@
             [lwjgl.experiment.kons9.math :as kmath]
             [lwjgl.experiment.kons9.particles :as kpart]
             [lwjgl.experiment.kons9.sdf :as ksdf]
-            [lwjgl.experiment.kons9.spring :as kspring]))
+            [lwjgl.experiment.kons9.spring :as kspring]
+            ;; 新功能模块
+            [lwjgl.experiment.kons9.geometry.curves :as curves]
+            [lwjgl.experiment.kons9.geometry.primitives :as prim]
+            [lwjgl.experiment.kons9.geometry.subdiv :as subdiv]
+            [lwjgl.experiment.kons9.geometry.sweep :as sweep]
+            [lwjgl.experiment.kons9.animation.boid :as boid]
+            [lwjgl.experiment.kons9.animation.lsystem :as lsys]))
 
 (defn- dist2
   "计算两个点之间的平方距离。"
@@ -62,6 +69,12 @@
                   (float bx) (float by) (float bz)
                   r g b]))
              (partition 2 1 points)))))
+
+(defn- upload-faces-mesh!
+  "将 {:vertices :faces} 网格转换为可渲染网格并上传。"
+  [set-mesh! mesh]
+  (let [{:keys [vertices indices]} (kgeom/mesh-from-faces (:vertices mesh) (:faces mesh))]
+    (set-mesh! vertices indices)))
 
 (defn- steer
   "朝目标产生速度向量。"
@@ -1291,4 +1304,191 @@
       :render (fn [ctx _] (default-render ctx))
       :cleanup (fn [_ _]
                  (clear-line-segments!)
-                 (clear-sprites!))}}))
+                 (clear-sprites!))}
+
+     ;; ============================================
+     ;; 新功能展示场景
+     ;; ============================================
+
+     :showcase-primitives
+     {:init (fn [_]
+              (set-clear-color! [0.03 0.03 0.05 1.0])
+              (set-cubes! [])
+              (clear-point-cloud!)
+              (clear-line-segments!)
+              (clear-mesh!)
+              ;; 展示各种基础几何体
+              (let [sphere (prim/make-sphere-mesh-data 0.6 16 12)
+                    torus (prim/make-torus-mesh-data 0.5 0.2 24 12)
+                    box (prim/make-box-mesh-data 0.8 0.8 0.8)]
+                (upload-faces-mesh! set-mesh! sphere)
+                (set-mesh-style! {:pos [0.0 0.0 0.0]
+                                  :rot [0.0 0.0 0.0]
+                                  :scale [1.0 1.0 1.0]
+                                  :color [0.7 0.75 0.85]}))
+              {:shape :sphere :t 0.0})
+      :update (fn [{:keys [time]} scene-state]
+                (let [dt (:dt time)
+                      t (+ (:t scene-state) dt)
+                      shape (:shape scene-state)]
+                  (when (> t 3.0)
+                    (let [new-shape (case shape
+                                      :sphere :torus
+                                      :torus :box
+                                      :box :superquadric
+                                      :superquadric :sphere)]
+                      (case new-shape
+                        :sphere (let [m (prim/make-sphere-mesh-data 0.6 16 12)]
+                                  (upload-faces-mesh! set-mesh! m))
+                        :torus (let [m (prim/make-torus-mesh-data 0.5 0.2 24 12)]
+                                 (upload-faces-mesh! set-mesh! m))
+                        :box (let [m (prim/make-box-mesh-data 0.8 0.8 0.8)]
+                               (upload-faces-mesh! set-mesh! m))
+                        :superquadric (let [m (prim/make-superquadric-mesh-data 1.2 0.3 0.7 24 12)]
+                                        (upload-faces-mesh! set-mesh! m)))
+                      (assoc scene-state :shape new-shape :t 0.0)))
+                  (assoc scene-state :t (+ (:t scene-state) dt))))
+      :render (fn [ctx _] (default-render ctx))
+      :cleanup (fn [_ _] (clear-mesh!))}
+
+     :showcase-subdiv
+     {:init (fn [_]
+              (set-clear-color! [0.02 0.02 0.04 1.0])
+              (set-cubes! [])
+              (clear-point-cloud!)
+              (clear-mesh!)
+              (set-wireframe-overlay! {:enabled? true
+                                       :line-width 1.0
+                                       :color [0.1 0.1 0.15]})
+              (let [ico (prim/make-sphere-mesh-data 1.0 8 6)]
+                (upload-faces-mesh! set-mesh! ico)
+                (set-mesh-style! {:pos [0.0 0.0 0.0]
+                                  :rot [0.0 0.0 0.0]
+                                  :scale [1.0 1.0 1.0]
+                                  :color [0.75 0.7 0.55]}))
+              {:level 0 :t 0.0})
+      :update (fn [{:keys [time]} scene-state]
+                (let [dt (:dt time)
+                      t (+ (:t scene-state) dt)]
+                  (when (> t 2.0)
+                    (let [new-level (mod (inc (:level scene-state)) 4)
+                          base (prim/make-sphere-mesh-data 1.0 8 6)
+                          result (case new-level
+                                   0 base
+                                   1 (subdiv/subdivide-loop (:vertices base) (:faces base))
+                                   2 (subdiv/subdivide-times (:vertices base) (:faces base)
+                                                             subdiv/subdivide-loop 2)
+                                   3 (subdiv/subdivide-times (:vertices base) (:faces base)
+                                                             subdiv/subdivide-loop 3))]
+                      (upload-faces-mesh! set-mesh! result)
+                      (assoc scene-state :level new-level :t 0.0)))
+                  (assoc scene-state :t t)))
+      :render (fn [ctx _] (default-render ctx))
+      :cleanup (fn [_ _]
+                 (set-wireframe-overlay! {:enabled? false})
+                 (clear-mesh!))}
+
+     :showcase-sweep
+     {:init (fn [_]
+              (set-clear-color! [0.02 0.02 0.05 1.0])
+              (set-cubes! [])
+              (clear-line-segments!)
+              (clear-mesh!)
+              ;; 创建弹簧
+              (let [spring (sweep/make-spring 1.0 0.08 4 3.0 32 8)]
+                (upload-faces-mesh! set-mesh! spring)
+                (set-mesh-style! {:pos [0.0 0.0 0.0]
+                                  :rot [0.0 0.0 0.0]
+                                  :scale [1.0 1.0 1.0]
+                                  :color [0.9 0.6 0.3]}))
+              {:mode :spring :t 0.0})
+      :update (fn [{:keys [time]} scene-state]
+                (let [dt (:dt time)
+                      t (+ (:t scene-state) dt)]
+                  (when (> t 3.0)
+                    (let [new-mode (case (:mode scene-state)
+                                     :spring :pipe
+                                     :pipe :vase
+                                     :vase :spring)]
+                      (case new-mode
+                        :spring (let [m (sweep/make-spring 1.0 0.08 4 3.0 32 8)]
+                                  (upload-faces-mesh! set-mesh! m))
+                        :pipe (let [path (curves/make-helix-points 1.0 4.0 3 60)
+                                    m (sweep/make-pipe path 0.15 8)]
+                                (upload-faces-mesh! set-mesh! m))
+                        :vase (let [m (sweep/make-revolution
+                                       [[0.2 0.0 0.0] [0.6 0.4 0.0]
+                                        [0.4 0.8 0.0] [0.5 1.2 0.0]
+                                        [0.3 1.6 0.0]]
+                                       32)]
+                                (upload-faces-mesh! set-mesh! m)))
+                      (assoc scene-state :mode new-mode :t 0.0)))
+                  (assoc scene-state :t t)))
+      :render (fn [ctx _] (default-render ctx))
+      :cleanup (fn [_ _] (clear-mesh!))}
+
+     :showcase-lsystem
+     {:init (fn [_]
+              (set-clear-color! [0.02 0.03 0.02 1.0])
+              (set-cubes! [])
+              (clear-line-segments!)
+              ;; 生成 L-System 植物
+              (let [fern-paths (lsys/lsystem-to-paths (lsys/make-fern))]
+                (set-line-segments!
+                 (mapcat (fn [path]
+                           (mapcat (fn [[a b]]
+                                     [(float (first a)) (float (second a)) (float (nth a 2)) 0.2 0.9 0.3
+                                      (float (first b)) (float (second b)) (float (nth b 2)) 0.2 0.9 0.3])
+                                   (partition 2 1 path)))
+                         fern-paths)))
+              {:plant :fern :t 0.0})
+      :update (fn [{:keys [time]} scene-state]
+                (let [dt (:dt time)
+                      t (+ (:t scene-state) dt)]
+                  (when (> t 4.0)
+                    (let [new-plant (case (:plant scene-state)
+                                      :fern :tree
+                                      :tree :koch
+                                      :koch :fern)
+                          paths (case new-plant
+                                  :fern (lsys/lsystem-to-paths (lsys/make-fern))
+                                  :tree (lsys/lsystem-to-paths (lsys/make-tree-3d))
+                                  :koch (lsys/lsystem-to-paths (lsys/make-koch-curve)))]
+                      (clear-line-segments!)
+                      (set-line-segments!
+                       (mapcat (fn [path]
+                                 (mapcat (fn [[a b]]
+                                           [(float (first a)) (float (second a)) (float (nth a 2)) 0.2 0.9 0.3
+                                            (float (first b)) (float (second b)) (float (nth b 2)) 0.2 0.9 0.3])
+                                         (partition 2 1 path)))
+                               paths))
+                      (assoc scene-state :plant new-plant :t 0.0)))
+                  (assoc scene-state :t t)))
+      :render (fn [ctx _] (default-render ctx))
+      :cleanup (fn [_ _] (clear-line-segments!))}
+
+     :showcase-boids
+     {:init (fn [_]
+              (set-clear-color! [0.01 0.02 0.03 1.0])
+              (set-cubes! [])
+              (clear-line-segments!)
+              ;; 初始化 Boid 系统
+              (let [bounds {:min [-3.0 -2.0 -3.0] :max [3.0 2.0 3.0]}
+                    system (boid/make-boid-system 60 bounds)]
+                {:boid-system system :bounds bounds :t 0.0}))
+      :update (fn [{:keys [time]} scene-state]
+                (let [dt (:dt time)
+                      system (:boid-system scene-state)
+                      updated (boid/update-boid-system system dt)
+                      positions (boid/boid-system-positions updated)]
+                  ;; 用立方体表示 Boids
+                  (set-cubes! (map-indexed
+                               (fn [idx pos]
+                                 {:id idx
+                                  :pos pos
+                                  :scale [0.06 0.06 0.06]
+                                  :color [0.9 0.7 0.2]})
+                               positions))
+                  (assoc scene-state :boid-system updated :t (+ (:t scene-state) dt))))
+      :render (fn [ctx _] (default-render ctx))
+      :cleanup (fn [_ _] (set-cubes! []))}}))

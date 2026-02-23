@@ -7,162 +7,104 @@ No restarts. No reloads.
 Just poking the scene and watching it change in real time.
 
 * Run
-- Run: =clj -M:run=
-- When running, an nREPL server starts and prints its port.
-- LearnOpenGL Chapter 1 (hello window) example (basic GLFW window with clear color): =clj -M:hello-window=
-- LearnOpenGL Chapter 1 (hello window clear) example (dynamic clear color): =clj -M:hello-window-clear=
-- LearnOpenGL Chapter 1 (hello triangle) example (basic OpenGL triangle render): =clj -M:chapter1=
-- LearnOpenGL Chapter 1 (indexed triangle) example (EBO + two triangles quad): =clj -M:triangle-indexed=
-- LearnOpenGL Chapter 1 (triangle exercise 1) example (two triangles, single VAO/VBO): =clj -M:triangle-ex1=
-- LearnOpenGL Chapter 1 (triangle exercise 2) example (two triangles, separate VAOs/VBOs): =clj -M:triangle-ex2=
-- LearnOpenGL Chapter 1 (triangle exercise 3) example (two fragment shaders: orange/yellow): =clj -M:triangle-ex3=
-- LearnOpenGL Chapter 1 (triangle input) example (WASD move, Q/E rotate, mouse drag to reposition): =clj -M:triangle-input=
-- LearnOpenGL Chapter 1 (triangle rainbow) example (rainbow shader, mouse X shifts hue, Z/X mix factor): =clj -M:triangle-rainbow=
-- LearnOpenGL Chapter 1 (shaders uniform) example (animated uniform color): =clj -M:shaders-uniform=
-- LearnOpenGL Chapter 1 (shaders interpolation) example (vertex color interpolation): =clj -M:shaders-interpolation=
-- LearnOpenGL Chapter 1 (shaders class) example (load shaders from resources): =clj -M:shaders-class=
-- LearnOpenGL Chapter 1 (shaders exercise 1) example (invert Y via vertex shader): =clj -M:shaders-ex1=
-- LearnOpenGL Chapter 1 (shaders exercise 2) example (constant yellow fragment color): =clj -M:shaders-ex2=
-- LearnOpenGL Chapter 1 (shaders exercise 3) example (custom attribute layout/name): =clj -M:shaders-ex3=
-- LearnOpenGL Chapter 1 (textures) example (single procedural texture on quad): =clj -M:textures=
-- LearnOpenGL Chapter 1 (textures combined) example (two procedural textures mixed): =clj -M:textures-combined=
-- LearnOpenGL Chapter 1 (textures exercise 1) example (flip second texture in mix): =clj -M:textures-ex1=
-- LearnOpenGL Chapter 1 (textures exercise 2) example (adjust mix factor with arrow keys): =clj -M:textures-ex2=
-- LearnOpenGL Chapter 1 (textures exercise 3) example (rotate texture coordinates 90°): =clj -M:textures-ex3=
-- LearnOpenGL Chapter 1 (textures exercise 4) example (clamp-to-border sampling): =clj -M:textures-ex4=
-- LearnOpenGL Chapter 1 (transformations) example (translate/rotate textured quad): =clj -M:transformations=
-- LearnOpenGL Chapter 1 (transformations exercise 1) example (two quads with differing transforms): =clj -M:transformations-ex1=
-- LearnOpenGL Chapter 1 (transformations exercise 2) example (animated rotation + scaling): =clj -M:transformations-ex2=
-- LearnOpenGL Chapter 1 (coordinate systems) example (single rotating cube with perspective): =clj -M:coordinate-systems=
-- LearnOpenGL Chapter 1 (coordinate systems depth) example (two cubes showing depth test): =clj -M:coordinate-systems-depth=
-- LearnOpenGL Chapter 1 (coordinate systems multiple) example (multiple cubes with transforms): =clj -M:coordinate-systems-multiple=
-- LearnOpenGL Chapter 1 (coordinate systems exercise 3) example (orbital camera around cubes): =clj -M:coordinate-systems-ex3=
-- LearnOpenGL Chapter 1 (camera circle) example (orbiting camera view): =clj -M:camera-circle=
-- LearnOpenGL Chapter 1 (camera keyboard dt) example (WASD camera movement with delta time): =clj -M:camera-keyboard-dt=
-- LearnOpenGL Chapter 1 (camera mouse zoom) example (mouse look + scroll zoom): =clj -M:camera-mouse-zoom=
-- LearnOpenGL Chapter 1 (camera class) example (camera controls via reusable state): =clj -M:camera-class=
-- LearnOpenGL Chapter 1 (camera exercise 1) example (grounded FPS-style camera): =clj -M:camera-exercise1=
-- LearnOpenGL Chapter 1 (camera exercise 2) example (manual LookAt matrix): =clj -M:camera-exercise2=
-- LearnOpenGL Chapter 1 (tetrahedron input) example (WASD/QE rotate, mouse drag rotate): =clj -M:tetrahedron-input=
-- LearnOpenGL Chapter 1 (tetrahedron translucent) example (WASD/QE rotate, Z/X scale, C/V alpha, scroll scale): =clj -M:tetrahedron-translucent=
-- LearnOpenGL Chapter 1 (cube input) example (WASD/QE rotate, Z/X scale, scroll scale): =clj -M:cube-input=
-- LearnOpenGL Chapter 2 (colors) example (basic ambient + diffuse lighting): =clj -M:colors=
-- LearnOpenGL Chapter 2 (basic lighting diffuse) example (Lambert diffuse + ambient): =clj -M:basic-lighting-diffuse=
-- LearnOpenGL Chapter 2 (basic lighting specular) example (adds Phong specular): =clj -M:basic-lighting-specular=
-- LearnOpenGL Chapter 2 (basic lighting exercise 1) example (animated light color): =clj -M:basic-lighting-ex1=
-- LearnOpenGL Chapter 2 (basic lighting exercise 2) example (animated light color + specular): =clj -M:basic-lighting-ex2=
-- LearnOpenGL Chapter 2 (basic lighting exercise 3) example (per-vertex/Gouraud shading): =clj -M:basic-lighting-ex3=
-- LearnOpenGL Chapter 2 (materials) example (material/lighting structs): =clj -M:materials=
-- LearnOpenGL Chapter 2 (materials exercise 1) example (changing light/material colors): =clj -M:materials-ex1=
-- LearnOpenGL Chapter 2 (lighting maps diffuse) example (textured diffuse lighting): =clj -M:lighting-maps-diffuse=
-- LearnOpenGL Chapter 2 (lighting maps specular) example (specular map highlights): =clj -M:lighting-maps-specular=
-- LearnOpenGL Chapter 2 (lighting maps exercise 2) example (rotating textured cube with specular map): =clj -M:lighting-maps-ex2=
-- LearnOpenGL Chapter 2 (lighting maps exercise 4) example (emission textured highlights): =clj -M:lighting-maps-ex4=
-- LearnOpenGL Chapter 2 (light casters directional) example (directional light): =clj -M:light-casters-directional=
-- LearnOpenGL Chapter 2 (light casters point) example (point light with attenuation): =clj -M:light-casters-point=
-- LearnOpenGL Chapter 2 (light casters spot) example (sharp spotlight): =clj -M:light-casters-spot=
-- LearnOpenGL Chapter 2 (light casters spot soft) example (soft-edged spotlight): =clj -M:light-casters-spot-soft=
-- LearnOpenGL Chapter 2 (multiple lights) example (directional + point + spotlight): =clj -M:multiple-lights=
-- LearnOpenGL Chapter 2 (multiple lights exercise 1) example (colored point lights): =clj -M:multiple-lights-ex1=
-- LearnOpenGL Chapter 3 (model loading) example (Assimp import, animated rotation): =clj -M:model-loading=
-- LearnOpenGL Chapter 5 (advanced lighting dispatch) example: =clj -M:advanced-lighting <scenario>= (scenarios: =advanced_lighting=, =gamma_correction=, =shadow_mapping_depth=, =shadow_mapping_base=, =shadow_mapping=, =point_shadows=, =point_shadows_soft=, =csm=, =normal_mapping=, =parallax_mapping=, =steep_parallax_mapping=, =parallax_occlusion_mapping=, =hdr=, =bloom=, =deferred_shading=, =deferred_shading_volumes=, =ssao=)
+- Run: =clj -M:alias1:alias2= [[elisp:(shell-command "./run.sh alias1 alias2")][./run.sh alias1 alias2]]
 
 * Chapter 1 migration TODO
-- [x] 1.1.hello_window
-- [x] 1.2.hello_window_clear
-- [x] 2.1.hello_triangle
-- [x] 2.2.hello_triangle_indexed
-- [x] 2.3.hello_triangle_exercise1
-- [x] 2.4.hello_triangle_exercise2
-- [x] 2.5.hello_triangle_exercise3
-- [x] 3.1.shaders_uniform
-- [x] 3.2.shaders_interpolation
-- [x] 3.3.shaders_class
-- [x] 3.4.shaders_exercise1
-- [x] 3.5.shaders_exercise2
-- [x] 3.6.shaders_exercise3
-- [x] 4.1.textures
-- [x] 4.2.textures_combined
-- [x] 4.3.textures_exercise1
-- [x] 4.4.textures_exercise2
-- [x] 4.5.textures_exercise3
-- [x] 4.6.textures_exercise4
-- [x] 5.1.transformations
-- [x] 5.2.transformations_exercise1
-- [x] 5.3.transformations_exercise2
-- [x] 6.1.coordinate_systems
-- [x] 6.2.coordinate_systems_depth
-- [x] 6.3.coordinate_systems_multiple
-- [x] 6.4.coordinate_systems_exercise3
-- [x] 7.1.camera_circle
-- [x] 7.2.camera_keyboard_dt
-- [x] 7.3.camera_mouse_zoom
-- [x] 7.4.camera_class
-- [x] 7.5.camera_exercise1
-- [x] 7.6.camera_exercise2
+- [x] 1.1.hello_window [[file:src/lwjgl/chapter1/hello_window.clj][代码]] [[elisp:(shell-command "./run.sh hello-window")][执行]]
+- [x] 1.2.hello_window_clear [[file:src/lwjgl/chapter1/hello_window_clear.clj][代码]] [[elisp:(shell-command "./run.sh hello-window-clear")][执行]]
+- [x] 2.1.hello_triangle [[file:src/lwjgl/chapter1/hello_triangle.clj][代码]] [[elisp:(shell-command "./run.sh chapter1")][执行]]
+- [x] 2.2.hello_triangle_indexed [[file:src/lwjgl/chapter1/hello_triangle_indexed.clj][代码]] [[elisp:(shell-command "./run.sh triangle-indexed")][执行]]
+- [x] 2.3.hello_triangle_exercise1 [[file:src/lwjgl/chapter1/hello_triangle_exercise1.clj][代码]] [[elisp:(shell-command "./run.sh triangle-ex1")][执行]]
+- [x] 2.4.hello_triangle_exercise2 [[file:src/lwjgl/chapter1/hello_triangle_exercise2.clj][代码]] [[elisp:(shell-command "./run.sh triangle-ex2")][执行]]
+- [x] 2.5.hello_triangle_exercise3 [[file:src/lwjgl/chapter1/hello_triangle_exercise3.clj][代码]] [[elisp:(shell-command "./run.sh triangle-ex3")][执行]]
+- [x] 3.1.shaders_uniform [[file:src/lwjgl/chapter1/shaders_uniform.clj][代码]] [[elisp:(shell-command "./run.sh shaders-uniform")][执行]]
+- [x] 3.2.shaders_interpolation [[file:src/lwjgl/chapter1/shaders_interpolation.clj][代码]] [[elisp:(shell-command "./run.sh shaders-interpolation")][执行]]
+- [x] 3.3.shaders_class [[file:src/lwjgl/chapter1/shaders_class.clj][代码]] [[elisp:(shell-command "./run.sh shaders-class")][执行]]
+- [x] 3.4.shaders_exercise1 [[file:src/lwjgl/chapter1/shaders_exercise1.clj][代码]] [[elisp:(shell-command "./run.sh shaders-exercise1")][执行]]
+- [x] 3.5.shaders_exercise2 [[file:src/lwjgl/chapter1/shaders_exercise2.clj][代码]] [[elisp:(shell-command "./run.sh shaders-exercise2")][执行]]
+- [x] 3.6.shaders_exercise3 [[file:src/lwjgl/chapter1/shaders_exercise3.clj][代码]] [[elisp:(shell-command "./run.sh shaders-exercise3")][执行]]
+- [x] 4.1.textures [[file:src/lwjgl/chapter1/textures.clj][代码]] [[elisp:(shell-command "./run.sh textures")][执行]]
+- [x] 4.2.textures_combined [[file:src/lwjgl/chapter1/textures_combined.clj][代码]] [[elisp:(shell-command "./run.sh textures-combined")][执行]]
+- [x] 4.3.textures_exercise1 [[file:src/lwjgl/chapter1/textures_exercise1.clj][代码]] [[elisp:(shell-command "./run.sh textures-exercise1")][执行]]
+- [x] 4.4.textures_exercise2 [[file:src/lwjgl/chapter1/textures_exercise2.clj][代码]] [[elisp:(shell-command "./run.sh textures-exercise2")][执行]]
+- [x] 4.5.textures_exercise3 [[file:src/lwjgl/chapter1/textures_exercise3.clj][代码]] [[elisp:(shell-command "./run.sh textures-exercise3")][执行]]
+- [x] 4.6.textures_exercise4 [[file:src/lwjgl/chapter1/textures_exercise4.clj][代码]] [[elisp:(shell-command "./run.sh textures-exercise4")][执行]]
+- [x] 5.1.transformations [[file:src/lwjgl/chapter1/transformations.clj][代码]] [[elisp:(shell-command "./run.sh transformations")][执行]]
+- [x] 5.2.transformations_exercise1 [[file:src/lwjgl/chapter1/transformations_exercise1.clj][代码]] [[elisp:(shell-command "./run.sh transformations-exercise1")][执行]]
+- [x] 5.3.transformations_exercise2 [[file:src/lwjgl/chapter1/transformations_exercise2.clj][代码]] [[elisp:(shell-command "./run.sh transformations-exercise2")][执行]]
+- [x] 6.1.coordinate_systems [[file:src/lwjgl/chapter1/coordinate_systems.clj][代码]] [[elisp:(shell-command "./run.sh coordinate-systems")][执行]]
+- [x] 6.2.coordinate_systems_depth [[file:src/lwjgl/chapter1/coordinate_systems_depth.clj][代码]] [[elisp:(shell-command "./run.sh coordinate-systems-depth")][执行]]
+- [x] 6.3.coordinate_systems_multiple [[file:src/lwjgl/chapter1/coordinate_systems_multiple.clj][代码]] [[elisp:(shell-command "./run.sh coordinate-systems-multiple")][执行]]
+- [x] 6.4.coordinate_systems_exercise3 [[file:src/lwjgl/chapter1/coordinate_systems_exercise3.clj][代码]] [[elisp:(shell-command "./run.sh coordinate-systems-exercise3")][执行]]
+- [x] 7.1.camera_circle [[file:src/lwjgl/chapter1/camera.clj][代码]] [[elisp:(shell-command "./run.sh camera-circle")][执行]]
+- [x] 7.2.camera_keyboard_dt [[file:src/lwjgl/chapter1/camera.clj][代码]] [[elisp:(shell-command "./run.sh camera-keyboard-dt")][执行]]
+- [x] 7.3.camera_mouse_zoom [[file:src/lwjgl/chapter1/camera.clj][代码]] [[elisp:(shell-command "./run.sh camera-mouse-zoom")][执行]]
+- [x] 7.4.camera_class [[file:src/lwjgl/chapter1/camera.clj][代码]] [[elisp:(shell-command "./run.sh camera-class")][执行]]
+- [x] 7.5.camera_exercise1 [[file:src/lwjgl/chapter1/camera.clj][代码]] [[elisp:(shell-command "./run.sh camera-exercise1")][执行]]
+- [x] 7.6.camera_exercise2 [[file:src/lwjgl/chapter1/camera.clj][代码]] [[elisp:(shell-command "./run.sh camera-exercise2")][执行]]
 
 * Chapter 2 migration TODO (Lighting)
-- [x] 1.colors
-- [x] 2.1.basic_lighting_diffuse
-- [x] 2.2.basic_lighting_specular
-- [x] 2.3.basic_lighting_exercise1
-- [x] 2.4.basic_lighting_exercise2
-- [x] 2.5.basic_lighting_exercise3
-- [x] 3.1.materials
-- [x] 3.2.materials_exercise1
-- [x] 4.1.lighting_maps_diffuse_map
-- [x] 4.2.lighting_maps_specular_map
-- [x] 4.3.lighting_maps_exercise2
-- [x] 4.4.lighting_maps_exercise4
-- [x] 5.1.light_casters_directional
-- [x] 5.2.light_casters_point
-- [x] 5.3.light_casters_spot
-- [x] 5.4.light_casters_spot_soft
-- [x] 6.multiple_lights
-- [x] 6.multiple_lights_exercise1
+- [x] 1.colors [[file:src/lwjgl/chapter2/colors.clj][代码]] [[elisp:(shell-command "./run.sh colors")][执行]]
+- [x] 2.1.basic_lighting_diffuse [[file:src/lwjgl/chapter2/basic_lighting_diffuse.clj][代码]] [[elisp:(shell-command "./run.sh basic-lighting-diffuse")][执行]]
+- [x] 2.2.basic_lighting_specular [[file:src/lwjgl/chapter2/basic_lighting_specular.clj][代码]] [[elisp:(shell-command "./run.sh basic-lighting-specular")][执行]]
+- [x] 2.3.basic_lighting_exercise1 [[file:src/lwjgl/chapter2/basic_lighting_exercise1.clj][代码]] [[elisp:(shell-command "./run.sh basic-lighting-exercise1")][执行]]
+- [x] 2.4.basic_lighting_exercise2 [[file:src/lwjgl/chapter2/basic_lighting_exercise2.clj][代码]] [[elisp:(shell-command "./run.sh basic-lighting-exercise2")][执行]]
+- [x] 2.5.basic_lighting_exercise3 [[file:src/lwjgl/chapter2/basic_lighting_exercise3.clj][代码]] [[elisp:(shell-command "./run.sh basic-lighting-exercise3")][执行]]
+- [x] 3.1.materials [[file:src/lwjgl/chapter2/materials.clj][代码]] [[elisp:(shell-command "./run.sh materials")][执行]]
+- [x] 3.2.materials_exercise1 [[file:src/lwjgl/chapter2/materials.clj][代码]] [[elisp:(shell-command "./run.sh materials-ex1")][执行]]
+- [x] 4.1.lighting_maps_diffuse_map [[file:src/lwjgl/chapter2/lighting_maps.clj][代码]] [[elisp:(shell-command "./run.sh lighting-maps-diffuse")][执行]]
+- [x] 4.2.lighting_maps_specular_map [[file:src/lwjgl/chapter2/lighting_maps.clj][代码]] [[elisp:(shell-command "./run.sh lighting-maps-specular")][执行]]
+- [x] 4.3.lighting_maps_exercise2 [[file:src/lwjgl/chapter2/lighting_maps.clj][代码]] [[elisp:(shell-command "./run.sh lighting-maps-ex2")][执行]]
+- [x] 4.4.lighting_maps_exercise4 [[file:src/lwjgl/chapter2/lighting_maps.clj][代码]] [[elisp:(shell-command "./run.sh lighting-maps-ex4")][执行]]
+- [x] 5.1.light_casters_directional [[file:src/lwjgl/chapter2/light_casters.clj][代码]] [[elisp:(shell-command "./run.sh light-casters-directional")][执行]]
+- [x] 5.2.light_casters_point [[file:src/lwjgl/chapter2/light_casters.clj][代码]] [[elisp:(shell-command "./run.sh light-casters-point")][执行]]
+- [x] 5.3.light_casters_spot [[file:src/lwjgl/chapter2/light_casters.clj][代码]] [[elisp:(shell-command "./run.sh light-casters-spot")][执行]]
+- [x] 5.4.light_casters_spot_soft [[file:src/lwjgl/chapter2/light_casters.clj][代码]] [[elisp:(shell-command "./run.sh light-casters-spot-soft")][执行]]
+- [x] 6.multiple_lights [[file:src/lwjgl/chapter2/multiple_lights.clj][代码]] [[elisp:(shell-command "./run.sh multiple-lights")][执行]]
+- [x] 6.multiple_lights_exercise1 [[file:src/lwjgl/chapter2/multiple_lights.clj][代码]] [[elisp:(shell-command "./run.sh multiple-lights-ex1")][执行]]
 
 * Chapter 3 migration TODO (Model Loading)
-- [x] 3.1.model_loading
+- [x] 3.1.model_loading [[file:src/lwjgl/chapter3/model_loading.clj][代码]] [[elisp:(shell-command "./run.sh model-loading")][执行]]
 
 * Chapter 4 migration TODO (Advanced OpenGL)
-- [x] 1.1.depth_testing
-- [x] 1.2.depth_testing_view
-- [x] 2.stencil_testing
-- [x] 3.1.blending_discard
-- [x] 3.2.blending_sort
-- [x] 4.face_culling_exercise1
-- [x] 5.1.framebuffers
-- [x] 5.2.framebuffers_exercise1
-- [x] 6.1.cubemaps_skybox
-- [x] 6.2.cubemaps_environment_mapping
-- [x] 8.advanced_glsl_ubo
-- [x] 9.1.geometry_shader_houses
-- [x] 9.2.geometry_shader_exploding
-- [x] 9.3.geometry_shader_normals
-- [x] 10.1.instancing_quads
-- [x] 10.2.asteroids
-- [x] 10.3.asteroids_instanced
-- [x] 11.1.anti_aliasing_msaa
-- [x] 11.2.anti_aliasing_offscreen
+- [x] 1.1.depth_testing [[file:src/lwjgl/chapter4/advanced_opengl.clj][代码]] [[elisp:(shell-command "./run.sh depth-testing")][执行]]
+- [x] 1.2.depth_testing_view [[file:src/lwjgl/chapter4/advanced_opengl.clj][代码]] [[elisp:(shell-command "./run.sh depth-testing-view")][执行]]
+- [x] 2.stencil_testing [[file:src/lwjgl/chapter4/advanced_opengl.clj][代码]] [[elisp:(shell-command "./run.sh stencil-testing")][执行]]
+- [x] 3.1.blending_discard [[file:src/lwjgl/chapter4/advanced_opengl.clj][代码]] [[elisp:(shell-command "./run.sh blending-discard")][执行]]
+- [x] 3.2.blending_sort [[file:src/lwjgl/chapter4/advanced_opengl.clj][代码]] [[elisp:(shell-command "./run.sh blending-sort")][执行]]
+- [x] 4.face_culling_exercise1 [[file:src/lwjgl/chapter4/advanced_opengl.clj][代码]] [[elisp:(shell-command "./run.sh face-culling-exercise1")][执行]]
+- [x] 5.1.framebuffers [[file:src/lwjgl/chapter4/advanced_opengl.clj][代码]] [[elisp:(shell-command "./run.sh framebuffers")][执行]]
+- [x] 5.2.framebuffers_exercise1 [[file:src/lwjgl/chapter4/advanced_opengl.clj][代码]] [[elisp:(shell-command "./run.sh framebuffers-exercise1")][执行]]
+- [x] 6.1.cubemaps_skybox [[file:src/lwjgl/chapter4/advanced_opengl.clj][代码]] [[elisp:(shell-command "./run.sh cubemaps-skybox")][执行]]
+- [x] 6.2.cubemaps_environment_mapping [[file:src/lwjgl/chapter4/advanced_opengl.clj][代码]] [[elisp:(shell-command "./run.sh cubemaps-environment-mapping")][执行]]
+- [x] 8.advanced_glsl_ubo [[file:src/lwjgl/chapter4/advanced_opengl.clj][代码]] [[elisp:(shell-command "./run.sh advanced-glsl-ubo")][执行]]
+- [x] 9.1.geometry_shader_houses [[file:src/lwjgl/chapter4/advanced_opengl.clj][代码]] [[elisp:(shell-command "./run.sh geometry-shader-houses")][执行]]
+- [x] 9.2.geometry_shader_exploding [[file:src/lwjgl/chapter4/advanced_opengl.clj][代码]] [[elisp:(shell-command "./run.sh geometry-shader-exploding")][执行]]
+- [x] 9.3.geometry_shader_normals [[file:src/lwjgl/chapter4/advanced_opengl.clj][代码]] [[elisp:(shell-command "./run.sh geometry-shader-normals")][执行]]
+- [x] 10.1.instancing_quads [[file:src/lwjgl/chapter4/advanced_opengl.clj][代码]] [[elisp:(shell-command "./run.sh instancing-quads")][执行]]
+- [x] 10.2.asteroids [[file:src/lwjgl/chapter4/advanced_opengl.clj][代码]] [[elisp:(shell-command "./run.sh asteroids")][执行]]
+- [x] 10.3.asteroids_instanced [[file:src/lwjgl/chapter4/advanced_opengl.clj][代码]] [[elisp:(shell-command "./run.sh asteroids-instanced")][执行]]
+- [x] 11.1.anti_aliasing_msaa [[file:src/lwjgl/chapter4/advanced_opengl.clj][代码]] [[elisp:(shell-command "./run.sh anti-aliasing-msaa")][执行]]
+- [x] 11.2.anti_aliasing_offscreen [[file:src/lwjgl/chapter4/advanced_opengl.clj][代码]] [[elisp:(shell-command "./run.sh anti-aliasing-offscreen")][执行]]
 
 * Chapter 5 migration TODO (Advanced Lighting)
-- [x] 1.advanced_lighting
-- [x] 2.gamma_correction
-- [x] 3.1.1.shadow_mapping_depth
-- [x] 3.1.2.shadow_mapping_base
-- [x] 3.1.3.shadow_mapping
-- [x] 3.2.1.point_shadows
-- [x] 3.2.2.point_shadows_soft
-- [x] 3.3.csm
-- [x] 4.normal_mapping
-- [x] 5.1.parallax_mapping
-- [x] 5.2.steep_parallax_mapping
-- [x] 5.3.parallax_occlusion_mapping
-- [x] 6.hdr
-- [x] 7.bloom
-- [x] 8.1.deferred_shading
-- [x] 8.2.deferred_shading_volumes
-- [x] 9.ssao
+- [x] 1.advanced_lighting [[file:src/lwjgl/chapter5/advanced_lighting.clj][代码]] [[elisp:(shell-command "./run.sh advanced-lighting advanced_lighting")][执行]]
+- [x] 2.gamma_correction [[file:src/lwjgl/chapter5/advanced_lighting.clj][代码]] [[elisp:(shell-command "./run.sh advanced-lighting gamma_correction")][执行]]
+- [x] 3.1.1.shadow_mapping_depth [[file:src/lwjgl/chapter5/advanced_lighting.clj][代码]] [[elisp:(shell-command "./run.sh advanced-lighting shadow_mapping_depth")][执行]]
+- [x] 3.1.2.shadow_mapping_base [[file:src/lwjgl/chapter5/advanced_lighting.clj][代码]] [[elisp:(shell-command "./run.sh advanced-lighting shadow_mapping_base")][执行]]
+- [x] 3.1.3.shadow_mapping [[file:src/lwjgl/chapter5/advanced_lighting.clj][代码]] [[elisp:(shell-command "./run.sh advanced-lighting shadow_mapping")][执行]]
+- [x] 3.2.1.point_shadows [[file:src/lwjgl/chapter5/advanced_lighting.clj][代码]] [[elisp:(shell-command "./run.sh advanced-lighting point_shadows")][执行]]
+- [x] 3.2.2.point_shadows_soft [[file:src/lwjgl/chapter5/advanced_lighting.clj][代码]] [[elisp:(shell-command "./run.sh advanced-lighting point_shadows_soft")][执行]]
+- [x] 3.3.csm [[file:src/lwjgl/chapter5/advanced_lighting.clj][代码]] [[elisp:(shell-command "./run.sh advanced-lighting csm")][执行]]
+- [x] 4.normal_mapping [[file:src/lwjgl/chapter5/advanced_lighting.clj][代码]] [[elisp:(shell-command "./run.sh advanced-lighting normal_mapping")][执行]]
+- [x] 5.1.parallax_mapping [[file:src/lwjgl/chapter5/advanced_lighting.clj][代码]] [[elisp:(shell-command "./run.sh advanced-lighting parallax_mapping")][执行]]
+- [x] 5.2.steep_parallax_mapping [[file:src/lwjgl/chapter5/advanced_lighting.clj][代码]] [[elisp:(shell-command "./run.sh advanced-lighting steep_parallax_mapping")][执行]]
+- [x] 5.3.parallax_occlusion_mapping [[file:src/lwjgl/chapter5/advanced_lighting.clj][代码]] [[elisp:(shell-command "./run.sh advanced-lighting parallax_occlusion_mapping")][执行]]
+- [x] 6.hdr [[file:src/lwjgl/chapter5/advanced_lighting.clj][代码]] [[elisp:(shell-command "./run.sh advanced-lighting hdr")][执行]]
+- [x] 7.bloom [[file:src/lwjgl/chapter5/advanced_lighting.clj][代码]] [[elisp:(shell-command "./run.sh advanced-lighting bloom")][执行]]
+- [x] 8.1.deferred_shading [[file:src/lwjgl/chapter5/advanced_lighting.clj][代码]] [[elisp:(shell-command "./run.sh advanced-lighting deferred_shading")][执行]]
+- [x] 8.2.deferred_shading_volumes [[file:src/lwjgl/chapter5/advanced_lighting.clj][代码]] [[elisp:(shell-command "./run.sh advanced-lighting deferred_shading_volumes")][执行]]
+- [x] 9.ssao [[file:src/lwjgl/chapter5/advanced_lighting.clj][代码]] [[elisp:(shell-command "./run.sh advanced-lighting ssao")][执行]]
 
 * Chapter 6 migration TODO (PBR)
 - [ ] 1.1.lighting
@@ -197,45 +139,45 @@ Just poking the scene and watching it change in real time.
 - Toggle instancing (single rectangle debug): press =I= in the window.
 
 * Kons-9 展示教程
-** 运行（带 nREPL）
-- 推荐：./run.sh hotreload-nrepl
-- Intel macOS：=clj -M:natives-intel:hotreload=
+** 运行(带 nREPL)
+- 推荐: ./run.sh hotreload-nrepl
+- Intel macOS: =clj -M:natives-intel:hotreload= [[elisp:(shell-command "./run.sh natives-intel hotreload")][./run.sh natives-intel hotreload]]
 
-** 快捷键（hotreload 窗口）
+** 快捷键(hotreload 窗口)
 - 1-9 切换内置场景
 - H/J/K/L/U/I/M/N/R/F/C/B/T/O/Y 切换扩展场景
 - 0 启动默认演示时间线
 - P 暂停/恢复
-- M 切换手动播放模式（按住空格播放）
+- M 切换手动播放模式(按住空格播放)
 - D 重置当前场景
 
-** 菜单与按钮（kons-9 UI）
-- 菜单默认显示在左上角，右上角按钮用于快速控制。
-- 菜单打开时，按条目左侧的字母键可直接执行/进入；如需使用全局快捷键可先按 =TAB= 隐藏菜单。
+** 菜单与按钮(kons-9 UI)
+- 菜单默认显示在左上角, 右上角按钮用于快速控制.
+- 菜单打开时, 按条目左侧的字母键可直接执行/进入; 如需使用全局快捷键可先按 =TAB= 隐藏菜单.
 
 *** 菜单导航
-- =TAB=：切换菜单显示；如果在子菜单则回到根菜单。
-- =←=：返回上一级菜单。
-- 鼠标左键点击条目进入/执行。
+- =TAB=: 切换菜单显示; 如果在子菜单则回到根菜单.
+- =←=: 返回上一级菜单.
+- 鼠标左键点击条目进入/执行.
 
 *** 顶部按钮
-- =Menu=：显示/隐藏菜单
-- =Demo=：启动默认演示时间线
-- =Pause/Resume=：暂停/继续时间线
-- =Info=：显示/隐藏信息面板
+- =Menu=: 显示/隐藏菜单
+- =Demo=: 启动默认演示时间线
+- =Pause/Resume=: 暂停/继续时间线
+- =Info=: 显示/隐藏信息面板
 
-*** 菜单结构（按键 -> 功能）
+*** 菜单结构(按键 -> 功能)
 **** Scene (=S=)
-- =N= New Scene：清空对象并回到 baseline
-- =E= Export OBJ File：未实现
-- =U= Export USD File：未实现
-- =I= Initialize Scene：重置当前场景
-- =Q= Quit Scene：关闭窗口
+- =N= New Scene: 清空对象并回到 baseline
+- =E= Export OBJ File: 未实现
+- =U= Export USD File: 未实现
+- =I= Initialize Scene: 重置当前场景
+- =Q= Quit Scene: 关闭窗口
 
 **** Edit (=E=)
-- =BS= Delete：清空对象
-- =S= Show：显示所有对象
-- =H= Hide：隐藏所有对象
+- =BS= Delete: 清空对象
+- =S= Show: 显示所有对象
+- =H= Hide: 隐藏所有对象
 
 **** Create (=C=)
 ***** Create Curve (=C=)
@@ -257,10 +199,10 @@ Just poking the scene and watching it change in real time.
 
 **** Inspect (=I=)
 - =R= Reset Camera
-- =F= Frame Selection（当前等同重置相机）
-- =I= Inspector（信息面板）
-- =S= Shapes（信息面板）
-- =M= Motions（信息面板）
+- =F= Frame Selection(当前等同重置相机)
+- =I= Inspector(信息面板)
+- =S= Shapes(信息面板)
+- =M= Motions(信息面板)
 
 **** Display (=D=)
 - =`= Toggle Lighting
@@ -275,10 +217,10 @@ Just poking the scene and watching it change in real time.
 - =9= Set Dark Theme
 
 **** Interactive Mode (=M=)
-- 进入交互模式后隐藏 UI，按 =ESC= 退出
+- 进入交互模式后隐藏 UI, 按 =ESC= 退出
 
 **** Context (=X=)
-- =T= Transform Selection：未实现
+- =T= Transform Selection: 未实现
 
 ** 连接 REPL 与加载
 #+begin_src clojure
@@ -296,39 +238,39 @@ Just poking the scene and watching it change in real time.
 (k/stop-demo!)
 #+end_src
 
-- 可展示场景：
-  - :baseline（基础坐标轴与网格）
-  - :geometry（基础几何/点云/球体）
-  - :rig（层级结构 + 关节动画）
-  - :sweep（扫掠网格）
-  - :heightfield（高度场/地形）
-  - :heightfield-particles（高度场粒子）
-  - :heightfield-sweep（高度场 + 粒子轨迹扫掠）
-  - :heightfield-animate（高度场动态起伏）
-  - :resource-growth（资源曲线驱动的生长）
-  - :surface-particles（曲面爬行粒子）
-  - :polyhedron-particles（多面体粒子源）
-  - :polyhedron-vertices（多面体顶点粒子）
-  - :polyhedron-face-centers（多面体面中心粒子）
-  - :polyhedron-refine（多面体细分 + 线框叠加）
-  - :polyhedron-fractal（多面体分型）
-  - :cut-cube（切角立方体）
-  - :box（盒子多面体）
-  - :isosurface-points（点集等值面）
-  - :isosurface-curves（曲线等值面）
-  - :isosurface-particles（粒子轨迹等值面）
-  - :particles（粒子点云）
-  - :particle-fields（力场粒子 + 精灵 + 轨迹）
-  - :sdf（SDF 等值面）
-- :spring（弹簧网格）
-- :spring-isosurface（弹簧网格等值面）
-- :ecosystem（生态系统）
-- :live（自定义 live 场景）
+- 可展示场景:
+  - :baseline(基础坐标轴与网格)
+  - :geometry(基础几何/点云/球体)
+  - :rig(层级结构 + 关节动画)
+  - :sweep(扫掠网格)
+  - :heightfield(高度场/地形)
+  - :heightfield-particles(高度场粒子)
+  - :heightfield-sweep(高度场 + 粒子轨迹扫掠)
+  - :heightfield-animate(高度场动态起伏)
+  - :resource-growth(资源曲线驱动的生长)
+  - :surface-particles(曲面爬行粒子)
+  - :polyhedron-particles(多面体粒子源)
+  - :polyhedron-vertices(多面体顶点粒子)
+  - :polyhedron-face-centers(多面体面中心粒子)
+  - :polyhedron-refine(多面体细分 + 线框叠加)
+  - :polyhedron-fractal(多面体分型)
+  - :cut-cube(切角立方体)
+  - :box(盒子多面体)
+  - :isosurface-points(点集等值面)
+  - :isosurface-curves(曲线等值面)
+  - :isosurface-particles(粒子轨迹等值面)
+  - :particles(粒子点云)
+  - :particle-fields(力场粒子 + 精灵 + 轨迹)
+  - :sdf(SDF 等值面)
+- :spring(弹簧网格)
+- :spring-isosurface(弹簧网格等值面)
+- :ecosystem(生态系统)
+- :live(自定义 live 场景)
 
-** 特别演示：SDF 与可调 Sweep Mesh
-- `:sdf-demo`（`(k/scene! :sdf-demo)` 或通过新快捷键 `Y`）实时展示球/盒/圆环 SDF 的布尔组合，Marching Tetrahedra 网格与彩虹折线，同时可以 `hr/pause!` 观察不同阈值下的形变。
-- `:sweep-live`（`(k/scene! :sweep-live)`）演示可调 `:segments`/`:twist`/`:taper` 的管状 UV sweep，配合 `kgeom/spiral-points` 生成的路径与 `k/rainbow-color` 上色粒子，便于解释 presentation 中“参数即刻更新”的体验。
-- 在默认时间线（按 `0`）已有 `:sdf-demo` 和 `:sweep-live`，建议先让时间线跑到 `:sdf-demo`，暂停观察布尔组合过程，再继续到 `:sweep-live` 展示滑动参数并强调精灵/线段的深度排序。
+** 特别演示: SDF 与可调 Sweep Mesh
+- `:sdf-demo`(`(k/scene! :sdf-demo)` 或通过新快捷键 `Y`)实时展示球/盒/圆环 SDF 的布尔组合, Marching Tetrahedra 网格与彩虹折线, 同时可以 `hr/pause!` 观察不同阈值下的形变.
+- `:sweep-live`(`(k/scene! :sweep-live)`)演示可调 `:segments`/`:twist`/`:taper` 的管状 UV sweep, 配合 `kgeom/spiral-points` 生成的路径与 `k/rainbow-color` 上色粒子, 便于解释 presentation 中" 参数即刻更新" 的体验.
+- 在默认时间线(按 `0`)已有 `:sdf-demo` 和 `:sweep-live`, 建议先让时间线跑到 `:sdf-demo`, 暂停观察布尔组合过程, 再继续到 `:sweep-live` 展示滑动参数并强调精灵/线段的深度排序.
 
 ** 迁移函数可视化速查
 *** 曲线/点云 -> =k/points!=
@@ -366,7 +308,7 @@ Just poking the scene and watching it change in real time.
   (k/mesh! vertices indices))
 #+end_src
 
-*** 多面体原型与变体（直接展示）
+*** 多面体原型与变体(直接展示)
 #+begin_src clojure
 ;; 基础多面体
 (let [{:keys [vertices indices]} (k/tetrahedron-mesh 2.0)]
@@ -381,7 +323,7 @@ Just poking the scene and watching it change in real time.
 (let [{:keys [vertices indices]} (k/icosahedron-mesh 2.0)]
   (k/mesh! vertices indices))
 
-;; 盒子与切角立方体（polyhedron -> mesh）
+;; 盒子与切角立方体(polyhedron -> mesh)
 (let [poly (k/box-polyhedron 2.0 1.2 0.8)
       {:keys [vertices indices]} (k/polyhedron->mesh poly)]
   (k/mesh! vertices indices))
@@ -390,7 +332,7 @@ Just poking the scene and watching it change in real time.
       {:keys [vertices indices]} (k/polyhedron->mesh poly)]
   (k/mesh! vertices indices))
 
-;; 线框叠加（细分网格更清晰）
+;; 线框叠加(细分网格更清晰)
 (k/wireframe-overlay! {:enabled? true :line-width 1.0 :color [0.1 0.1 0.15]})
 #+end_src
 
@@ -455,9 +397,9 @@ Just poking the scene and watching it change in real time.
 #+end_src
 
 *** 细分/分型参数建议
-- refine: =levels= 建议 1-3（超过 3 顶点数快速增长）
-- smooth: 适合二十面体/十二面体，细分 1-2 层即可明显圆润
-- fractalize: =displacement= 建议 0.2~0.8，层数 2-3
+- refine: =levels= 建议 1-3(超过 3 顶点数快速增长)
+- smooth: 适合二十面体/十二面体, 细分 1-2 层即可明显圆润
+- fractalize: =displacement= 建议 0.2~0.8, 层数 2-3
 
 *** SDF/等值面
 #+begin_src clojure
@@ -474,7 +416,7 @@ Just poking the scene and watching it change in real time.
  :radius 0.25 :threshold 1.0 :res 32)
 #+end_src
 
-*** 精灵（透明排序）
+*** 精灵(透明排序)
 #+begin_src clojure
 (require '[lwjgl.experiment.hotreload :as hr])
 
@@ -484,10 +426,10 @@ Just poking the scene and watching it change in real time.
 
 *** 点云 vs 精灵 对比
 #+begin_src clojure
-;; 点云：GPU 点
+;; 点云: GPU 点
 (k/points! (k/sphere-point-cloud 200 1.2))
 
-;; 精灵：带透明混合的 billboard
+;; 精灵: 带透明混合的 billboard
 (require '[lwjgl.experiment.hotreload :as hr])
 (hr/set-sprite-style! {:size 14.0 :alpha 0.65 :softness 0.2})
 (hr/set-sprites! (k/sphere-point-cloud 200 1.2))
@@ -497,14 +439,14 @@ Just poking the scene and watching it change in real time.
 #+begin_src clojure
 (require '[lwjgl.experiment.hotreload :as hr])
 
-;; 切换到手动播放（空格按住播放）
+;; 切换到手动播放(空格按住播放)
 (hr/set-manual-play! true)
 
-;; 重置当前场景（时间与状态）
+;; 重置当前场景(时间与状态)
 (hr/reset-scene!)
 #+end_src
 
-** Live 场景（自定义展示）
+** Live 场景(自定义展示)
 #+begin_src clojure
 (k/live!
  {:build (fn [{:keys [t]} _]
@@ -549,7 +491,7 @@ Just poking the scene and watching it change in real time.
 #+end_src
 
 * CIDER
-- Start the app with CIDER middleware: =clj -M:run:cider-deps=
+- Start the app with CIDER middleware: =clj -M:run:cider-deps= [[elisp:(shell-command "./run.sh run cider-deps")][./run.sh run cider-deps]]
 - In Emacs, run =cider-connect= to the port in =.nrepl-port=.
 - Live tweak example: =(reset! lwjgl.core/rect-color [0.9 0.2 0.2])=
-- Alternative: =clj -M:cider= then =(lwjgl.core/run-app!)= from the REPL.
+- Alternative: =clj -M:cider= then =(lwjgl.core/run-app!)= from the REPL. [[elisp:(shell-command "./run.sh cider")][./run.sh cider]]
