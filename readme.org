@@ -12,7 +12,7 @@ Just poking the scene and watching it change in real time.
 * Chapter 1 migration TODO
 - [x] 1.1.hello_window [[file:src/lwjgl/chapter1/hello_window.clj][代码]] [[elisp:(shell-command "./run.sh hello-window")][执行]]
 - [x] 1.2.hello_window_clear [[file:src/lwjgl/chapter1/hello_window_clear.clj][代码]] [[elisp:(shell-command "./run.sh hello-window-clear")][执行]]
-- [x] 2.1.hello_triangle [[file:src/lwjgl/chapter1/hello_triangle.clj][代码]] [[elisp:(shell-command "./run.sh chapter1")][执行]]
+- [x] 2.1.hello_triangle [[file:src/lwjgl/chapter1/hello_triangle.clj][代码]] [[elisp:(shell-command "./run.sh hello-triangle")][执行]]
 - [x] 2.2.hello_triangle_indexed [[file:src/lwjgl/chapter1/hello_triangle_indexed.clj][代码]] [[elisp:(shell-command "./run.sh triangle-indexed")][执行]]
 - [x] 2.3.hello_triangle_exercise1 [[file:src/lwjgl/chapter1/hello_triangle_exercise1.clj][代码]] [[elisp:(shell-command "./run.sh triangle-ex1")][执行]]
 - [x] 2.4.hello_triangle_exercise2 [[file:src/lwjgl/chapter1/hello_triangle_exercise2.clj][代码]] [[elisp:(shell-command "./run.sh triangle-ex2")][执行]]

@@ -27,9 +27,9 @@
            :hello-window-clear {:main-opts ["-m" "lwjgl.chapter1.hello-window-clear"]
                                 :jvm-opts ["-XstartOnFirstThread"
                                            "--enable-native-access=ALL-UNNAMED"]}
-           :chapter1 {:main-opts ["-m" "lwjgl.chapter1.hello-triangle"]
-                      :jvm-opts ["-XstartOnFirstThread"
-                                 "--enable-native-access=ALL-UNNAMED"]}
+           :hello-triangle {:main-opts ["-m" "lwjgl.chapter1.hello-triangle"]
+                            :jvm-opts ["-XstartOnFirstThread"
+                                       "--enable-native-access=ALL-UNNAMED"]}
            :triangle-indexed {:main-opts ["-m" "lwjgl.chapter1.hello-triangle-indexed"]
                               :jvm-opts ["-XstartOnFirstThread"
                                          "--enable-native-access=ALL-UNNAMED"]}
