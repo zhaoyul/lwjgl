@@ -6,9 +6,10 @@
         org.clojure/core.async {:mvn/version "1.6.681"}
         org.joml/joml {:mvn/version "1.10.8"}
         nrepl/nrepl {:mvn/version "1.1.0"}}
- :aliases {;; Architecture-specific natives (pick one based on your Mac)
-           ;; Intel Macs: add -M:natives-intel
-           ;; Apple Silicon (M1/M2/M3): add -M:natives-arm
+ :aliases {;; Architecture-specific natives (pick one based on your OS)
+           ;; macOS Intel: add -M:natives-intel
+           ;; macOS Apple Silicon (M1/M2/M3): add -M:natives-arm
+           ;; Linux x86_64: add -M:natives-linux
            :natives-intel {:extra-deps {org.lwjgl/lwjgl$natives-macos {:mvn/version "3.3.6"}
                                         org.lwjgl/lwjgl-glfw$natives-macos {:mvn/version "3.3.6"}
                                         org.lwjgl/lwjgl-opengl$natives-macos {:mvn/version "3.3.6"}
@@ -17,6 +18,10 @@
                                       org.lwjgl/lwjgl-glfw$natives-macos-arm64 {:mvn/version "3.3.6"}
                                       org.lwjgl/lwjgl-opengl$natives-macos-arm64 {:mvn/version "3.3.6"}
                                       org.lwjgl/lwjgl-assimp$natives-macos-arm64 {:mvn/version "3.3.6"}}}
+           :natives-linux {:extra-deps {org.lwjgl/lwjgl$natives-linux {:mvn/version "3.3.6"}
+                                        org.lwjgl/lwjgl-glfw$natives-linux {:mvn/version "3.3.6"}
+                                        org.lwjgl/lwjgl-opengl$natives-linux {:mvn/version "3.3.6"}
+                                        org.lwjgl/lwjgl-assimp$natives-linux {:mvn/version "3.3.6"}}}
 
            :run {:main-opts ["-m" "lwjgl.core"]
                  :jvm-opts ["-XstartOnFirstThread"
@@ -260,7 +265,7 @@
                  :main-opts ["-m" "lwjgl.experiment.hotreload" "--nrepl"]
                  :jvm-opts ["-XstartOnFirstThread"
                             "--enable-native-access=ALL-UNNAMED"]}
-           ;; Hot reload examples - use with :natives-intel or :natives-arm
+           ;; Hot reload examples - use with :natives-intel, :natives-arm, or :natives-linux
            :hotreload {:main-opts ["-m" "lwjgl.experiment.hotreload" "--nrepl"]
                        :jvm-opts ["-XstartOnFirstThread"
                                   "--enable-native-access=ALL-UNNAMED"]}

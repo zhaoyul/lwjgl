@@ -14,13 +14,13 @@
 - **所有函数 docstring 必须使用中文**
 - 变量名可以使用英文, 但复杂逻辑必须加中文注释说明
 
-## 运行项目(macOS 架构支持)
+## 运行项目(支持 macOS 和 Linux)
 
-本项目同时支持 Intel 和 Apple Silicon (ARM64) Mac. LWJGL 本地库是架构相关的.
+本项目支持 macOS (Intel/Apple Silicon) 和 Linux x86-64. LWJGL 本地库是操作系统和架构相关的.
 
 ### 方式一: 使用 run.sh 脚本(推荐)
 
-`run.sh` 脚本会自动检测架构:
+`run.sh` 脚本会自动检测操作系统和架构:
 
 ```bash
 # 运行带 nREPL 的 hotreload
@@ -49,12 +49,18 @@ clj -M:natives-intel:hotreload-nrepl
 clj -M:natives-arm:hotreload-nrepl
 ```
 
+**Linux (x86_64):**
+```bash
+clj -M:natives-linux:hotreload-nrepl
+```
+
 ### 可用的架构别名
 
 - `:natives-intel` - Intel macOS 本地库
 - `:natives-arm` - Apple Silicon (ARM64) 本地库
+- `:natives-linux` - Linux x86-64 本地库
 
-在 macOS 上运行时, 始终在其他别名之前包含其中之一.
+在运行项目时, 始终在其他别名之前包含对应的 natives 别名.
 
 ## 代码示例规范
 
