@@ -99,12 +99,15 @@ void main() {
             (when-not (GLFW/glfwWindowShouldClose window)
               (GL45/glClearColor 0.2 0.3 0.3 1.0)
               (GL45/glClear GL45/GL_COLOR_BUFFER_BIT)
+
               (GL45/glUseProgram program-orange)
               (GL45/glBindVertexArray vao1)
               (GL45/glDrawArrays GL45/GL_TRIANGLES 0 3)
+
               (GL45/glUseProgram program-yellow)
               (GL45/glBindVertexArray vao2)
               (GL45/glDrawArrays GL45/GL_TRIANGLES 0 3)
+
               (GLFW/glfwSwapBuffers window)
               (GLFW/glfwPollEvents)
               (recur)))

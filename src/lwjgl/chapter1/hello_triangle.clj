@@ -71,7 +71,7 @@ void main() {
               (GL45/glClear GL45/GL_COLOR_BUFFER_BIT)
               (GL45/glUseProgram program)
               (GL45/glBindVertexArray vao)
-              (GL45/glDrawArrays GL45/GL_TRIANGLES 0 3)
+              (GL45/glDrawArrays GL45/GL_TRIANGLES 0 3) ;; draw array
               (GLFW/glfwSwapBuffers window)
               (GLFW/glfwPollEvents)
               (recur)))

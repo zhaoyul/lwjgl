@@ -40,11 +40,11 @@ if [ "$OS" = "Linux" ]; then
     MAIN_ALIAS="$1"
     shift
     EXTRA_ARGS=("$@")
-    
+
     # 使用 Clojure 脚本提取 alias 信息
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     OUTPUT=$(clj -M "$SCRIPT_DIR/scripts/extract-alias-info.clj" "$MAIN_ALIAS" "$NATIVES_ALIAS" 2>&1)
-    
+
     # 检查输出
     if echo "$OUTPUT" | grep -q "^FALLBACK$"; then
         # 回退到原始 clj 命令
@@ -65,7 +65,7 @@ if [ "$OS" = "Linux" ]; then
         MAIN_CLASS=$(echo "$LINE" | cut -d'|' -f1)
         CLASSPATH=$(echo "$LINE" | cut -d'|' -f2)
         JVM_OPTS_STR=$(echo "$LINE" | cut -d'|' -f3)
-        
+
         # 构建命令
         CMD=("java")
         if [ -n "$JVM_OPTS_STR" ] && [ "$JVM_OPTS_STR" != "--enable-native-access=ALL-UNNAMED" ]; then
@@ -77,11 +77,11 @@ if [ "$OS" = "Linux" ]; then
             CMD+=("--enable-native-access=ALL-UNNAMED")
         fi
         CMD+=("-cp" "$CLASSPATH" "clojure.main" "-m" "$MAIN_CLASS" "${EXTRA_ARGS[@]}")
-        
+
         echo "Running: java ... -m $MAIN_CLASS"
         exec "${CMD[@]}"
     fi
-    
+
 else
     # macOS：使用原始的 alias 方式
     ALIASES="$NATIVES_ALIAS"
@@ -89,7 +89,7 @@ else
         arg="${arg#:}"
         ALIASES="$ALIASES:$arg"
     done
-    
+
     echo "Running: clj -M$ALIASES"
     clj -M"$ALIASES"
 fi
