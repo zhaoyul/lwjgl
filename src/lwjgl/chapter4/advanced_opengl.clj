@@ -1,5 +1,5 @@
 (ns lwjgl.chapter4.advanced-opengl
-  (:require [lwjgl.core :as core])
+  (:require [lwjgl.utils :as u])
   (:import (org.lwjgl BufferUtils)
            (org.lwjgl.glfw GLFW GLFWFramebufferSizeCallbackI GLFWKeyCallbackI)
            (org.lwjgl.opengl GL GL11 GL12 GL13 GL15 GL20 GL30 GL31 GL32 GL33)
@@ -18,11 +18,11 @@
 
 (defn- create-program*
   ([vs-src fs-src]
-   (core/create-program vs-src fs-src))
+   (u/create-program vs-src fs-src))
   ([vs-src fs-src geom-src]
-   (let [vs (core/compile-shader GL20/GL_VERTEX_SHADER vs-src)
-         gs (core/compile-shader GL32/GL_GEOMETRY_SHADER geom-src)
-         fs (core/compile-shader GL20/GL_FRAGMENT_SHADER fs-src)
+   (let [vs (u/compile-shader GL20/GL_VERTEX_SHADER vs-src)
+         gs (u/compile-shader GL32/GL_GEOMETRY_SHADER geom-src)
+         fs (u/compile-shader GL20/GL_FRAGMENT_SHADER fs-src)
          program (GL20/glCreateProgram)]
      (GL20/glAttachShader program vs)
      (GL20/glAttachShader program gs)
@@ -41,10 +41,10 @@
   []
   (let [vao (GL30/glGenVertexArrays)
         vbo (GL15/glGenBuffers)
-        buf (BufferUtils/createFloatBuffer (alength core/cube-vertices))
+        buf (BufferUtils/createFloatBuffer (alength u/cube-vertices))
         stride (* 6 Float/BYTES)]
     (GL30/glBindVertexArray vao)
-    (.put buf core/cube-vertices)
+    (.put buf u/cube-vertices)
     (.flip buf)
     (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER vbo)
     (GL15/glBufferData GL15/GL_ARRAY_BUFFER buf GL15/GL_STATIC_DRAW)
@@ -363,8 +363,8 @@ void main() {
 
 (defn- setup-window
   [title]
-  (let [error-callback (core/init-glfw!)
-        window (core/create-window width height title)]
+  (let [error-callback (u/init-glfw!)
+        window (u/create-window width height title)]
     (GL/createCapabilities)
     (GLFW/glfwSetFramebufferSizeCallback
      window
@@ -397,7 +397,7 @@ void main() {
             points (points-mesh)
             mat-buf (BufferUtils/createFloatBuffer 16)
             projection (basic-projection)]
-        (core/init-viewport! window width height)
+        (u/init-viewport! window width height)
         (case scenario
           (:depth-testing :depth-testing-view)
           (let [program (simple-program)

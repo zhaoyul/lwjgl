@@ -1,6 +1,6 @@
 (ns lwjgl.chapter1.hello-triangle-indexed
   (:gen-class)
-  (:require [lwjgl.core :as core])
+  (:require [lwjgl.utils :as u])
   (:import (org.lwjgl BufferUtils)
            (org.lwjgl.glfw GLFW GLFWFramebufferSizeCallbackI GLFWKeyCallbackI)
            (org.lwjgl.opengl GL GL11 GL15 GL20 GL30)))
@@ -57,14 +57,14 @@ void main() {
   []
   (let [width 800
         height 600
-        error-callback (core/init-glfw!)
-        window (core/create-window width height "LearnOpenGL - Hello Triangle Indexed (LWJGL)")]
+        error-callback (u/init-glfw!)
+        window (u/create-window width height "LearnOpenGL - Hello Triangle Indexed (LWJGL)")]
     (try
       (GL/createCapabilities)
-      (let [program (core/create-program vertex-shader-source fragment-shader-source)
+      (let [program (u/create-program vertex-shader-source fragment-shader-source)
             {:keys [vao vbo ebo]} (create-quad-vao)]
         (try
-          (core/init-viewport! window width height)
+          (u/init-viewport! window width height)
           (GLFW/glfwSetFramebufferSizeCallback
            window
            (reify GLFWFramebufferSizeCallbackI

@@ -1,6 +1,6 @@
 (ns lwjgl.chapter1.camera
   (:gen-class)
-  (:require [lwjgl.core :as core])
+  (:require [lwjgl.utils :as u])
   (:import (org.lwjgl BufferUtils)
            (org.lwjgl.glfw GLFW GLFWCursorPosCallbackI GLFWFramebufferSizeCallbackI
                            GLFWKeyCallbackI GLFWScrollCallbackI)
@@ -234,12 +234,12 @@ void main() {
   [mode]
   (let [width (atom 800)
         height (atom 600)
-        error-callback (core/init-glfw!)
-        window (core/create-window @width @height (window-title mode))]
+        error-callback (u/init-glfw!)
+        window (u/create-window @width @height (window-title mode))]
     (try
       (GL/createCapabilities)
       (GL11/glEnable GL11/GL_DEPTH_TEST)
-      (let [program (core/create-program vertex-shader-source fragment-shader-source)
+      (let [program (u/create-program vertex-shader-source fragment-shader-source)
             {:keys [vao vbo]} (create-cube)
             tex (create-texture 256 256)
             model-loc (GL20/glGetUniformLocation program "model")
@@ -254,7 +254,7 @@ void main() {
             target (Vector3f.)
             last-time (atom (GLFW/glfwGetTime))]
         (try
-          (core/init-viewport! window width height)
+          (u/init-viewport! window width height)
           (GLFW/glfwSetFramebufferSizeCallback
            window
            (reify GLFWFramebufferSizeCallbackI

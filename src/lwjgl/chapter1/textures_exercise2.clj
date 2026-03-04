@@ -1,6 +1,6 @@
 (ns lwjgl.chapter1.textures-exercise2
   (:gen-class)
-  (:require [lwjgl.core :as core])
+  (:require [lwjgl.utils :as u])
   (:import (org.lwjgl BufferUtils)
            (org.lwjgl.glfw GLFW GLFWFramebufferSizeCallbackI GLFWKeyCallbackI)
            (org.lwjgl.opengl GL GL11 GL13 GL15 GL20 GL30)))
@@ -101,11 +101,11 @@ void main() {
   []
   (let [width 800
         height 600
-        error-callback (core/init-glfw!)
-        window (core/create-window width height "LearnOpenGL - Textures Exercise 2 (LWJGL)")]
+        error-callback (u/init-glfw!)
+        window (u/create-window width height "LearnOpenGL - Textures Exercise 2 (LWJGL)")]
     (try
       (GL/createCapabilities)
-      (let [program (core/create-program vertex-shader-source fragment-shader-source)
+      (let [program (u/create-program vertex-shader-source fragment-shader-source)
             {:keys [vao vbo ebo]} (create-quad)
             tex1 (create-texture 256 256 checker)
             tex2 (create-texture 256 256 gradient)
@@ -114,7 +114,7 @@ void main() {
             mix-loc (GL20/glGetUniformLocation program "mixValue")
             mix-value (atom 0.2)]
         (try
-          (core/init-viewport! window width height)
+          (u/init-viewport! window width height)
           (GLFW/glfwSetFramebufferSizeCallback
            window
            (reify GLFWFramebufferSizeCallbackI

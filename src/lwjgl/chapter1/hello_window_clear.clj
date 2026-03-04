@@ -1,6 +1,6 @@
 (ns lwjgl.chapter1.hello-window-clear
   (:gen-class)
-  (:require [lwjgl.core :as core])
+  (:require [lwjgl.utils :as u])
   (:import (org.lwjgl.glfw GLFW GLFWFramebufferSizeCallbackI GLFWKeyCallbackI)
            (org.lwjgl.opengl GL GL11)))
 
@@ -8,11 +8,11 @@
   []
   (let [width 800
         height 600
-        error-callback (core/init-glfw!)
-        window (core/create-window width height "LearnOpenGL - Hello Window Clear (LWJGL)")]
+        error-callback (u/init-glfw!)
+        window (u/create-window width height "LearnOpenGL - Hello Window Clear (LWJGL)")]
     (try
       (GL/createCapabilities)
-      (core/init-viewport! window width height)
+      (u/init-viewport! window width height)
       (GLFW/glfwSetFramebufferSizeCallback
        window
        (reify GLFWFramebufferSizeCallbackI

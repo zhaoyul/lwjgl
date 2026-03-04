@@ -1,5 +1,5 @@
 (ns lwjgl.chapter2.lighting-common
-  (:require [lwjgl.core :as core])
+  (:require [lwjgl.utils :as u])
   (:import (org.lwjgl BufferUtils)
            (org.lwjgl.opengl GL GL11 GL13 GL15 GL20 GL30)
            (org.joml Matrix4f)))
@@ -192,11 +192,11 @@ void main() {
 
 (defn create-single-light-program
   []
-  (core/create-program single-light-vertex-shader single-light-fragment-shader))
+  (u/create-program single-light-vertex-shader single-light-fragment-shader))
 
 (defn create-lamp-program
   []
-  (core/create-program lamp-vertex-shader lamp-fragment-shader))
+  (u/create-program lamp-vertex-shader lamp-fragment-shader))
 
 (defn upload-mat!
   [^Matrix4f m ^java.nio.FloatBuffer buf loc]

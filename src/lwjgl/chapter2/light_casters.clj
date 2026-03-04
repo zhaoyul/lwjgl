@@ -1,6 +1,6 @@
 (ns lwjgl.chapter2.light-casters
   (:gen-class)
-  (:require [lwjgl.core :as core]
+  (:require [lwjgl.utils :as u]
             [lwjgl.chapter2.lighting-common :as lc])
   (:import (org.lwjgl BufferUtils)
            (org.lwjgl.glfw GLFW GLFWFramebufferSizeCallbackI GLFWKeyCallbackI)
@@ -13,7 +13,7 @@
 
 (defn- configure-window!
   [window width height]
-  (core/init-viewport! window width height)
+  (u/init-viewport! window width height)
   (GLFW/glfwSetFramebufferSizeCallback
    window
    (reify GLFWFramebufferSizeCallbackI
@@ -122,8 +122,8 @@
   [mode]
   (let [width 800
         height 600
-        {:keys [window error-callback]} (let [cb (core/init-glfw!)
-                                              win (core/create-window width height (str "LearnOpenGL - " (name mode) " (LWJGL)"))]
+        {:keys [window error-callback]} (let [cb (u/init-glfw!)
+                                              win (u/create-window width height (str "LearnOpenGL - " (name mode) " (LWJGL)"))]
                                           {:error-callback cb :window win})]
     (try
       (GL/createCapabilities)

@@ -1,6 +1,6 @@
 (ns lwjgl.chapter1.transformations-exercise2
   (:gen-class)
-  (:require [lwjgl.core :as core])
+  (:require [lwjgl.utils :as u])
   (:import (org.lwjgl BufferUtils)
            (org.lwjgl.glfw GLFW GLFWFramebufferSizeCallbackI GLFWKeyCallbackI)
            (org.lwjgl.opengl GL GL11 GL13 GL15 GL20 GL30)
@@ -97,18 +97,18 @@ void main() {
         height 600
         base-scale 0.5
         scale-amp 0.5
-        error-callback (core/init-glfw!)
-        window (core/create-window width height "LearnOpenGL - Transformations Exercise 2 (LWJGL)")]
+        error-callback (u/init-glfw!)
+        window (u/create-window width height "LearnOpenGL - Transformations Exercise 2 (LWJGL)")]
     (try
       (GL/createCapabilities)
-      (let [program (core/create-program vertex-shader-source fragment-shader-source)
+      (let [program (u/create-program vertex-shader-source fragment-shader-source)
             {:keys [vao vbo ebo]} (create-quad)
             tex (create-texture 256 256)
             transform-loc (GL20/glGetUniformLocation program "transform")
             tex-loc (GL20/glGetUniformLocation program "texture1")
             buf (BufferUtils/createFloatBuffer 16)]
         (try
-          (core/init-viewport! window width height)
+          (u/init-viewport! window width height)
           (GLFW/glfwSetFramebufferSizeCallback
            window
            (reify GLFWFramebufferSizeCallbackI

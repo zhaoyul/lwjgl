@@ -1,7 +1,7 @@
 (ns lwjgl.experiment.kons9.ui
   "kons-9 的轻量 UI 数据结构与布局计算。"
   (:require [clojure.string :as str]
-            [lwjgl.core :as core])
+            [lwjgl.utils :as u])
   (:import (org.lwjgl.glfw GLFW)))
 
 (def ^:const menu-margin 16)
@@ -22,7 +22,7 @@
 (def ^:const info-line-height 18)
 (def ^:const info-max-width 420)
 
-(def ^:const font-px-height (* core/font-height core/font-scale))
+(def ^:const font-px-height (* u/font-height u/font-scale))
 (def ^:const text-baseline-offset 2)
 
 (def ^:const theme
@@ -144,7 +144,7 @@
 (defn- text-width
   [s]
   (if (seq s)
-    (:w (core/text-size [(str s)]))
+    (:w (u/text-size [(str s)]))
     0))
 
 (defn- text-baseline

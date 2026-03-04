@@ -1,6 +1,6 @@
 (ns lwjgl.chapter2.lighting-maps
   (:gen-class)
-  (:require [lwjgl.core :as core]
+  (:require [lwjgl.utils :as u]
             [lwjgl.chapter2.lighting-common :as lc])
   (:import (org.lwjgl BufferUtils)
            (org.lwjgl.glfw GLFW GLFWFramebufferSizeCallbackI GLFWKeyCallbackI)
@@ -13,7 +13,7 @@
 
 (defn- configure-window!
   [window width height]
-  (core/init-viewport! window width height)
+  (u/init-viewport! window width height)
   (GLFW/glfwSetFramebufferSizeCallback
    window
    (reify GLFWFramebufferSizeCallbackI
@@ -112,8 +112,8 @@
         diffuse-tex (lc/create-checker-texture 128 128 [196 132 86] [120 78 48])
         specular-tex (lc/create-radial-specular-map 128 128 20 255)
         emission-tex (lc/create-emission-map 128 128)
-        error-callback (core/init-glfw!)
-        window (core/create-window width height (str "LearnOpenGL - lighting maps (" (name mode) ") (LWJGL)"))]
+        error-callback (u/init-glfw!)
+        window (u/create-window width height (str "LearnOpenGL - lighting maps (" (name mode) ") (LWJGL)"))]
     (try
       (GL/createCapabilities)
       (GL11/glEnable GL11/GL_DEPTH_TEST)

@@ -1,7 +1,7 @@
 (ns lwjgl.chapter5.advanced-lighting
   (:gen-class)
   (:require [clojure.string :as str]
-            [lwjgl.core :as core])
+            [lwjgl.utils :as u])
   (:import (org.lwjgl BufferUtils)
            (org.lwjgl.glfw GLFW GLFWFramebufferSizeCallbackI GLFWKeyCallbackI)
            (org.lwjgl.opengl GL GL11 GL13 GL14 GL15 GL20 GL30)
@@ -227,7 +227,7 @@ void main() {
     FragColor = vec4(color, 1.0);
 }")
 
-(defn- simple-program [] (core/create-program simple-vs simple-fs))
+(defn- simple-program [] (u/create-program simple-vs simple-fs))
 
 (def ^:private depth-vs
   "#version 330 core
@@ -334,8 +334,8 @@ void main() {
 
 (defn- setup-window
   [title]
-  (let [error-cb (core/init-glfw!)
-        window (core/create-window width height title)]
+  (let [error-cb (u/init-glfw!)
+        window (u/create-window width height title)]
     (GL/createCapabilities)
     (GLFW/glfwSetFramebufferSizeCallback
      window
@@ -360,9 +360,9 @@ void main() {
 (defn- run-simple
   [mode config]
   (let [{:keys [window] :as env} (setup-window (str "LearnOpenGL - " (name mode)))
-        cube (let [mesh (core/create-cube-mesh)
-                   ;; cube-vertices in core.clj are pos(3)+normal(3) => stride 6
-                   count (quot (alength core/cube-vertices) cube-vertex-stride)]
+        cube (let [mesh (u/create-cube-mesh)
+                   ;; cube-vertices in utils.clj are pos(3)+normal(3) => stride 6
+                   count (quot (alength u/cube-vertices) cube-vertex-stride)]
                (assoc mesh :count count))
         plane (create-plane)
         program (simple-program)
@@ -497,16 +497,16 @@ void main() {
 (defn- run-shadow
   [{:keys [mode]}]
   (let [{:keys [window] :as env} (setup-window (str "LearnOpenGL - " (name mode)))
-        cube (let [mesh (core/create-cube-mesh)
+        cube (let [mesh (u/create-cube-mesh)
                    ;; assumes cube-vertices are position + normal matching cube-vertex-stride
-                   count (quot (alength core/cube-vertices) cube-vertex-stride)]
+                   count (quot (alength u/cube-vertices) cube-vertex-stride)]
                (assoc mesh :count count))
         plane (create-plane)
         quad (create-quad)
         depth-map (create-depth-map)
-        depth-program (core/create-program depth-vs depth-fs)
-        scene-program (core/create-program scene-vs scene-fs)
-        debug-program (core/create-program debug-depth-vs debug-depth-fs)
+        depth-program (u/create-program depth-vs depth-fs)
+        scene-program (u/create-program scene-vs scene-fs)
+        debug-program (u/create-program debug-depth-vs debug-depth-fs)
         mat-buf (BufferUtils/createFloatBuffer 16)
         light-pos (Vector3f. -2.0 4.0 -1.0)
         model (Matrix4f.)
@@ -517,7 +517,7 @@ void main() {
         light-view (Matrix4f.)]
     (try
       (GL11/glEnable GL11/GL_DEPTH_TEST)
-      (core/init-viewport! window width height)
+      (u/init-viewport! window width height)
       (let [model-loc-depth (GL20/glGetUniformLocation depth-program "model")
             light-depth-loc (GL20/glGetUniformLocation depth-program "lightSpaceMatrix")
             model-loc (GL20/glGetUniformLocation scene-program "model")
@@ -560,7 +560,7 @@ void main() {
 
             ;; second pass: scene render
             (GL20/glUseProgram scene-program)
-            (core/init-viewport! window width height)
+            (u/init-viewport! window width height)
             (GL11/glClearColor 0.1 0.1 0.12 1.0)
             (GL11/glClear (bit-or GL11/GL_COLOR_BUFFER_BIT GL11/GL_DEPTH_BUFFER_BIT))
             (.setLookAt view 0.0 3.0 6.0   0.0 0.0 0.0   0.0 1.0 0.0)

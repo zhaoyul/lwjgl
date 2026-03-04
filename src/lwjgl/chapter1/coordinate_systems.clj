@@ -1,6 +1,6 @@
 (ns lwjgl.chapter1.coordinate-systems
   (:gen-class)
-  (:require [lwjgl.core :as core])
+  (:require [lwjgl.utils :as u])
   (:import (org.lwjgl BufferUtils)
            (org.lwjgl.glfw GLFW GLFWFramebufferSizeCallbackI GLFWKeyCallbackI)
            (org.lwjgl.opengl GL GL11 GL13 GL15 GL20 GL30)
@@ -125,12 +125,12 @@ void main() {
   []
   (let [width 800
         height 600
-        error-callback (core/init-glfw!)
-        window (core/create-window width height "LearnOpenGL - Coordinate Systems (LWJGL)")]
+        error-callback (u/init-glfw!)
+        window (u/create-window width height "LearnOpenGL - Coordinate Systems (LWJGL)")]
     (try
       (GL/createCapabilities)
       (GL11/glEnable GL11/GL_DEPTH_TEST)
-      (let [program (core/create-program vertex-shader-source fragment-shader-source)
+      (let [program (u/create-program vertex-shader-source fragment-shader-source)
             {:keys [vao vbo]} (create-cube)
             tex (create-texture 256 256)
             model-loc (GL20/glGetUniformLocation program "model")
@@ -142,7 +142,7 @@ void main() {
             view (doto (Matrix4f.) (.translate (Vector3f. 0.0 0.0 -3.0)))
             projection (doto (Matrix4f.) (.perspective (float (Math/toRadians 45.0)) (/ width (float height)) 0.1 100.0))]
         (try
-          (core/init-viewport! window width height)
+          (u/init-viewport! window width height)
           (GLFW/glfwSetFramebufferSizeCallback
            window
            (reify GLFWFramebufferSizeCallbackI

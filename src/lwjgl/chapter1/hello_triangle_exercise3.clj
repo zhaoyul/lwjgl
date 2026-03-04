@@ -1,6 +1,6 @@
 (ns lwjgl.chapter1.hello-triangle-exercise3
   (:gen-class)
-  (:require [lwjgl.core :as core])
+  (:require [lwjgl.utils :as u])
   (:import (org.lwjgl BufferUtils)
            (org.lwjgl.glfw GLFW GLFWFramebufferSizeCallbackI GLFWKeyCallbackI)
            (org.lwjgl.opengl GL GL11 GL15 GL20 GL30)))
@@ -74,15 +74,15 @@ void main() {
   []
   (let [width 800
         height 600
-        error-callback (core/init-glfw!)
-        window (core/create-window width height "LearnOpenGL - Hello Triangle Exercise 3 (LWJGL)")]
+        error-callback (u/init-glfw!)
+        window (u/create-window width height "LearnOpenGL - Hello Triangle Exercise 3 (LWJGL)")]
     (try
       (GL/createCapabilities)
-      (let [program-orange (core/create-program vertex-shader-source fragment-orange)
-            program-yellow (core/create-program vertex-shader-source fragment-yellow)
+      (let [program-orange (u/create-program vertex-shader-source fragment-orange)
+            program-yellow (u/create-program vertex-shader-source fragment-yellow)
             {:keys [vao1 vao2 vbo1 vbo2]} (create-two-vaos)]
         (try
-          (core/init-viewport! window width height)
+          (u/init-viewport! window width height)
           (GLFW/glfwSetFramebufferSizeCallback
            window
            (reify GLFWFramebufferSizeCallbackI

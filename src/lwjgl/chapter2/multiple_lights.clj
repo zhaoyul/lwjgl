@@ -1,6 +1,6 @@
 (ns lwjgl.chapter2.multiple-lights
   (:gen-class)
-  (:require [lwjgl.core :as core]
+  (:require [lwjgl.utils :as u]
             [lwjgl.chapter2.lighting-common :as lc])
   (:import (org.lwjgl BufferUtils)
            (org.lwjgl.glfw GLFW GLFWFramebufferSizeCallbackI GLFWKeyCallbackI)
@@ -145,7 +145,7 @@ void main() {
 
 (defn- configure-window!
   [window width height]
-  (core/init-viewport! window width height)
+  (u/init-viewport! window width height)
   (GLFW/glfwSetFramebufferSizeCallback
    window
    (reify GLFWFramebufferSizeCallbackI
@@ -244,12 +244,12 @@ void main() {
         diffuse-tex (lc/create-checker-texture 128 128 [200 150 110] [120 80 60])
         specular-tex (lc/create-radial-specular-map 128 128 30 255)
         emission-tex (lc/create-emission-map 128 128)
-        error-callback (core/init-glfw!)
-        window (core/create-window width height (str "LearnOpenGL - multiple lights (" (name mode) ") (LWJGL)"))]
+        error-callback (u/init-glfw!)
+        window (u/create-window width height (str "LearnOpenGL - multiple lights (" (name mode) ") (LWJGL)"))]
     (try
       (GL/createCapabilities)
       (GL11/glEnable GL11/GL_DEPTH_TEST)
-      (let [program (core/create-program vertex-shader fragment-shader)
+      (let [program (u/create-program vertex-shader fragment-shader)
             lamp-program (lc/create-lamp-program)
             {:keys [vao vbo]} (lc/create-textured-cube-mesh)
             mat-buf (BufferUtils/createFloatBuffer 16)

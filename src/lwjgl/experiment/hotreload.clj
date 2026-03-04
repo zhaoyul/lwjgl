@@ -1,7 +1,7 @@
 (ns lwjgl.experiment.hotreload
   (:gen-class)
   (:require [clojure.core.async :as async]
-            [lwjgl.core :as core]
+            [lwjgl.utils :as u]
             [lwjgl.experiment.kons9.geometry :as kgeom]
             [lwjgl.experiment.kons9.input :as kinput]
             [lwjgl.experiment.kons9.math :as kmath]
@@ -643,9 +643,9 @@ void main() {
     (let [{:keys [ui-text-program ui-text-vao ui-text-tex ui-text-tex-w ui-text-tex-h
                   ui-text-bytes ui-text-buffer ui-text-viewport-loc ui-text-color-loc]} @state
           [r g b] (or text-color [0.1 0.1 0.1])]
-      (core/clear-text-buffer! ui-text-bytes)
+      (u/clear-text-buffer! ui-text-bytes)
       (doseq [{:keys [x y text]} texts]
-        (core/draw-string! ui-text-bytes ui-text-tex-w ui-text-tex-h (int x) (int y) (str text)))
+        (u/draw-string! ui-text-bytes ui-text-tex-w ui-text-tex-h (int x) (int y) (str text)))
       (.clear ui-text-buffer)
       (.put ui-text-buffer ui-text-bytes 0 (* ui-text-tex-w ui-text-tex-h))
       (.flip ui-text-buffer)
@@ -979,7 +979,7 @@ void main() {
       (when need-resize?
         (when (pos? ui-text-tex)
           (GL11/glDeleteTextures ui-text-tex))
-        (let [tex (core/create-overlay-texture tex-w tex-h)
+        (let [tex (u/create-overlay-texture tex-w tex-h)
               bytes (byte-array (* tex-w tex-h))
               buffer (BufferUtils/createByteBuffer (* tex-w tex-h))]
           (swap! state assoc
@@ -1267,17 +1267,17 @@ void main() {
 
 (defn- init-resources!
   []
-  (let [program (core/create-program @vs-source @fs-source)
+  (let [program (u/create-program @vs-source @fs-source)
         {:keys [vao vbo ebo index-count]} (create-quad)
         tex (create-texture 256 256)
         tex-loc (GL20/glGetUniformLocation program "texture1")
-        axis-program (core/create-program axis-vs-source axis-fs-source)
-        point-program (core/create-program point-vs-source point-fs-source)
-        sprite-program (core/create-program sprite-vs-source sprite-fs-source)
-        overlay-program (core/create-program overlay-vs-source overlay-fs-source)
-        ui-rect-program (core/create-program ui-rect-vs-source ui-rect-fs-source)
-        ui-text-program (core/create-program (core/slurp-resource "shaders/overlay.vert")
-                                             (core/slurp-resource "shaders/overlay.frag"))
+        axis-program (u/create-program axis-vs-source axis-fs-source)
+        point-program (u/create-program point-vs-source point-fs-source)
+        sprite-program (u/create-program sprite-vs-source sprite-fs-source)
+        overlay-program (u/create-program overlay-vs-source overlay-fs-source)
+        ui-rect-program (u/create-program ui-rect-vs-source ui-rect-fs-source)
+        ui-text-program (u/create-program (u/slurp-resource "shaders/overlay.vert")
+                                             (u/slurp-resource "shaders/overlay.frag"))
         ui-rect-viewport-loc (GL20/glGetUniformLocation ui-rect-program "uViewport")
         ui-rect-color-loc (GL20/glGetUniformLocation ui-rect-program "uColor")
         ui-text-viewport-loc (GL20/glGetUniformLocation ui-text-program "uViewport")
@@ -1290,12 +1290,12 @@ void main() {
         (build-axis-vao (axis-arrow-vertices length arrow-length arrow-radius))
         {grid-vao :vao grid-vbo :vbo grid-count :count} (build-grid-vao)
         ;; Cube resources
-        cube-program (core/create-program cube-vs-source cube-fs-source)
+        cube-program (u/create-program cube-vs-source cube-fs-source)
         {point-vao :vao point-vbo :vbo} (build-point-vao)
         {sprite-vao :vao sprite-vbo :vbo} (build-sprite-vao)
         {overlay-vao :vao overlay-vbo :vbo} (build-overlay-vao)
         {ui-rect-vao :vao ui-rect-vbo :vbo} (build-ui-rect-vao)
-        {ui-text-vao :vao ui-text-vbo :vbo} (core/create-overlay-quad)
+        {ui-text-vao :vao ui-text-vbo :vbo} (u/create-overlay-quad)
         ui-rect-buffer (BufferUtils/createFloatBuffer (* 6 2))
         ui-text-vertex-buffer (BufferUtils/createFloatBuffer (* 6 4))
         {mesh-vao :vao mesh-vbo :vbo mesh-ebo :ebo} (build-mesh-vao)
@@ -2291,7 +2291,7 @@ void main() {
   (enqueue!
    (fn []
      (let [old (:program @state)
-           program (core/create-program @vs-source @fs-source)
+           program (u/create-program @vs-source @fs-source)
            tex-loc (GL20/glGetUniformLocation program "texture1")]
        (when (pos? old) (GL20/glDeleteProgram old))
        (GL20/glUseProgram program)
@@ -2525,8 +2525,8 @@ void main() {
   []
   (let [width 800
         height 600
-        error-callback (core/init-glfw!)
-        window (core/create-window width height "LWJGL - Hot Reload (experiment)")]
+        error-callback (u/init-glfw!)
+        window (u/create-window width height "LWJGL - Hot Reload (experiment)")]
     (try
       (swap! app assoc :window window)
       (let [w (BufferUtils/createIntBuffer 1)
@@ -2541,7 +2541,7 @@ void main() {
         (swap! app assoc-in [:input :fb-height] (.get h 0)))
       (GL/createCapabilities)
       ;; 这里强制使用 framebuffer 尺寸初始化 viewport, 避免 HiDPI 下比例错误
-      (core/init-viewport! window (get-in @app [:input :fb-width]) (get-in @app [:input :fb-height]))
+      (u/init-viewport! window (get-in @app [:input :fb-width]) (get-in @app [:input :fb-height]))
       (swap! app assoc :time {:now (now-seconds)
                               :dt 0.0
                               :frame 0
@@ -2671,7 +2671,7 @@ void main() {
 (defn -main
   [& args]
   (when (some #{"--nrepl"} args)
-    (let [server (core/start-nrepl!)]
+    (let [server (u/start-nrepl!)]
       (println "nREPL server started for hotreload")))
   (run-example!))
 

@@ -1,6 +1,6 @@
 (ns lwjgl.chapter2.basic-lighting-exercise2
   (:gen-class)
-  (:require [lwjgl.core :as core])
+  (:require [lwjgl.utils :as u])
   (:import (org.lwjgl BufferUtils)
            (org.lwjgl.glfw GLFW GLFWFramebufferSizeCallbackI GLFWKeyCallbackI)
            (org.lwjgl.opengl GL GL11 GL15 GL20 GL30)
@@ -91,14 +91,14 @@ void main() {
   []
   (let [width 800
         height 600
-        error-callback (core/init-glfw!)
-        window (core/create-window width height "LearnOpenGL - Basic Lighting Exercise 2 (LWJGL)")]
+        error-callback (u/init-glfw!)
+        window (u/create-window width height "LearnOpenGL - Basic Lighting Exercise 2 (LWJGL)")]
     (try
       (GL/createCapabilities)
       (GL11/glEnable GL11/GL_DEPTH_TEST)
-      (let [lighting-program (core/create-program vertex-shader-source fragment-shader-source)
-            lamp-program (core/create-program lamp-vertex-shader lamp-fragment-shader)
-            {:keys [vao vbo]} (core/create-cube-mesh)
+      (let [lighting-program (u/create-program vertex-shader-source fragment-shader-source)
+            lamp-program (u/create-program lamp-vertex-shader lamp-fragment-shader)
+            {:keys [vao vbo]} (u/create-cube-mesh)
             mat-buf (BufferUtils/createFloatBuffer 16)
             model (Matrix4f.)
             lamp-model (Matrix4f.)
@@ -119,7 +119,7 @@ void main() {
             lamp-proj-loc (GL20/glGetUniformLocation lamp-program "projection")
             lamp-color-loc (GL20/glGetUniformLocation lamp-program "lightColor")]
         (try
-          (core/init-viewport! window width height)
+          (u/init-viewport! window width height)
           (GLFW/glfwSetFramebufferSizeCallback
            window
            (reify GLFWFramebufferSizeCallbackI

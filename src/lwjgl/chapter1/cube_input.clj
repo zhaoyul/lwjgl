@@ -1,6 +1,6 @@
 (ns lwjgl.chapter1.cube-input
   (:gen-class)
-  (:require [lwjgl.core :as core])
+  (:require [lwjgl.utils :as u])
   (:import (org.lwjgl BufferUtils)
            (org.lwjgl.glfw GLFW GLFWCursorPosCallbackI GLFWFramebufferSizeCallbackI
                            GLFWKeyCallbackI GLFWMouseButtonCallbackI GLFWScrollCallbackI)
@@ -118,11 +118,11 @@ void main() {
         last-x (atom 0.0)
         last-y (atom 0.0)
         last-time (atom 0.0)
-        error-callback (core/init-glfw!)
-        window (core/create-window @width @height "LearnOpenGL - Cube Input (LWJGL)")]
+        error-callback (u/init-glfw!)
+        window (u/create-window @width @height "LearnOpenGL - Cube Input (LWJGL)")]
     (try
       (GL/createCapabilities)
-      (let [program (core/create-program vertex-shader-source fragment-shader-source)
+      (let [program (u/create-program vertex-shader-source fragment-shader-source)
             {:keys [vao vbo count]} (create-cube)
             model-loc (GL20/glGetUniformLocation program "model")
             view-loc (GL20/glGetUniformLocation program "view")
@@ -133,7 +133,7 @@ void main() {
             projection (Matrix4f.)]
         (try
           (GL11/glEnable GL11/GL_DEPTH_TEST)
-          (core/init-viewport! window width height)
+          (u/init-viewport! window width height)
           (GLFW/glfwSetFramebufferSizeCallback
            window
            (reify GLFWFramebufferSizeCallbackI

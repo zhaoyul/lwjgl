@@ -1,6 +1,6 @@
 (ns lwjgl.chapter2.materials
   (:gen-class)
-  (:require [lwjgl.core :as core]
+  (:require [lwjgl.utils :as u]
             [lwjgl.chapter2.lighting-common :as lc])
   (:import (org.lwjgl BufferUtils)
            (org.lwjgl.glfw GLFW GLFWFramebufferSizeCallbackI GLFWKeyCallbackI)
@@ -13,14 +13,14 @@
 
 (defn- setup-window
   [title width height]
-  (let [error-callback (core/init-glfw!)
-        window (core/create-window width height title)]
+  (let [error-callback (u/init-glfw!)
+        window (u/create-window width height title)]
     {:error-callback error-callback
      :window window}))
 
 (defn- configure-window!
   [window width height]
-  (core/init-viewport! window width height)
+  (u/init-viewport! window width height)
   (GLFW/glfwSetFramebufferSizeCallback
    window
    (reify GLFWFramebufferSizeCallbackI

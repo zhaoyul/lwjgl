@@ -1,7 +1,7 @@
 (ns lwjgl.chapter3.model-loading
   (:gen-class)
   (:require [clojure.java.io :as io]
-            [lwjgl.core :as core])
+            [lwjgl.utils :as u])
   (:import (org.lwjgl BufferUtils)
            (org.lwjgl.assimp Assimp AIMesh AIVector3D AIVector3D$Buffer)
            (org.lwjgl.glfw GLFW GLFWFramebufferSizeCallbackI GLFWKeyCallbackI)
@@ -162,12 +162,12 @@ void main() {
                                            e))))))
         width 800
         height 600
-        error-callback (core/init-glfw!)
-        window (core/create-window width height "LearnOpenGL - Model Loading (LWJGL)")]
+        error-callback (u/init-glfw!)
+        window (u/create-window width height "LearnOpenGL - Model Loading (LWJGL)")]
     (try
       (GL/createCapabilities)
       (GL11/glEnable GL11/GL_DEPTH_TEST)
-      (let [program (core/create-program vertex-shader-source fragment-shader-source)
+      (let [program (u/create-program vertex-shader-source fragment-shader-source)
             {:keys [vao vbo vertex-count]} (load-mesh! model-path)
             mat-buf (BufferUtils/createFloatBuffer 16)
             model (Matrix4f.)
@@ -184,7 +184,7 @@ void main() {
             light-color-loc (GL20/glGetUniformLocation program "lightColor")
             object-color-loc (GL20/glGetUniformLocation program "objectColor")]
         (try
-          (core/init-viewport! window width height)
+          (u/init-viewport! window width height)
           (GLFW/glfwSetFramebufferSizeCallback
            window
            (reify GLFWFramebufferSizeCallbackI

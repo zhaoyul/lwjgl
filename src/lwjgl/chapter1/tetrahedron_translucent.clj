@@ -1,6 +1,6 @@
 (ns lwjgl.chapter1.tetrahedron-translucent
   (:gen-class)
-  (:require [lwjgl.core :as core])
+  (:require [lwjgl.utils :as u])
   (:import (org.lwjgl BufferUtils)
            (org.lwjgl.glfw GLFW GLFWCursorPosCallbackI GLFWFramebufferSizeCallbackI
                            GLFWKeyCallbackI GLFWMouseButtonCallbackI GLFWScrollCallbackI)
@@ -94,11 +94,11 @@ void main() {
         last-x (atom 0.0)
         last-y (atom 0.0)
         last-time (atom 0.0)
-        error-callback (core/init-glfw!)
-        window (core/create-window @width @height "LearnOpenGL - Translucent Tetrahedron (LWJGL)")]
+        error-callback (u/init-glfw!)
+        window (u/create-window @width @height "LearnOpenGL - Translucent Tetrahedron (LWJGL)")]
     (try
       (GL/createCapabilities)
-      (let [program (core/create-program vertex-shader-source fragment-shader-source)
+      (let [program (u/create-program vertex-shader-source fragment-shader-source)
             {:keys [vao vbo count]} (create-tetrahedron)
             model-loc (GL20/glGetUniformLocation program "model")
             view-loc (GL20/glGetUniformLocation program "view")
@@ -112,7 +112,7 @@ void main() {
           (GL11/glEnable GL11/GL_BLEND)
           (GL11/glBlendFunc GL11/GL_SRC_ALPHA GL11/GL_ONE_MINUS_SRC_ALPHA)
           (GL11/glEnable GL11/GL_DEPTH_TEST)
-          (core/init-viewport! window width height)
+          (u/init-viewport! window width height)
           (GLFW/glfwSetFramebufferSizeCallback
            window
            (reify GLFWFramebufferSizeCallbackI

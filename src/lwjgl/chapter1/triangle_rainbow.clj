@@ -1,6 +1,6 @@
 (ns lwjgl.chapter1.triangle-rainbow
   (:gen-class)
-  (:require [lwjgl.core :as core])
+  (:require [lwjgl.utils :as u])
   (:import (org.lwjgl BufferUtils)
            (org.lwjgl.glfw GLFW GLFWCursorPosCallbackI GLFWFramebufferSizeCallbackI
                            GLFWKeyCallbackI GLFWMouseButtonCallbackI GLFWWindowSizeCallbackI)
@@ -85,12 +85,12 @@ void main() {
         cursor-x (atom 0.0)
         dragging? (atom false)
         last-time (atom 0.0)
-        error-callback (core/init-glfw!)
-        window (core/create-window @width @height "LearnOpenGL - Triangle Rainbow (LWJGL)")]
+        error-callback (u/init-glfw!)
+        window (u/create-window @width @height "LearnOpenGL - Triangle Rainbow (LWJGL)")]
     (try
       (GL/createCapabilities)
-      (core/init-viewport! window fb-width fb-height)
-      (let [program (core/create-program vertex-shader-source fragment-shader-source)
+      (u/init-viewport! window fb-width fb-height)
+      (let [program (u/create-program vertex-shader-source fragment-shader-source)
             {:keys [vao vbo]} (create-triangle)
             offset-loc (GL20/glGetUniformLocation program "offset")
             angle-loc (GL20/glGetUniformLocation program "angle")
