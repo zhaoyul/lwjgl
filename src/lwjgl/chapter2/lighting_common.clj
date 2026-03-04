@@ -1,7 +1,7 @@
 (ns lwjgl.chapter2.lighting-common
   (:require [lwjgl.utils :as u])
   (:import (org.lwjgl BufferUtils)
-           (org.lwjgl.opengl GL GL11 GL13 GL15 GL20 GL30)
+           (org.lwjgl.opengl GL GL45)
            (org.joml Matrix4f)))
 
 (def textured-cube-vertices
@@ -51,22 +51,22 @@
 
 (defn create-textured-cube-mesh
   []
-  (let [vao (GL30/glGenVertexArrays)
-        vbo (GL15/glGenBuffers)
+  (let [vao (GL45/glGenVertexArrays)
+        vbo (GL45/glGenBuffers)
         buf (BufferUtils/createFloatBuffer (alength textured-cube-vertices))
         stride (* 8 Float/BYTES)]
-    (GL30/glBindVertexArray vao)
+    (GL45/glBindVertexArray vao)
     (.put buf textured-cube-vertices)
     (.flip buf)
-    (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER vbo)
-    (GL15/glBufferData GL15/GL_ARRAY_BUFFER buf GL15/GL_STATIC_DRAW)
-    (GL20/glVertexAttribPointer 0 3 GL11/GL_FLOAT false stride 0)
-    (GL20/glEnableVertexAttribArray 0)
-    (GL20/glVertexAttribPointer 1 3 GL11/GL_FLOAT false stride (* 3 Float/BYTES))
-    (GL20/glEnableVertexAttribArray 1)
-    (GL20/glVertexAttribPointer 2 2 GL11/GL_FLOAT false stride (* 6 Float/BYTES))
-    (GL20/glEnableVertexAttribArray 2)
-    (GL30/glBindVertexArray 0)
+    (GL45/glBindBuffer GL45/GL_ARRAY_BUFFER vbo)
+    (GL45/glBufferData GL45/GL_ARRAY_BUFFER buf GL45/GL_STATIC_DRAW)
+    (GL45/glVertexAttribPointer 0 3 GL45/GL_FLOAT false stride 0)
+    (GL45/glEnableVertexAttribArray 0)
+    (GL45/glVertexAttribPointer 1 3 GL45/GL_FLOAT false stride (* 3 Float/BYTES))
+    (GL45/glEnableVertexAttribArray 1)
+    (GL45/glVertexAttribPointer 2 2 GL45/GL_FLOAT false stride (* 6 Float/BYTES))
+    (GL45/glEnableVertexAttribArray 2)
+    (GL45/glBindVertexArray 0)
     {:vao vao :vbo vbo}))
 
 (def single-light-vertex-shader
@@ -204,11 +204,11 @@ void main() {
   (.get m buf)
   (.rewind buf)
   (when (<= 0 loc)
-    (GL20/glUniformMatrix4fv loc false buf)))
+    (GL45/glUniformMatrix4fv loc false buf)))
 
 (defn create-checker-texture
   [w h [r0 g0 b0] [r1 g1 b1]]
-  (let [tex (GL11/glGenTextures)
+  (let [tex (GL45/glGenTextures)
         buf (BufferUtils/createByteBuffer (* w h 3))]
     (dotimes [y h]
       (dotimes [x w]
@@ -218,17 +218,17 @@ void main() {
           (.put buf (inc idx) (unchecked-byte (if checker g0 g1)))
           (.put buf (+ idx 2) (unchecked-byte (if checker b0 b1))))))
     (.rewind buf)
-    (GL11/glBindTexture GL11/GL_TEXTURE_2D tex)
-    (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_MIN_FILTER GL11/GL_LINEAR)
-    (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_MAG_FILTER GL11/GL_LINEAR)
-    (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_WRAP_S GL11/GL_REPEAT)
-    (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_WRAP_T GL11/GL_REPEAT)
-    (GL11/glTexImage2D GL11/GL_TEXTURE_2D 0 GL11/GL_RGB w h 0 GL11/GL_RGB GL11/GL_UNSIGNED_BYTE buf)
+    (GL45/glBindTexture GL45/GL_TEXTURE_2D tex)
+    (GL45/glTexParameteri GL45/GL_TEXTURE_2D GL45/GL_TEXTURE_MIN_FILTER GL45/GL_LINEAR)
+    (GL45/glTexParameteri GL45/GL_TEXTURE_2D GL45/GL_TEXTURE_MAG_FILTER GL45/GL_LINEAR)
+    (GL45/glTexParameteri GL45/GL_TEXTURE_2D GL45/GL_TEXTURE_WRAP_S GL45/GL_REPEAT)
+    (GL45/glTexParameteri GL45/GL_TEXTURE_2D GL45/GL_TEXTURE_WRAP_T GL45/GL_REPEAT)
+    (GL45/glTexImage2D GL45/GL_TEXTURE_2D 0 GL45/GL_RGB w h 0 GL45/GL_RGB GL45/GL_UNSIGNED_BYTE buf)
     tex))
 
 (defn create-radial-specular-map
   [w h base highlight]
-  (let [tex (GL11/glGenTextures)
+  (let [tex (GL45/glGenTextures)
         buf (BufferUtils/createByteBuffer (* w h 3))
         cx (/ w 2.0)
         cy (/ h 2.0)
@@ -245,17 +245,17 @@ void main() {
           (.put buf (inc idx) (unchecked-byte value))
           (.put buf (+ idx 2) (unchecked-byte value)))))
     (.rewind buf)
-    (GL11/glBindTexture GL11/GL_TEXTURE_2D tex)
-    (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_MIN_FILTER GL11/GL_LINEAR)
-    (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_MAG_FILTER GL11/GL_LINEAR)
-    (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_WRAP_S GL11/GL_REPEAT)
-    (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_WRAP_T GL11/GL_REPEAT)
-    (GL11/glTexImage2D GL11/GL_TEXTURE_2D 0 GL11/GL_RGB w h 0 GL11/GL_RGB GL11/GL_UNSIGNED_BYTE buf)
+    (GL45/glBindTexture GL45/GL_TEXTURE_2D tex)
+    (GL45/glTexParameteri GL45/GL_TEXTURE_2D GL45/GL_TEXTURE_MIN_FILTER GL45/GL_LINEAR)
+    (GL45/glTexParameteri GL45/GL_TEXTURE_2D GL45/GL_TEXTURE_MAG_FILTER GL45/GL_LINEAR)
+    (GL45/glTexParameteri GL45/GL_TEXTURE_2D GL45/GL_TEXTURE_WRAP_S GL45/GL_REPEAT)
+    (GL45/glTexParameteri GL45/GL_TEXTURE_2D GL45/GL_TEXTURE_WRAP_T GL45/GL_REPEAT)
+    (GL45/glTexImage2D GL45/GL_TEXTURE_2D 0 GL45/GL_RGB w h 0 GL45/GL_RGB GL45/GL_UNSIGNED_BYTE buf)
     tex))
 
 (defn create-emission-map
   [w h]
-  (let [tex (GL11/glGenTextures)
+  (let [tex (GL45/glGenTextures)
         buf (BufferUtils/createByteBuffer (* w h 3))]
     (dotimes [y h]
       (dotimes [x w]
@@ -265,10 +265,10 @@ void main() {
           (.put buf (inc idx) (unchecked-byte 80))
           (.put buf (+ idx 2) (unchecked-byte 120)))))
     (.rewind buf)
-    (GL11/glBindTexture GL11/GL_TEXTURE_2D tex)
-    (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_MIN_FILTER GL11/GL_LINEAR)
-    (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_MAG_FILTER GL11/GL_LINEAR)
-    (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_WRAP_S GL11/GL_REPEAT)
-    (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_WRAP_T GL11/GL_REPEAT)
-    (GL11/glTexImage2D GL11/GL_TEXTURE_2D 0 GL11/GL_RGB w h 0 GL11/GL_RGB GL11/GL_UNSIGNED_BYTE buf)
+    (GL45/glBindTexture GL45/GL_TEXTURE_2D tex)
+    (GL45/glTexParameteri GL45/GL_TEXTURE_2D GL45/GL_TEXTURE_MIN_FILTER GL45/GL_LINEAR)
+    (GL45/glTexParameteri GL45/GL_TEXTURE_2D GL45/GL_TEXTURE_MAG_FILTER GL45/GL_LINEAR)
+    (GL45/glTexParameteri GL45/GL_TEXTURE_2D GL45/GL_TEXTURE_WRAP_S GL45/GL_REPEAT)
+    (GL45/glTexParameteri GL45/GL_TEXTURE_2D GL45/GL_TEXTURE_WRAP_T GL45/GL_REPEAT)
+    (GL45/glTexImage2D GL45/GL_TEXTURE_2D 0 GL45/GL_RGB w h 0 GL45/GL_RGB GL45/GL_UNSIGNED_BYTE buf)
     tex))

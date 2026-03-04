@@ -3,7 +3,7 @@
   (:require [lwjgl.utils :as u])
   (:import (org.lwjgl BufferUtils)
            (org.lwjgl.glfw GLFW GLFWFramebufferSizeCallbackI GLFWKeyCallbackI)
-           (org.lwjgl.opengl GL GL11 GL15 GL20 GL30)
+           (org.lwjgl.opengl GL GL45)
            (org.joml Matrix4f Vector3f)))
 
 (def ^:private vertex-shader-source
@@ -85,7 +85,7 @@ void main() {
   (.get m buf)
   (.rewind buf)
   (when (<= 0 loc)
-    (GL20/glUniformMatrix4fv loc false buf)))
+    (GL45/glUniformMatrix4fv loc false buf)))
 
 (defn run-example!
   []
@@ -95,7 +95,7 @@ void main() {
         window (u/create-window width height "LearnOpenGL - Basic Lighting Exercise 3 (LWJGL)")]
     (try
       (GL/createCapabilities)
-      (GL11/glEnable GL11/GL_DEPTH_TEST)
+      (GL45/glEnable GL45/GL_DEPTH_TEST)
       (let [lighting-program (u/create-program vertex-shader-source fragment-shader-source)
             lamp-program (u/create-program lamp-vertex-shader lamp-fragment-shader)
             {:keys [vao vbo]} (u/create-cube-mesh)
@@ -107,24 +107,24 @@ void main() {
                                                        (/ width (float height))
                                                        0.1 100.0))
             light-pos (Vector3f. 1.2 1.0 2.0)
-            model-loc (GL20/glGetUniformLocation lighting-program "model")
-            view-loc (GL20/glGetUniformLocation lighting-program "view")
-            proj-loc (GL20/glGetUniformLocation lighting-program "projection")
-            light-pos-loc (GL20/glGetUniformLocation lighting-program "lightPos")
-            view-pos-loc (GL20/glGetUniformLocation lighting-program "viewPos")
-            light-color-loc (GL20/glGetUniformLocation lighting-program "lightColor")
-            object-color-loc (GL20/glGetUniformLocation lighting-program "objectColor")
-            lamp-model-loc (GL20/glGetUniformLocation lamp-program "model")
-            lamp-view-loc (GL20/glGetUniformLocation lamp-program "view")
-            lamp-proj-loc (GL20/glGetUniformLocation lamp-program "projection")
-            lamp-color-loc (GL20/glGetUniformLocation lamp-program "lightColor")]
+            model-loc (GL45/glGetUniformLocation lighting-program "model")
+            view-loc (GL45/glGetUniformLocation lighting-program "view")
+            proj-loc (GL45/glGetUniformLocation lighting-program "projection")
+            light-pos-loc (GL45/glGetUniformLocation lighting-program "lightPos")
+            view-pos-loc (GL45/glGetUniformLocation lighting-program "viewPos")
+            light-color-loc (GL45/glGetUniformLocation lighting-program "lightColor")
+            object-color-loc (GL45/glGetUniformLocation lighting-program "objectColor")
+            lamp-model-loc (GL45/glGetUniformLocation lamp-program "model")
+            lamp-view-loc (GL45/glGetUniformLocation lamp-program "view")
+            lamp-proj-loc (GL45/glGetUniformLocation lamp-program "projection")
+            lamp-color-loc (GL45/glGetUniformLocation lamp-program "lightColor")]
         (try
           (u/init-viewport! window width height)
           (GLFW/glfwSetFramebufferSizeCallback
            window
            (reify GLFWFramebufferSizeCallbackI
              (invoke [_ _ w h]
-               (GL11/glViewport 0 0 w h))))
+               (GL45/glViewport 0 0 w h))))
           (GLFW/glfwSetKeyCallback
            window
            (reify GLFWKeyCallbackI
@@ -133,13 +133,13 @@ void main() {
                           (= action GLFW/GLFW_PRESS))
                  (GLFW/glfwSetWindowShouldClose win true)))))
 
-          (GL20/glUseProgram lighting-program)
+          (GL45/glUseProgram lighting-program)
           (upload-mat! view mat-buf view-loc)
           (upload-mat! projection mat-buf proj-loc)
           (when (<= 0 object-color-loc)
-            (GL20/glUniform3f object-color-loc 1.0 0.5 0.31))
+            (GL45/glUniform3f object-color-loc 1.0 0.5 0.31))
 
-          (GL20/glUseProgram lamp-program)
+          (GL45/glUseProgram lamp-program)
           (upload-mat! view mat-buf lamp-view-loc)
           (upload-mat! projection mat-buf lamp-proj-loc)
 
@@ -150,39 +150,39 @@ void main() {
                                            (float (Math/sin (* 0.7 t)))
                                            (float (Math/sin (* 1.3 t))))]
 
-                (GL11/glClearColor 0.1 0.1 0.12 1.0)
-                (GL11/glClear (bit-or GL11/GL_COLOR_BUFFER_BIT GL11/GL_DEPTH_BUFFER_BIT))
+                (GL45/glClearColor 0.1 0.1 0.12 1.0)
+                (GL45/glClear (bit-or GL45/GL_COLOR_BUFFER_BIT GL45/GL_DEPTH_BUFFER_BIT))
 
-                (GL20/glUseProgram lighting-program)
+                (GL45/glUseProgram lighting-program)
                 (.identity model)
                 (upload-mat! model mat-buf model-loc)
                 (when (<= 0 light-pos-loc)
-                  (GL20/glUniform3f light-pos-loc (.x light-pos) (.y light-pos) (.z light-pos)))
+                  (GL45/glUniform3f light-pos-loc (.x light-pos) (.y light-pos) (.z light-pos)))
                 (when (<= 0 view-pos-loc)
-                  (GL20/glUniform3f view-pos-loc 0.0 0.0 3.0))
+                  (GL45/glUniform3f view-pos-loc 0.0 0.0 3.0))
                 (when (<= 0 light-color-loc)
-                  (GL20/glUniform3f light-color-loc (.x light-color) (.y light-color) (.z light-color)))
-                (GL30/glBindVertexArray vao)
-                (GL11/glDrawArrays GL11/GL_TRIANGLES 0 36)
+                  (GL45/glUniform3f light-color-loc (.x light-color) (.y light-color) (.z light-color)))
+                (GL45/glBindVertexArray vao)
+                (GL45/glDrawArrays GL45/GL_TRIANGLES 0 36)
 
-                (GL20/glUseProgram lamp-program)
+                (GL45/glUseProgram lamp-program)
                 (.identity lamp-model)
                 (.translate lamp-model light-pos)
                 (.scale lamp-model 0.2)
                 (upload-mat! lamp-model mat-buf lamp-model-loc)
                 (when (<= 0 lamp-color-loc)
-                  (GL20/glUniform3f lamp-color-loc (.x light-color) (.y light-color) (.z light-color)))
-                (GL30/glBindVertexArray vao)
-                (GL11/glDrawArrays GL11/GL_TRIANGLES 0 36)
+                  (GL45/glUniform3f lamp-color-loc (.x light-color) (.y light-color) (.z light-color)))
+                (GL45/glBindVertexArray vao)
+                (GL45/glDrawArrays GL45/GL_TRIANGLES 0 36)
 
                 (GLFW/glfwSwapBuffers window)
                 (GLFW/glfwPollEvents)
                 (recur))))
           (finally
-            (delete-if-positive lighting-program #(GL20/glDeleteProgram %))
-            (delete-if-positive lamp-program #(GL20/glDeleteProgram %))
-            (delete-if-positive vbo #(GL15/glDeleteBuffers %))
-            (delete-if-positive vao #(GL30/glDeleteVertexArrays %)))))
+            (delete-if-positive lighting-program #(GL45/glDeleteProgram %))
+            (delete-if-positive lamp-program #(GL45/glDeleteProgram %))
+            (delete-if-positive vbo #(GL45/glDeleteBuffers %))
+            (delete-if-positive vao #(GL45/glDeleteVertexArrays %)))))
       (finally
         (when (pos? window) (GLFW/glfwDestroyWindow window))
         (GLFW/glfwTerminate)

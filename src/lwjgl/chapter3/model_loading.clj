@@ -5,7 +5,7 @@
   (:import (org.lwjgl BufferUtils)
            (org.lwjgl.assimp Assimp AIMesh AIVector3D AIVector3D$Buffer)
            (org.lwjgl.glfw GLFW GLFWFramebufferSizeCallbackI GLFWKeyCallbackI)
-           (org.lwjgl.opengl GL GL11 GL15 GL20 GL30)
+           (org.lwjgl.opengl GL GL45)
            (org.joml Matrix4f Vector3f)))
 
 (def ^:private vertex-shader-source
@@ -77,7 +77,7 @@ void main() {
   (.get m buf)
   (.rewind buf)
   (when (<= 0 loc)
-    (GL20/glUniformMatrix4fv loc false buf)))
+    (GL45/glUniformMatrix4fv loc false buf)))
 
 (defn- load-mesh!
   [^String path]
@@ -117,17 +117,17 @@ void main() {
                   (.put fb (.y n))
                   (.put fb (.z n))))))
           (.flip fb)
-          (let [vao (GL30/glGenVertexArrays)
-                vbo (GL15/glGenBuffers)]
-            (GL30/glBindVertexArray vao)
-            (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER vbo)
-            (GL15/glBufferData GL15/GL_ARRAY_BUFFER fb GL15/GL_STATIC_DRAW)
-            (GL20/glVertexAttribPointer 0 3 GL11/GL_FLOAT false stride-bytes 0)
-            (GL20/glEnableVertexAttribArray 0)
-            (GL20/glVertexAttribPointer 1 3 GL11/GL_FLOAT false stride-bytes (* 3 Float/BYTES))
-            (GL20/glEnableVertexAttribArray 1)
-            (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER 0)
-            (GL30/glBindVertexArray 0)
+          (let [vao (GL45/glGenVertexArrays)
+                vbo (GL45/glGenBuffers)]
+            (GL45/glBindVertexArray vao)
+            (GL45/glBindBuffer GL45/GL_ARRAY_BUFFER vbo)
+            (GL45/glBufferData GL45/GL_ARRAY_BUFFER fb GL45/GL_STATIC_DRAW)
+            (GL45/glVertexAttribPointer 0 3 GL45/GL_FLOAT false stride-bytes 0)
+            (GL45/glEnableVertexAttribArray 0)
+            (GL45/glVertexAttribPointer 1 3 GL45/GL_FLOAT false stride-bytes (* 3 Float/BYTES))
+            (GL45/glEnableVertexAttribArray 1)
+            (GL45/glBindBuffer GL45/GL_ARRAY_BUFFER 0)
+            (GL45/glBindVertexArray 0)
             {:vao vao
              :vbo vbo
              :vertex-count (* face-count 3)})))
@@ -166,7 +166,7 @@ void main() {
         window (u/create-window width height "LearnOpenGL - Model Loading (LWJGL)")]
     (try
       (GL/createCapabilities)
-      (GL11/glEnable GL11/GL_DEPTH_TEST)
+      (GL45/glEnable GL45/GL_DEPTH_TEST)
       (let [program (u/create-program vertex-shader-source fragment-shader-source)
             {:keys [vao vbo vertex-count]} (load-mesh! model-path)
             mat-buf (BufferUtils/createFloatBuffer 16)
@@ -176,20 +176,20 @@ void main() {
                                                        (/ width (float height))
                                                        0.1 100.0))
             light-pos (Vector3f. 2.0 2.0 2.0)
-            model-loc (GL20/glGetUniformLocation program "model")
-            view-loc (GL20/glGetUniformLocation program "view")
-            proj-loc (GL20/glGetUniformLocation program "projection")
-            light-pos-loc (GL20/glGetUniformLocation program "lightPos")
-            view-pos-loc (GL20/glGetUniformLocation program "viewPos")
-            light-color-loc (GL20/glGetUniformLocation program "lightColor")
-            object-color-loc (GL20/glGetUniformLocation program "objectColor")]
+            model-loc (GL45/glGetUniformLocation program "model")
+            view-loc (GL45/glGetUniformLocation program "view")
+            proj-loc (GL45/glGetUniformLocation program "projection")
+            light-pos-loc (GL45/glGetUniformLocation program "lightPos")
+            view-pos-loc (GL45/glGetUniformLocation program "viewPos")
+            light-color-loc (GL45/glGetUniformLocation program "lightColor")
+            object-color-loc (GL45/glGetUniformLocation program "objectColor")]
         (try
           (u/init-viewport! window width height)
           (GLFW/glfwSetFramebufferSizeCallback
            window
            (reify GLFWFramebufferSizeCallbackI
              (invoke [_ _ w h]
-               (GL11/glViewport 0 0 w h))))
+               (GL45/glViewport 0 0 w h))))
           (GLFW/glfwSetKeyCallback
            window
            (reify GLFWKeyCallbackI
@@ -198,7 +198,7 @@ void main() {
                           (= action GLFW/GLFW_PRESS))
                  (GLFW/glfwSetWindowShouldClose win true)))))
 
-          (GL20/glUseProgram program)
+          (GL45/glUseProgram program)
           (upload-mat! view mat-buf view-loc)
           (upload-mat! projection mat-buf proj-loc)
 
@@ -208,33 +208,33 @@ void main() {
                     light-color (Vector3f. (float (+ 0.5 (* 0.5 (Math/sin (* light-frequency-x t)))))
                                            (float (+ 0.5 (* 0.5 (Math/sin (* light-frequency-y t)))))
                                            (float (+ 0.5 (* 0.5 (Math/sin (* light-frequency-z t))))))]
-                (GL11/glClearColor 0.07 0.07 0.09 1.0)
-                (GL11/glClear (bit-or GL11/GL_COLOR_BUFFER_BIT GL11/GL_DEPTH_BUFFER_BIT))
+                (GL45/glClearColor 0.07 0.07 0.09 1.0)
+                (GL45/glClear (bit-or GL45/GL_COLOR_BUFFER_BIT GL45/GL_DEPTH_BUFFER_BIT))
 
-                (GL20/glUseProgram program)
+                (GL45/glUseProgram program)
                 (.identity model)
                 (.rotateY model (* 0.4 t))
                 (.rotateX model (* 0.2 t))
                 (upload-mat! model mat-buf model-loc)
                 (when (<= 0 light-pos-loc)
-                  (GL20/glUniform3f light-pos-loc (.x light-pos) (.y light-pos) (.z light-pos)))
+                  (GL45/glUniform3f light-pos-loc (.x light-pos) (.y light-pos) (.z light-pos)))
                 (when (<= 0 view-pos-loc)
-                  (GL20/glUniform3f view-pos-loc 0.0 0.0 camera-distance))
+                  (GL45/glUniform3f view-pos-loc 0.0 0.0 camera-distance))
                 (when (<= 0 light-color-loc)
-                  (GL20/glUniform3f light-color-loc (.x light-color) (.y light-color) (.z light-color)))
+                  (GL45/glUniform3f light-color-loc (.x light-color) (.y light-color) (.z light-color)))
                 (when (<= 0 object-color-loc)
-                  (GL20/glUniform3f object-color-loc object-color-r object-color-g object-color-b))
+                  (GL45/glUniform3f object-color-loc object-color-r object-color-g object-color-b))
 
-                (GL30/glBindVertexArray vao)
-                (GL11/glDrawArrays GL11/GL_TRIANGLES 0 vertex-count)
+                (GL45/glBindVertexArray vao)
+                (GL45/glDrawArrays GL45/GL_TRIANGLES 0 vertex-count)
 
                 (GLFW/glfwSwapBuffers window)
                 (GLFW/glfwPollEvents)
                 (recur))))
           (finally
-            (delete-if-positive program #(GL20/glDeleteProgram %))
-            (delete-if-positive vbo #(GL15/glDeleteBuffers %))
-            (delete-if-positive vao #(GL30/glDeleteVertexArrays %)))))
+            (delete-if-positive program #(GL45/glDeleteProgram %))
+            (delete-if-positive vbo #(GL45/glDeleteBuffers %))
+            (delete-if-positive vao #(GL45/glDeleteVertexArrays %)))))
       (finally
         (when (pos? window) (GLFW/glfwDestroyWindow window))
         (GLFW/glfwTerminate)

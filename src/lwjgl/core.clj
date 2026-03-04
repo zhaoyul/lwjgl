@@ -5,7 +5,7 @@
   (:require [lwjgl.utils :as u]
             [clojure.java.io :as io])
   (:import (org.lwjgl.glfw GLFW GLFWFramebufferSizeCallbackI GLFWKeyCallbackI)
-           (org.lwjgl.opengl GL GL11 GL13 GL15 GL20 GL30 GL31 GL33)
+           (org.lwjgl.opengl GL GL45)
            (org.lwjgl BufferUtils)
            (java.util Locale Random)))
 
@@ -286,37 +286,37 @@
         stride (* 6 Float/BYTES)]
     (u/set-vertex-attrib! 0 3 stride 0)           ; position
     (u/set-vertex-attrib! 1 3 stride (* 3 Float/BYTES)) ; normal
-    (GL30/glBindVertexArray 0)
+    (GL45/glBindVertexArray 0)
     {:vao vao :vbo vbo}))
 
 (defn create-instance-buffer
   "创建实例化数据 VBO"
   [num-instances]
-  (let [vbo (GL15/glGenBuffers)
+  (let [vbo (GL45/glGenBuffers)
         stride (* 4 Float/BYTES)]
-    (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER vbo)
-    (GL15/glBufferData GL15/GL_ARRAY_BUFFER
+    (GL45/glBindBuffer GL45/GL_ARRAY_BUFFER vbo)
+    (GL45/glBufferData GL45/GL_ARRAY_BUFFER
                        (* num-instances 4 Float/BYTES)
-                       GL15/GL_STREAM_DRAW)
-    (GL20/glVertexAttribPointer 2 3 GL11/GL_FLOAT false stride 0)
-    (GL20/glEnableVertexAttribArray 2)
-    (GL20/glVertexAttribPointer 3 1 GL11/GL_FLOAT false stride (* 3 Float/BYTES))
-    (GL20/glEnableVertexAttribArray 3)
-    (GL33/glVertexAttribDivisor 2 1)
-    (GL33/glVertexAttribDivisor 3 1)
+                       GL45/GL_STREAM_DRAW)
+    (GL45/glVertexAttribPointer 2 3 GL45/GL_FLOAT false stride 0)
+    (GL45/glEnableVertexAttribArray 2)
+    (GL45/glVertexAttribPointer 3 1 GL45/GL_FLOAT false stride (* 3 Float/BYTES))
+    (GL45/glEnableVertexAttribArray 3)
+    (GL45/glVertexAttribDivisor 2 1)
+    (GL45/glVertexAttribDivisor 3 1)
     vbo))
 
 (defn create-overlay-quad
   "创建 UI 覆盖层四边形 VAO/VBO"
   []
   (let [vao (u/create-vao)
-        vbo (GL15/glGenBuffers)
+        vbo (GL45/glGenBuffers)
         stride (* 4 Float/BYTES)]
-    (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER vbo)
-    (GL15/glBufferData GL15/GL_ARRAY_BUFFER (* 6 4 Float/BYTES) GL15/GL_STREAM_DRAW)
+    (GL45/glBindBuffer GL45/GL_ARRAY_BUFFER vbo)
+    (GL45/glBufferData GL45/GL_ARRAY_BUFFER (* 6 4 Float/BYTES) GL45/GL_STREAM_DRAW)
     (u/set-vertex-attrib! 0 2 stride 0)           ; position
     (u/set-vertex-attrib! 1 2 stride (* 2 Float/BYTES)) ; uv
-    (GL30/glBindVertexArray 0)
+    (GL45/glBindVertexArray 0)
     {:vao vao :vbo vbo}))
 
 ;; ---------------------------------------------------------------------------
@@ -341,7 +341,7 @@
     (.clear buffer)
     (.put buffer bytes 0 (* tex-w tex-h))
     (.flip buffer)
-    (u/update-texture-2d! tex tex-w tex-h GL11/GL_RED GL11/GL_UNSIGNED_BYTE buffer)
+    (u/update-texture-2d! tex tex-w tex-h GL45/GL_RED GL45/GL_UNSIGNED_BYTE buffer)
     ;; 更新顶点数据
     (let [x0 (float overlay-margin)
           y0 (float overlay-margin)
@@ -360,8 +360,8 @@
                             x0 y1 u-left v-bottom
                             x0 y0 u-left v-top]))
       (.flip vertex-buffer)
-      (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER vbo)
-      (GL15/glBufferSubData GL15/GL_ARRAY_BUFFER 0 vertex-buffer))))
+      (GL45/glBindBuffer GL45/GL_ARRAY_BUFFER vbo)
+      (GL45/glBufferSubData GL45/GL_ARRAY_BUFFER 0 vertex-buffer))))
 
 ;; ---------------------------------------------------------------------------
 ;; 格式化工具
@@ -413,12 +413,12 @@
       (GL/createCapabilities)
       (reset! gl-ready? true)
       (reset! nrepl-server (u/start-nrepl!))
-      (println "GL_VENDOR:" (GL11/glGetString GL11/GL_VENDOR))
-      (println "GL_RENDERER:" (GL11/glGetString GL11/GL_RENDERER))
-      (println "GL_VERSION:" (GL11/glGetString GL11/GL_VERSION))
-      (println "GLSL_VERSION:" (GL11/glGetString GL20/GL_SHADING_LANGUAGE_VERSION))
+      (println "GL_VENDOR:" (GL45/glGetString GL45/GL_VENDOR))
+      (println "GL_RENDERER:" (GL45/glGetString GL45/GL_RENDERER))
+      (println "GL_VERSION:" (GL45/glGetString GL45/GL_VERSION))
+      (println "GLSL_VERSION:" (GL45/glGetString GL45/GL_SHADING_LANGUAGE_VERSION))
       (u/init-viewport! window width height)
-      (GL11/glDisable GL11/GL_DEPTH_TEST)
+      (GL45/glDisable GL45/GL_DEPTH_TEST)
 
       ;; 窗口大小变化回调
       (GLFW/glfwSetFramebufferSizeCallback
@@ -427,7 +427,7 @@
          (invoke [_ _ w h]
            (reset! width w)
            (reset! height h)
-           (GL11/glViewport 0 0 w h))))
+           (GL45/glViewport 0 0 w h))))
 
       ;; 键盘输入回调
       (GLFW/glfwSetKeyCallback
@@ -442,8 +442,8 @@
            (when (and (= key GLFW/GLFW_KEY_W)
                       (= action GLFW/GLFW_PRESS))
              (let [enabled (swap! wireframe? not)
-                   mode (if enabled GL11/GL_LINE GL11/GL_FILL)]
-               (GL11/glPolygonMode GL11/GL_FRONT_AND_BACK mode)))
+                   mode (if enabled GL45/GL_LINE GL45/GL_FILL)]
+               (GL45/glPolygonMode GL45/GL_FRONT_AND_BACK mode)))
            ;; I 切换实例化渲染
            (when (and (= key GLFW/GLFW_KEY_I)
                       (= action GLFW/GLFW_PRESS))
@@ -471,16 +471,16 @@
       ;; 创建 shader programs
       (let [program (u/create-program (u/slurp-resource "shaders/instanced.vert")
                                       (u/slurp-resource "shaders/instanced.frag"))
-            time-loc (GL20/glGetUniformLocation program "uTime")
-            view-loc (GL20/glGetUniformLocation program "uViewAngles")
-            rect-color-loc (GL20/glGetUniformLocation program "uRectColor")
-            use-global-color-loc (GL20/glGetUniformLocation program "uUseGlobalColor")
-            rot-speed-loc (GL20/glGetUniformLocation program "uRotationSpeed")
+            time-loc (GL45/glGetUniformLocation program "uTime")
+            view-loc (GL45/glGetUniformLocation program "uViewAngles")
+            rect-color-loc (GL45/glGetUniformLocation program "uRectColor")
+            use-global-color-loc (GL45/glGetUniformLocation program "uUseGlobalColor")
+            rot-speed-loc (GL45/glGetUniformLocation program "uRotationSpeed")
             overlay-program (u/create-program (u/slurp-resource "shaders/overlay.vert")
                                               (u/slurp-resource "shaders/overlay.frag"))
-            overlay-viewport-loc (GL20/glGetUniformLocation overlay-program "uViewport")
-            overlay-text-loc (GL20/glGetUniformLocation overlay-program "uText")
-            overlay-color-loc (GL20/glGetUniformLocation overlay-program "uTextColor")
+            overlay-viewport-loc (GL45/glGetUniformLocation overlay-program "uViewport")
+            overlay-text-loc (GL45/glGetUniformLocation overlay-program "uText")
+            overlay-color-loc (GL45/glGetUniformLocation overlay-program "uTextColor")
             ;; 创建网格
             {:keys [vao vbo]} (create-cube-mesh)
             overlay-quad (create-overlay-quad)
@@ -488,7 +488,7 @@
             overlay-vbo (:vbo overlay-quad)
             ;; 创建覆盖层纹理
             overlay-tex (u/create-texture-2d overlay-tex-width overlay-tex-height
-                                             GL30/GL_R8 GL11/GL_RED GL11/GL_UNSIGNED_BYTE)
+                                             GL45/GL_R8 GL45/GL_RED GL45/GL_UNSIGNED_BYTE)
             overlay-bytes (byte-array (* overlay-tex-width overlay-tex-height))
             overlay-buffer (BufferUtils/createByteBuffer (* overlay-tex-width overlay-tex-height))
             overlay-vertex-buffer (BufferUtils/createFloatBuffer (* 6 4))
@@ -502,17 +502,17 @@
                      :vertex-buffer overlay-vertex-buffer}
             ;; 实例化 buffer
             instance-vbo (do
-                           (GL30/glBindVertexArray vao)
+                           (GL45/glBindVertexArray vao)
                            (create-instance-buffer num-instances))
             ;; 实例化状态
             {:keys [base params sizes instance-data]} (init-instance-state num-instances)
             instance-buffer (BufferUtils/createFloatBuffer (* num-instances 4))]
 
         ;; 初始化 shader uniforms
-        (GL20/glUseProgram program)
-        (GL20/glUseProgram overlay-program)
+        (GL45/glUseProgram program)
+        (GL45/glUseProgram overlay-program)
         (when (<= 0 overlay-text-loc)
-          (GL20/glUniform1i overlay-text-loc 0))
+          (GL45/glUniform1i overlay-text-loc 0))
 
         ;; 主循环
         (loop []
@@ -539,54 +539,54 @@
                 (.put instance-buffer instance-data)
                 (.flip instance-buffer)
                 (let [upload-start (System/nanoTime)]
-                  (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER instance-vbo)
-                  (GL15/glBufferSubData GL15/GL_ARRAY_BUFFER 0 instance-buffer)
+                  (GL45/glBindBuffer GL45/GL_ARRAY_BUFFER instance-vbo)
+                  (GL45/glBufferSubData GL45/GL_ARRAY_BUFFER 0 instance-buffer)
                   (let [upload-ms (/ (- (System/nanoTime) upload-start) 1000000.0)
                         render-start (System/nanoTime)]
                     ;; 清除屏幕
                     (let [[r g b a] @background-color]
-                      (GL11/glClearColor (float r) (float g) (float b) (float a)))
-                    (GL11/glClear GL11/GL_COLOR_BUFFER_BIT)
+                      (GL45/glClearColor (float r) (float g) (float b) (float a)))
+                    (GL45/glClear GL45/GL_COLOR_BUFFER_BIT)
                     ;; 渲染立方体
-                    (GL20/glUseProgram program)
+                    (GL45/glUseProgram program)
                     (when (<= 0 time-loc)
-                      (GL20/glUniform1f time-loc (float t)))
+                      (GL45/glUniform1f time-loc (float t)))
                     (when (<= 0 rot-speed-loc)
-                      (GL20/glUniform1f rot-speed-loc (float @rotation-speed)))
+                      (GL45/glUniform1f rot-speed-loc (float @rotation-speed)))
                     (when (<= 0 view-loc)
                       (let [{:keys [yaw pitch]} @view-angles]
-                        (GL20/glUniform2f view-loc (float yaw) (float pitch))))
+                        (GL45/glUniform2f view-loc (float yaw) (float pitch))))
                     (let [color @rect-color
                           use-global? (and (vector? color) (= 3 (count color)))]
                       (when (<= 0 use-global-color-loc)
-                        (GL20/glUniform1f use-global-color-loc (if use-global? 1.0 0.0)))
+                        (GL45/glUniform1f use-global-color-loc (if use-global? 1.0 0.0)))
                       (when (<= 0 rect-color-loc)
                         (if use-global?
                           (let [[rr gg bb] color]
-                            (GL20/glUniform3f rect-color-loc (float rr) (float gg) (float bb)))
-                          (GL20/glUniform3f rect-color-loc 0.0 0.0 0.0))))
-                    (GL30/glBindVertexArray vao)
+                            (GL45/glUniform3f rect-color-loc (float rr) (float gg) (float bb)))
+                          (GL45/glUniform3f rect-color-loc 0.0 0.0 0.0))))
+                    (GL45/glBindVertexArray vao)
                     (if @instancing?
                       ;; 实例化渲染
                       (do
-                        (GL20/glEnableVertexAttribArray 2)
-                        (GL20/glEnableVertexAttribArray 3)
-                        (GL33/glVertexAttribDivisor 2 1)
-                        (GL33/glVertexAttribDivisor 3 1)
-                        (GL31/glDrawArraysInstanced GL11/GL_TRIANGLES 0 36 num-instances))
+                        (GL45/glEnableVertexAttribArray 2)
+                        (GL45/glEnableVertexAttribArray 3)
+                        (GL45/glVertexAttribDivisor 2 1)
+                        (GL45/glVertexAttribDivisor 3 1)
+                        (GL45/glDrawArraysInstanced GL45/GL_TRIANGLES 0 36 num-instances))
                       ;; 单实例渲染
                       (let [x (aget instance-data 0)
                             y (aget instance-data 1)
                             z (aget instance-data 2)
                             size (aget instance-data 3)]
-                        (GL20/glDisableVertexAttribArray 2)
-                        (GL20/glDisableVertexAttribArray 3)
-                        (GL33/glVertexAttribDivisor 2 0)
-                        (GL33/glVertexAttribDivisor 3 0)
-                        (GL20/glVertexAttrib3f 2 x y z)
-                        (GL20/glVertexAttrib1f 3 size)
-                        (GL11/glDrawArrays GL11/GL_TRIANGLES 0 36)))
-                    (GL30/glBindVertexArray 0)
+                        (GL45/glDisableVertexAttribArray 2)
+                        (GL45/glDisableVertexAttribArray 3)
+                        (GL45/glVertexAttribDivisor 2 0)
+                        (GL45/glVertexAttribDivisor 3 0)
+                        (GL45/glVertexAttrib3f 2 x y z)
+                        (GL45/glVertexAttrib1f 3 size)
+                        (GL45/glDrawArrays GL45/GL_TRIANGLES 0 36)))
+                    (GL45/glBindVertexArray 0)
                     (let [render-ms (/ (- (System/nanoTime) render-start) 1000000.0)]
                       ;; 渲染覆盖层统计
                       (when @show-stats?
@@ -606,19 +606,19 @@
                                      (str "Render: " (format-ms render-ms) " ms")
                                      "[F1] Toggle Stats"]]
                           (update-overlay! overlay lines)
-                          (GL20/glUseProgram overlay-program)
+                          (GL45/glUseProgram overlay-program)
                           (when (<= 0 overlay-viewport-loc)
-                            (GL20/glUniform2f overlay-viewport-loc (float @width) (float @height)))
+                            (GL45/glUniform2f overlay-viewport-loc (float @width) (float @height)))
                           (when (<= 0 overlay-color-loc)
-                            (GL20/glUniform3f overlay-color-loc 0.2 1.0 0.2))
-                          (GL13/glActiveTexture GL13/GL_TEXTURE0)
-                          (GL11/glBindTexture GL11/GL_TEXTURE_2D overlay-tex)
-                          (GL30/glBindVertexArray overlay-vao)
-                          (GL11/glEnable GL11/GL_BLEND)
-                          (GL11/glBlendFunc GL11/GL_SRC_ALPHA GL11/GL_ONE_MINUS_SRC_ALPHA)
-                          (GL11/glDrawArrays GL11/GL_TRIANGLES 0 6)
-                          (GL11/glDisable GL11/GL_BLEND)
-                          (GL30/glBindVertexArray 0))))
+                            (GL45/glUniform3f overlay-color-loc 0.2 1.0 0.2))
+                          (GL45/glActiveTexture GL45/GL_TEXTURE0)
+                          (GL45/glBindTexture GL45/GL_TEXTURE_2D overlay-tex)
+                          (GL45/glBindVertexArray overlay-vao)
+                          (GL45/glEnable GL45/GL_BLEND)
+                          (GL45/glBlendFunc GL45/GL_SRC_ALPHA GL45/GL_ONE_MINUS_SRC_ALPHA)
+                          (GL45/glDrawArrays GL45/GL_TRIANGLES 0 6)
+                          (GL45/glDisable GL45/GL_BLEND)
+                          (GL45/glBindVertexArray 0))))
 
                     ;; 交换缓冲区并轮询事件
                     (GLFW/glfwSwapBuffers window)

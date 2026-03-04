@@ -4,7 +4,7 @@
   (:import (org.lwjgl BufferUtils)
            (org.lwjgl.glfw GLFW GLFWCursorPosCallbackI GLFWFramebufferSizeCallbackI
                            GLFWKeyCallbackI GLFWMouseButtonCallbackI GLFWWindowSizeCallbackI)
-           (org.lwjgl.opengl GL GL11 GL15 GL20 GL30)))
+           (org.lwjgl.opengl GL GL45)))
 
 (def ^:private vertex-shader-source
   "#version 330 core
@@ -40,18 +40,18 @@ void main() {
                   [0.0 0.6
                    -0.6 -0.5
                    0.6 -0.5])
-        vao (GL30/glGenVertexArrays)
-        vbo (GL15/glGenBuffers)
+        vao (GL45/glGenVertexArrays)
+        vbo (GL45/glGenBuffers)
         buf (BufferUtils/createFloatBuffer (alength vertices))
         stride (* 2 Float/BYTES)]
-    (GL30/glBindVertexArray vao)
+    (GL45/glBindVertexArray vao)
     (.put buf vertices)
     (.flip buf)
-    (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER vbo)
-    (GL15/glBufferData GL15/GL_ARRAY_BUFFER buf GL15/GL_STATIC_DRAW)
-    (GL20/glVertexAttribPointer 0 2 GL11/GL_FLOAT false stride 0)
-    (GL20/glEnableVertexAttribArray 0)
-    (GL30/glBindVertexArray 0)
+    (GL45/glBindBuffer GL45/GL_ARRAY_BUFFER vbo)
+    (GL45/glBufferData GL45/GL_ARRAY_BUFFER buf GL45/GL_STATIC_DRAW)
+    (GL45/glVertexAttribPointer 0 2 GL45/GL_FLOAT false stride 0)
+    (GL45/glEnableVertexAttribArray 0)
+    (GL45/glBindVertexArray 0)
     {:vao vao :vbo vbo}))
 
 (defn run-example!
@@ -71,9 +71,9 @@ void main() {
       (u/init-viewport! window fb-width fb-height)
       (let [program (u/create-program vertex-shader-source fragment-shader-source)
             {:keys [vao vbo]} (create-triangle)
-            offset-loc (GL20/glGetUniformLocation program "offset")
-            angle-loc (GL20/glGetUniformLocation program "angle")
-            color-loc (GL20/glGetUniformLocation program "baseColor")]
+            offset-loc (GL45/glGetUniformLocation program "offset")
+            angle-loc (GL45/glGetUniformLocation program "angle")
+            color-loc (GL45/glGetUniformLocation program "baseColor")]
         (try
           (GLFW/glfwSetFramebufferSizeCallback
            window
@@ -81,7 +81,7 @@ void main() {
              (invoke [_ _ w h]
                (reset! fb-width w)
                (reset! fb-height h)
-               (GL11/glViewport 0 0 w h))))
+               (GL45/glViewport 0 0 w h))))
           (GLFW/glfwSetWindowSizeCallback
            window
            (reify GLFWWindowSizeCallbackI
@@ -109,9 +109,9 @@ void main() {
                  (let [nx (- (* 2.0 (/ xpos (double @width))) 1.0)
                        ny (- 1.0 (* 2.0 (/ ypos (double @height))))]
                    (reset! offset [(float nx) (float ny)]))))))
-          (GL20/glUseProgram program)
+          (GL45/glUseProgram program)
           (when (<= 0 color-loc)
-            (GL20/glUniform3f color-loc 0.2 0.7 0.9))
+            (GL45/glUniform3f color-loc 0.2 0.7 0.9))
           (loop []
             (when-not (GLFW/glfwWindowShouldClose window)
               (let [now (GLFW/glfwGetTime)
@@ -135,22 +135,22 @@ void main() {
                 (reset! offset [(float (clamp ox -1.0 1.0))
                                 (float (clamp oy -1.0 1.0))])
                 (reset! angle (float new-angle))
-                (GL11/glClearColor 0.05 0.06 0.08 1.0)
-                (GL11/glClear GL11/GL_COLOR_BUFFER_BIT)
+                (GL45/glClearColor 0.05 0.06 0.08 1.0)
+                (GL45/glClear GL45/GL_COLOR_BUFFER_BIT)
                 (when (<= 0 offset-loc)
                   (let [[tx ty] @offset]
-                    (GL20/glUniform2f offset-loc (float tx) (float ty))))
+                    (GL45/glUniform2f offset-loc (float tx) (float ty))))
                 (when (<= 0 angle-loc)
-                  (GL20/glUniform1f angle-loc (float @angle)))
-                (GL30/glBindVertexArray vao)
-                (GL11/glDrawArrays GL11/GL_TRIANGLES 0 3)
+                  (GL45/glUniform1f angle-loc (float @angle)))
+                (GL45/glBindVertexArray vao)
+                (GL45/glDrawArrays GL45/GL_TRIANGLES 0 3)
                 (GLFW/glfwSwapBuffers window)
                 (GLFW/glfwPollEvents)
                 (recur))))
           (finally
-            (delete-if-positive program #(GL20/glDeleteProgram %))
-            (delete-if-positive vbo #(GL15/glDeleteBuffers %))
-            (delete-if-positive vao #(GL30/glDeleteVertexArrays %)))))
+            (delete-if-positive program #(GL45/glDeleteProgram %))
+            (delete-if-positive vbo #(GL45/glDeleteBuffers %))
+            (delete-if-positive vao #(GL45/glDeleteVertexArrays %)))))
       (finally
         (when (pos? window) (GLFW/glfwDestroyWindow window))
         (GLFW/glfwTerminate)

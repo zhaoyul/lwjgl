@@ -2,7 +2,7 @@
   (:gen-class)
   (:require [lwjgl.utils :as u])
   (:import (org.lwjgl.glfw GLFW GLFWFramebufferSizeCallbackI GLFWKeyCallbackI)
-           (org.lwjgl.opengl GL GL11)))
+           (org.lwjgl.opengl GL GL45)))
 
 (defn run-example!
   []
@@ -17,7 +17,7 @@
        window
        (reify GLFWFramebufferSizeCallbackI
          (invoke [_ _ width height]
-           (GL11/glViewport 0 0 width height))))
+           (GL45/glViewport 0 0 width height))))
       (GLFW/glfwSetKeyCallback
        window
        (reify GLFWKeyCallbackI
@@ -27,8 +27,8 @@
              (GLFW/glfwSetWindowShouldClose win true)))))
       (loop []
         (when-not (GLFW/glfwWindowShouldClose window)
-          (GL11/glClearColor 0.2 0.3 0.3 1.0)
-          (GL11/glClear GL11/GL_COLOR_BUFFER_BIT)
+          (GL45/glClearColor 0.2 0.3 0.3 1.0)
+          (GL45/glClear GL45/GL_COLOR_BUFFER_BIT)
           (GLFW/glfwSwapBuffers window)
           (GLFW/glfwPollEvents)
           (recur)))

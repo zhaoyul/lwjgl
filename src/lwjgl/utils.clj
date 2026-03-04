@@ -4,7 +4,7 @@
   (:require [clojure.java.io :as io]
             [nrepl.server :as nrepl])
   (:import (org.lwjgl.glfw GLFW GLFWErrorCallback GLFWFramebufferSizeCallbackI)
-           (org.lwjgl.opengl GL GL11 GL12 GL13 GL15 GL20 GL30 GL31 GL33)
+           (org.lwjgl.opengl GL GL45 GL46)  ; 使用 GL45/GL46 统一访问所有 OpenGL 函数
            (org.lwjgl BufferUtils)
            (java.nio FloatBuffer ByteBuffer)
            (java.util Arrays)))
@@ -147,13 +147,13 @@
   (GLFW/glfwWindowHint GLFW/GLFW_CONTEXT_VERSION_MINOR 3)
   (GLFW/glfwWindowHint GLFW/GLFW_OPENGL_PROFILE GLFW/GLFW_OPENGL_CORE_PROFILE)
   (when (= (System/getProperty "os.name") "Mac OS X")
-    (GLFW/glfwWindowHint GLFW/GLFW_OPENGL_FORWARD_COMPAT GL11/GL_TRUE))
-  (GLFW/glfwWindowHint GLFW/GLFW_RESIZABLE GL11/GL_TRUE)
+    (GLFW/glfwWindowHint GLFW/GLFW_OPENGL_FORWARD_COMPAT GL45/GL_TRUE))
+  (GLFW/glfwWindowHint GLFW/GLFW_RESIZABLE GL45/GL_TRUE)
   (let [window (GLFW/glfwCreateWindow width height title 0 0)]
     (when (zero? window)
       (throw (RuntimeException. "Failed to create GLFW window")))
     (GLFW/glfwMakeContextCurrent window)
-    (GLFW/glfwSwapInterval 1)
+    (GLFW/glfwSwapInterval 1) ;; 垂直同步刷新
     (GLFW/glfwShowWindow window)
     window))
 
@@ -173,7 +173,7 @@
         (reset! width fw))
       (when (instance? clojure.lang.IAtom height)
         (reset! height fh))
-      (GL11/glViewport 0 0 fw fh))))
+      (GL45/glViewport 0 0 fw fh))))
 
 ;; ---------------------------------------------------------------------------
 ;; Shader 和 Program
@@ -185,12 +185,12 @@
     source      - shader 源代码字符串
   返回: shader ID"
   [shader-type source]
-  (let [shader (GL20/glCreateShader shader-type)]
-    (GL20/glShaderSource shader source)
-    (GL20/glCompileShader shader)
-    (when (zero? (GL20/glGetShaderi shader GL20/GL_COMPILE_STATUS))
-      (let [log (GL20/glGetShaderInfoLog shader)]
-        (GL20/glDeleteShader shader)
+  (let [shader (GL45/glCreateShader shader-type)]
+    (GL45/glShaderSource shader source)
+    (GL45/glCompileShader shader)
+    (when (zero? (GL45/glGetShaderi shader GL45/GL_COMPILE_STATUS))
+      (let [log (GL45/glGetShaderInfoLog shader)]
+        (GL45/glDeleteShader shader)
         (throw (RuntimeException. (str "Shader compile failed: " log)))))
     shader))
 
@@ -201,18 +201,18 @@
     fs-source - 片段 shader 源代码
   返回: program ID"
   [vs-source fs-source]
-  (let [vs (compile-shader GL20/GL_VERTEX_SHADER vs-source)
-        fs (compile-shader GL20/GL_FRAGMENT_SHADER fs-source)
-        program (GL20/glCreateProgram)]
-    (GL20/glAttachShader program vs)
-    (GL20/glAttachShader program fs)
-    (GL20/glLinkProgram program)
-    (when (zero? (GL20/glGetProgrami program GL20/GL_LINK_STATUS))
-      (let [log (GL20/glGetProgramInfoLog program)]
-        (GL20/glDeleteProgram program)
+  (let [vs (compile-shader GL45/GL_VERTEX_SHADER vs-source)
+        fs (compile-shader GL45/GL_FRAGMENT_SHADER fs-source)
+        program (GL45/glCreateProgram)]
+    (GL45/glAttachShader program vs)
+    (GL45/glAttachShader program fs)
+    (GL45/glLinkProgram program)
+    (when (zero? (GL45/glGetProgrami program GL45/GL_LINK_STATUS))
+      (let [log (GL45/glGetProgramInfoLog program)]
+        (GL45/glDeleteProgram program)
         (throw (RuntimeException. (str "Program link failed: " log)))))
-    (GL20/glDeleteShader vs)
-    (GL20/glDeleteShader fs)
+    (GL45/glDeleteShader vs)
+    (GL45/glDeleteShader fs)
     program))
 
 ;; ---------------------------------------------------------------------------
@@ -250,8 +250,8 @@
 (defn create-vao
   "创建并绑定一个新的 VAO, 返回 VAO ID"
   []
-  (let [vao (GL30/glGenVertexArrays)]
-    (GL30/glBindVertexArray vao)
+  (let [vao (GL45/glGenVertexArrays)]
+    (GL45/glBindVertexArray vao)
     vao))
 
 (defn create-vbo
@@ -261,22 +261,22 @@
     usage        - GL_STATIC_DRAW 或 GL_DYNAMIC_DRAW 等
   返回: VBO ID"
   [data-or-size usage]
-  (let [vbo (GL15/glGenBuffers)]
-    (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER vbo)
+  (let [vbo (GL45/glGenBuffers)]
+    (GL45/glBindBuffer GL45/GL_ARRAY_BUFFER vbo)
     (if (instance? FloatBuffer data-or-size)
-      (GL15/glBufferData GL15/GL_ARRAY_BUFFER ^FloatBuffer data-or-size usage)
-      (GL15/glBufferData GL15/GL_ARRAY_BUFFER ^long data-or-size usage))
+      (GL45/glBufferData GL45/GL_ARRAY_BUFFER ^FloatBuffer data-or-size usage)
+      (GL45/glBufferData GL45/GL_ARRAY_BUFFER ^long data-or-size usage))
     vbo))
 
 (defn create-vbo-from-array
   "从 float-array 创建静态 VBO"
   [^floats arr]
-  (let [vbo (GL15/glGenBuffers)
+  (let [vbo (GL45/glGenBuffers)
         buf (BufferUtils/createFloatBuffer (alength arr))]
     (.put buf arr)
     (.flip buf)
-    (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER vbo)
-    (GL15/glBufferData GL15/GL_ARRAY_BUFFER buf GL15/GL_STATIC_DRAW)
+    (GL45/glBindBuffer GL45/GL_ARRAY_BUFFER vbo)
+    (GL45/glBufferData GL45/GL_ARRAY_BUFFER buf GL45/GL_STATIC_DRAW)
     vbo))
 
 (defn set-vertex-attrib!
@@ -287,8 +287,8 @@
     stride - 步幅(字节)
     offset - 偏移量(字节)"
   ([index size stride offset]
-   (GL20/glVertexAttribPointer index size GL11/GL_FLOAT false stride offset)
-   (GL20/glEnableVertexAttribArray index))
+   (GL45/glVertexAttribPointer index size GL45/GL_FLOAT false stride offset)
+   (GL45/glEnableVertexAttribArray index))
   ([index size]
    (set-vertex-attrib! index size 0 0)))
 
@@ -300,9 +300,9 @@
     stride - 步幅(字节)
     offset - 偏移量(字节)"
   [index size stride offset]
-  (GL20/glVertexAttribPointer index size GL11/GL_FLOAT false stride offset)
-  (GL20/glEnableVertexAttribArray index)
-  (GL33/glVertexAttribDivisor index 1))
+  (GL45/glVertexAttribPointer index size GL45/GL_FLOAT false stride offset)
+  (GL45/glEnableVertexAttribArray index)
+  (GL45/glVertexAttribDivisor index 1))
 
 ;; ---------------------------------------------------------------------------
 ;; 纹理创建
@@ -317,23 +317,23 @@
     type        - 数据类型(如 GL_UNSIGNED_BYTE)
   返回: 纹理 ID"
   ([width height internal-fmt format type]
-   (let [tex (GL11/glGenTextures)]
-     (GL11/glBindTexture GL11/GL_TEXTURE_2D tex)
-     (GL11/glPixelStorei GL11/GL_UNPACK_ALIGNMENT 1)
-     (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_MIN_FILTER GL11/GL_NEAREST)
-     (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_MAG_FILTER GL11/GL_NEAREST)
-     (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_WRAP_S GL12/GL_CLAMP_TO_EDGE)
-     (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_WRAP_T GL12/GL_CLAMP_TO_EDGE)
-     (GL11/glTexImage2D GL11/GL_TEXTURE_2D 0 internal-fmt width height 0 format type nil)
+   (let [tex (GL45/glGenTextures)]
+     (GL45/glBindTexture GL45/GL_TEXTURE_2D tex)
+     (GL45/glPixelStorei GL45/GL_UNPACK_ALIGNMENT 1)
+     (GL45/glTexParameteri GL45/GL_TEXTURE_2D GL45/GL_TEXTURE_MIN_FILTER GL45/GL_NEAREST)
+     (GL45/glTexParameteri GL45/GL_TEXTURE_2D GL45/GL_TEXTURE_MAG_FILTER GL45/GL_NEAREST)
+     (GL45/glTexParameteri GL45/GL_TEXTURE_2D GL45/GL_TEXTURE_WRAP_S GL45/GL_CLAMP_TO_EDGE)
+     (GL45/glTexParameteri GL45/GL_TEXTURE_2D GL45/GL_TEXTURE_WRAP_T GL45/GL_CLAMP_TO_EDGE)
+     (GL45/glTexImage2D GL45/GL_TEXTURE_2D 0 internal-fmt width height 0 format type nil)
      tex))
   ([width height]
-   (create-texture-2d width height GL11/GL_RGBA GL11/GL_RGBA GL11/GL_UNSIGNED_BYTE)))
+   (create-texture-2d width height GL45/GL_RGBA GL45/GL_RGBA GL45/GL_UNSIGNED_BYTE)))
 
 (defn update-texture-2d!
   "更新 2D 纹理数据"
   [tex width height format type ^ByteBuffer data]
-  (GL11/glBindTexture GL11/GL_TEXTURE_2D tex)
-  (GL11/glTexSubImage2D GL11/GL_TEXTURE_2D 0 0 0 width height format type data))
+  (GL45/glBindTexture GL45/GL_TEXTURE_2D tex)
+  (GL45/glTexSubImage2D GL45/GL_TEXTURE_2D 0 0 0 width height format type data))
 
 ;; ---------------------------------------------------------------------------
 ;; 资源加载
@@ -377,32 +377,32 @@
   "删除 VAO"
   [vao]
   (when (and (number? vao) (pos? vao))
-    (GL30/glDeleteVertexArrays vao)))
+    (GL45/glDeleteVertexArrays vao)))
 
 (defn delete-vbo!
   "删除 VBO"
   [vbo]
   (when (and (number? vbo) (pos? vbo))
-    (GL15/glDeleteBuffers vbo)))
+    (GL45/glDeleteBuffers vbo)))
 
 (defn delete-program!
   "删除 Shader Program"
   [program]
   (when (and (number? program) (pos? program))
-    (GL20/glDeleteProgram program)))
+    (GL45/glDeleteProgram program)))
 
 (defn delete-texture!
   "删除纹理"
   [tex]
   (when (and (number? tex) (pos? tex))
-    (GL11/glDeleteTextures tex)))
+    (GL45/glDeleteTextures tex)))
 
 (defn cleanup-gl!
   "清理所有 OpenGL 资源"
   [& {:keys [vaos vbos programs textures]}]
-  (GL20/glUseProgram 0)
-  (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER 0)
-  (GL30/glBindVertexArray 0)
+  (GL45/glUseProgram 0)
+  (GL45/glBindBuffer GL45/GL_ARRAY_BUFFER 0)
+  (GL45/glBindVertexArray 0)
   (doseq [t textures] (delete-texture! t))
   (doseq [p programs] (delete-program! p))
   (doseq [v vbos] (delete-vbo! v))
@@ -495,20 +495,20 @@
 (defn create-overlay-texture
   "创建 UI 覆盖层纹理 (单通道 R8 格式)"
   [w h]
-  (create-texture-2d w h GL30/GL_R8 GL11/GL_RED GL11/GL_UNSIGNED_BYTE))
+  (create-texture-2d w h GL45/GL_R8 GL45/GL_RED GL45/GL_UNSIGNED_BYTE))
 
 (defn create-overlay-quad
   "创建 UI 覆盖层四边形 VAO/VBO
   返回包含 :vao 和 :vbo 的 map"
   []
   (let [vao (create-vao)
-        vbo (GL15/glGenBuffers)
+        vbo (GL45/glGenBuffers)
         stride (* 4 Float/BYTES)]
-    (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER vbo)
-    (GL15/glBufferData GL15/GL_ARRAY_BUFFER (* 6 4 Float/BYTES) GL15/GL_STREAM_DRAW)
+    (GL45/glBindBuffer GL45/GL_ARRAY_BUFFER vbo)
+    (GL45/glBufferData GL45/GL_ARRAY_BUFFER (* 6 4 Float/BYTES) GL45/GL_STREAM_DRAW)
     (set-vertex-attrib! 0 2 stride 0)           ; position
     (set-vertex-attrib! 1 2 stride (* 2 Float/BYTES)) ; uv
-    (GL30/glBindVertexArray 0)
+    (GL45/glBindVertexArray 0)
     {:vao vao :vbo vbo}))
 
 (defn create-cube-mesh
@@ -520,5 +520,5 @@
         stride (* 6 Float/BYTES)]
     (set-vertex-attrib! 0 3 stride 0)           ; position
     (set-vertex-attrib! 1 3 stride (* 3 Float/BYTES)) ; normal
-    (GL30/glBindVertexArray 0)
+    (GL45/glBindVertexArray 0)
     {:vao vao :vbo vbo}))

@@ -3,7 +3,7 @@
   (:require [lwjgl.utils :as u])
   (:import (org.lwjgl BufferUtils)
            (org.lwjgl.glfw GLFW GLFWFramebufferSizeCallbackI GLFWKeyCallbackI)
-           (org.lwjgl.opengl GL GL11 GL15 GL20 GL30)))
+           (org.lwjgl.opengl GL GL45)))
 
 (def ^:private vertex-shader-source
   "#version 330 core
@@ -43,8 +43,8 @@ void main() {
         vaos (BufferUtils/createIntBuffer 2)
         vbos (BufferUtils/createIntBuffer 2)
         stride (* 3 Float/BYTES)]
-    (GL30/glGenVertexArrays vaos)
-    (GL15/glGenBuffers vbos)
+    (GL45/glGenVertexArrays vaos)
+    (GL45/glGenBuffers vbos)
     (let [vao1 (.get vaos 0)
           vao2 (.get vaos 1)
           vbo1 (.get vbos 0)
@@ -52,22 +52,22 @@ void main() {
           buf1 (BufferUtils/createFloatBuffer (alength first))
           buf2 (BufferUtils/createFloatBuffer (alength second))]
       ;; first triangle
-      (GL30/glBindVertexArray vao1)
+      (GL45/glBindVertexArray vao1)
       (.put buf1 first)
       (.flip buf1)
-      (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER vbo1)
-      (GL15/glBufferData GL15/GL_ARRAY_BUFFER buf1 GL15/GL_STATIC_DRAW)
-      (GL20/glVertexAttribPointer 0 3 GL11/GL_FLOAT false stride 0)
-      (GL20/glEnableVertexAttribArray 0)
+      (GL45/glBindBuffer GL45/GL_ARRAY_BUFFER vbo1)
+      (GL45/glBufferData GL45/GL_ARRAY_BUFFER buf1 GL45/GL_STATIC_DRAW)
+      (GL45/glVertexAttribPointer 0 3 GL45/GL_FLOAT false stride 0)
+      (GL45/glEnableVertexAttribArray 0)
       ;; second triangle
-      (GL30/glBindVertexArray vao2)
+      (GL45/glBindVertexArray vao2)
       (.put buf2 second)
       (.flip buf2)
-      (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER vbo2)
-      (GL15/glBufferData GL15/GL_ARRAY_BUFFER buf2 GL15/GL_STATIC_DRAW)
-      (GL20/glVertexAttribPointer 0 3 GL11/GL_FLOAT false stride 0)
-      (GL20/glEnableVertexAttribArray 0)
-      (GL30/glBindVertexArray 0)
+      (GL45/glBindBuffer GL45/GL_ARRAY_BUFFER vbo2)
+      (GL45/glBufferData GL45/GL_ARRAY_BUFFER buf2 GL45/GL_STATIC_DRAW)
+      (GL45/glVertexAttribPointer 0 3 GL45/GL_FLOAT false stride 0)
+      (GL45/glEnableVertexAttribArray 0)
+      (GL45/glBindVertexArray 0)
       {:vao1 vao1 :vao2 vao2 :vbo1 vbo1 :vbo2 vbo2})))
 
 (defn run-example!
@@ -87,7 +87,7 @@ void main() {
            window
            (reify GLFWFramebufferSizeCallbackI
              (invoke [_ _ w h]
-               (GL11/glViewport 0 0 w h))))
+               (GL45/glViewport 0 0 w h))))
           (GLFW/glfwSetKeyCallback
            window
            (reify GLFWKeyCallbackI
@@ -97,24 +97,24 @@ void main() {
                  (GLFW/glfwSetWindowShouldClose win true)))))
           (loop []
             (when-not (GLFW/glfwWindowShouldClose window)
-              (GL11/glClearColor 0.2 0.3 0.3 1.0)
-              (GL11/glClear GL11/GL_COLOR_BUFFER_BIT)
-              (GL20/glUseProgram program-orange)
-              (GL30/glBindVertexArray vao1)
-              (GL11/glDrawArrays GL11/GL_TRIANGLES 0 3)
-              (GL20/glUseProgram program-yellow)
-              (GL30/glBindVertexArray vao2)
-              (GL11/glDrawArrays GL11/GL_TRIANGLES 0 3)
+              (GL45/glClearColor 0.2 0.3 0.3 1.0)
+              (GL45/glClear GL45/GL_COLOR_BUFFER_BIT)
+              (GL45/glUseProgram program-orange)
+              (GL45/glBindVertexArray vao1)
+              (GL45/glDrawArrays GL45/GL_TRIANGLES 0 3)
+              (GL45/glUseProgram program-yellow)
+              (GL45/glBindVertexArray vao2)
+              (GL45/glDrawArrays GL45/GL_TRIANGLES 0 3)
               (GLFW/glfwSwapBuffers window)
               (GLFW/glfwPollEvents)
               (recur)))
           (finally
-            (delete-if-positive program-orange #(GL20/glDeleteProgram %))
-            (delete-if-positive program-yellow #(GL20/glDeleteProgram %))
-            (delete-if-positive vbo1 #(GL15/glDeleteBuffers %))
-            (delete-if-positive vbo2 #(GL15/glDeleteBuffers %))
-            (delete-if-positive vao1 #(GL30/glDeleteVertexArrays %))
-            (delete-if-positive vao2 #(GL30/glDeleteVertexArrays %)))))
+            (delete-if-positive program-orange #(GL45/glDeleteProgram %))
+            (delete-if-positive program-yellow #(GL45/glDeleteProgram %))
+            (delete-if-positive vbo1 #(GL45/glDeleteBuffers %))
+            (delete-if-positive vbo2 #(GL45/glDeleteBuffers %))
+            (delete-if-positive vao1 #(GL45/glDeleteVertexArrays %))
+            (delete-if-positive vao2 #(GL45/glDeleteVertexArrays %)))))
       (finally
         (when (pos? window) (GLFW/glfwDestroyWindow window))
         (GLFW/glfwTerminate)

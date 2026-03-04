@@ -4,7 +4,7 @@
   (:import (org.lwjgl BufferUtils)
            (org.lwjgl.glfw GLFW GLFWCursorPosCallbackI GLFWFramebufferSizeCallbackI
                            GLFWKeyCallbackI GLFWMouseButtonCallbackI)
-           (org.lwjgl.opengl GL GL11 GL15 GL20 GL30)
+           (org.lwjgl.opengl GL GL45)
            (org.joml Matrix4f)))
 
 (def ^:private vertex-shader-source
@@ -56,20 +56,20 @@ void main() {
                    (- p) (- p) p  0.9 0.8 0.3
                    p (- p) (- p)  0.9 0.8 0.3
                    (- p) p (- p)  0.9 0.8 0.3])
-        vao (GL30/glGenVertexArrays)
-        vbo (GL15/glGenBuffers)
+        vao (GL45/glGenVertexArrays)
+        vbo (GL45/glGenBuffers)
         buf (BufferUtils/createFloatBuffer (alength vertices))
         stride (* 6 Float/BYTES)]
-    (GL30/glBindVertexArray vao)
+    (GL45/glBindVertexArray vao)
     (.put buf vertices)
     (.flip buf)
-    (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER vbo)
-    (GL15/glBufferData GL15/GL_ARRAY_BUFFER buf GL15/GL_STATIC_DRAW)
-    (GL20/glVertexAttribPointer 0 3 GL11/GL_FLOAT false stride 0)
-    (GL20/glEnableVertexAttribArray 0)
-    (GL20/glVertexAttribPointer 1 3 GL11/GL_FLOAT false stride (* 3 Float/BYTES))
-    (GL20/glEnableVertexAttribArray 1)
-    (GL30/glBindVertexArray 0)
+    (GL45/glBindBuffer GL45/GL_ARRAY_BUFFER vbo)
+    (GL45/glBufferData GL45/GL_ARRAY_BUFFER buf GL45/GL_STATIC_DRAW)
+    (GL45/glVertexAttribPointer 0 3 GL45/GL_FLOAT false stride 0)
+    (GL45/glEnableVertexAttribArray 0)
+    (GL45/glVertexAttribPointer 1 3 GL45/GL_FLOAT false stride (* 3 Float/BYTES))
+    (GL45/glEnableVertexAttribArray 1)
+    (GL45/glBindVertexArray 0)
     {:vao vao :vbo vbo :count 12}))
 
 (defn- upload-mat!
@@ -78,7 +78,7 @@ void main() {
   (.get m buf)
   (.rewind buf)
   (when (<= 0 loc)
-    (GL20/glUniformMatrix4fv loc false buf)))
+    (GL45/glUniformMatrix4fv loc false buf)))
 
 (defn run-example!
   []
@@ -97,15 +97,15 @@ void main() {
       (GL/createCapabilities)
       (let [program (u/create-program vertex-shader-source fragment-shader-source)
             {:keys [vao vbo count]} (create-tetrahedron)
-            model-loc (GL20/glGetUniformLocation program "model")
-            view-loc (GL20/glGetUniformLocation program "view")
-            proj-loc (GL20/glGetUniformLocation program "projection")
+            model-loc (GL45/glGetUniformLocation program "model")
+            view-loc (GL45/glGetUniformLocation program "view")
+            proj-loc (GL45/glGetUniformLocation program "projection")
             mat-buf (BufferUtils/createFloatBuffer 16)
             model (Matrix4f.)
             view (doto (Matrix4f.) (.translate 0.0 0.0 -3.0))
             projection (Matrix4f.)]
         (try
-          (GL11/glEnable GL11/GL_DEPTH_TEST)
+          (GL45/glEnable GL45/GL_DEPTH_TEST)
           (u/init-viewport! window width height)
           (GLFW/glfwSetFramebufferSizeCallback
            window
@@ -113,7 +113,7 @@ void main() {
              (invoke [_ _ w h]
                (reset! width w)
                (reset! height h)
-               (GL11/glViewport 0 0 w h))))
+               (GL45/glViewport 0 0 w h))))
           (GLFW/glfwSetKeyCallback
            window
            (reify GLFWKeyCallbackI
@@ -139,7 +139,7 @@ void main() {
                    (when @dragging?
                      (swap! yaw + (* 0.005 dx))
                      (swap! pitch + (* -0.005 dy))))))))
-          (GL20/glUseProgram program)
+          (GL45/glUseProgram program)
           (loop []
             (when-not (GLFW/glfwWindowShouldClose window)
               (let [now (GLFW/glfwGetTime)
@@ -168,20 +168,20 @@ void main() {
                 (.rotateX model (float @pitch))
                 (.rotateY model (float @yaw))
                 (.rotateZ model (float @roll))
-                (GL11/glClearColor 0.06 0.07 0.1 1.0)
-                (GL11/glClear (bit-or GL11/GL_COLOR_BUFFER_BIT GL11/GL_DEPTH_BUFFER_BIT))
+                (GL45/glClearColor 0.06 0.07 0.1 1.0)
+                (GL45/glClear (bit-or GL45/GL_COLOR_BUFFER_BIT GL45/GL_DEPTH_BUFFER_BIT))
                 (upload-mat! model mat-buf model-loc)
                 (upload-mat! view mat-buf view-loc)
                 (upload-mat! projection mat-buf proj-loc)
-                (GL30/glBindVertexArray vao)
-                (GL11/glDrawArrays GL11/GL_TRIANGLES 0 count)
+                (GL45/glBindVertexArray vao)
+                (GL45/glDrawArrays GL45/GL_TRIANGLES 0 count)
                 (GLFW/glfwSwapBuffers window)
                 (GLFW/glfwPollEvents)
                 (recur))))
           (finally
-            (delete-if-positive program #(GL20/glDeleteProgram %))
-            (delete-if-positive vbo #(GL15/glDeleteBuffers %))
-            (delete-if-positive vao #(GL30/glDeleteVertexArrays %)))))
+            (delete-if-positive program #(GL45/glDeleteProgram %))
+            (delete-if-positive vbo #(GL45/glDeleteBuffers %))
+            (delete-if-positive vao #(GL45/glDeleteVertexArrays %)))))
       (finally
         (when (pos? window) (GLFW/glfwDestroyWindow window))
         (GLFW/glfwTerminate)

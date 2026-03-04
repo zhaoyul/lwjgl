@@ -3,7 +3,7 @@
   (:require [lwjgl.utils :as u])
   (:import (org.lwjgl BufferUtils)
            (org.lwjgl.glfw GLFW GLFWFramebufferSizeCallbackI GLFWKeyCallbackI)
-           (org.lwjgl.opengl GL GL11 GL13 GL15 GL20 GL30)
+           (org.lwjgl.opengl GL GL45)
            (org.joml Matrix4f Vector3f)))
 
 (def ^:private vertex-shader-source
@@ -77,25 +77,25 @@ void main() {
                    0.5  0.5  0.5      1.0 0.0
                    -0.5  0.5  0.5      0.0 0.0
                    -0.5  0.5 -0.5      0.0 1.0])
-        vao (GL30/glGenVertexArrays)
-        vbo (GL15/glGenBuffers)
+        vao (GL45/glGenVertexArrays)
+        vbo (GL45/glGenBuffers)
         buf (BufferUtils/createFloatBuffer (alength vertices))
         stride (* 5 Float/BYTES)]
-    (GL30/glBindVertexArray vao)
+    (GL45/glBindVertexArray vao)
     (.put buf vertices)
     (.flip buf)
-    (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER vbo)
-    (GL15/glBufferData GL15/GL_ARRAY_BUFFER buf GL15/GL_STATIC_DRAW)
-    (GL20/glVertexAttribPointer 0 3 GL11/GL_FLOAT false stride 0)
-    (GL20/glEnableVertexAttribArray 0)
-    (GL20/glVertexAttribPointer 1 2 GL11/GL_FLOAT false stride (* 3 Float/BYTES))
-    (GL20/glEnableVertexAttribArray 1)
-    (GL30/glBindVertexArray 0)
+    (GL45/glBindBuffer GL45/GL_ARRAY_BUFFER vbo)
+    (GL45/glBufferData GL45/GL_ARRAY_BUFFER buf GL45/GL_STATIC_DRAW)
+    (GL45/glVertexAttribPointer 0 3 GL45/GL_FLOAT false stride 0)
+    (GL45/glEnableVertexAttribArray 0)
+    (GL45/glVertexAttribPointer 1 2 GL45/GL_FLOAT false stride (* 3 Float/BYTES))
+    (GL45/glEnableVertexAttribArray 1)
+    (GL45/glBindVertexArray 0)
     {:vao vao :vbo vbo}))
 
 (defn- create-texture
   [w h]
-  (let [tex (GL11/glGenTextures)
+  (let [tex (GL45/glGenTextures)
         buf (BufferUtils/createByteBuffer (* w h 3))]
     (dotimes [y h]
       (dotimes [x w]
@@ -105,12 +105,12 @@ void main() {
           (.put buf (inc idx) (unchecked-byte checker))
           (.put buf (+ idx 2) (unchecked-byte 200)))))
     (.rewind buf)
-    (GL11/glBindTexture GL11/GL_TEXTURE_2D tex)
-    (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_MIN_FILTER GL11/GL_LINEAR)
-    (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_MAG_FILTER GL11/GL_LINEAR)
-    (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_WRAP_S GL11/GL_REPEAT)
-    (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_WRAP_T GL11/GL_REPEAT)
-    (GL11/glTexImage2D GL11/GL_TEXTURE_2D 0 GL11/GL_RGB w h 0 GL11/GL_RGB GL11/GL_UNSIGNED_BYTE buf)
+    (GL45/glBindTexture GL45/GL_TEXTURE_2D tex)
+    (GL45/glTexParameteri GL45/GL_TEXTURE_2D GL45/GL_TEXTURE_MIN_FILTER GL45/GL_LINEAR)
+    (GL45/glTexParameteri GL45/GL_TEXTURE_2D GL45/GL_TEXTURE_MAG_FILTER GL45/GL_LINEAR)
+    (GL45/glTexParameteri GL45/GL_TEXTURE_2D GL45/GL_TEXTURE_WRAP_S GL45/GL_REPEAT)
+    (GL45/glTexParameteri GL45/GL_TEXTURE_2D GL45/GL_TEXTURE_WRAP_T GL45/GL_REPEAT)
+    (GL45/glTexImage2D GL45/GL_TEXTURE_2D 0 GL45/GL_RGB w h 0 GL45/GL_RGB GL45/GL_UNSIGNED_BYTE buf)
     tex))
 
 (defn- upload-mat!
@@ -119,7 +119,7 @@ void main() {
   (.get m buf)
   (.rewind buf)
   (when (<= 0 loc)
-    (GL20/glUniformMatrix4fv loc false buf)))
+    (GL45/glUniformMatrix4fv loc false buf)))
 
 (def cube-positions
   [(Vector3f. 0.0 0.0 0.0)
@@ -143,14 +143,14 @@ void main() {
         window (u/create-window width height "LearnOpenGL - Coordinate Systems Multiple (LWJGL)")]
     (try
       (GL/createCapabilities)
-      (GL11/glEnable GL11/GL_DEPTH_TEST)
+      (GL45/glEnable GL45/GL_DEPTH_TEST)
       (let [program (u/create-program vertex-shader-source fragment-shader-source)
             {:keys [vao vbo]} (create-cube)
             tex (create-texture 256 256)
-            model-loc (GL20/glGetUniformLocation program "model")
-            view-loc (GL20/glGetUniformLocation program "view")
-            proj-loc (GL20/glGetUniformLocation program "projection")
-            tex-loc (GL20/glGetUniformLocation program "texture1")
+            model-loc (GL45/glGetUniformLocation program "model")
+            view-loc (GL45/glGetUniformLocation program "view")
+            proj-loc (GL45/glGetUniformLocation program "projection")
+            tex-loc (GL45/glGetUniformLocation program "texture1")
             mat-buf (BufferUtils/createFloatBuffer 16)
             model (Matrix4f.)
             view (doto (Matrix4f.) (.translate (Vector3f. 0.0 0.0 -3.0)))
@@ -161,7 +161,7 @@ void main() {
            window
            (reify GLFWFramebufferSizeCallbackI
              (invoke [_ _ w h]
-               (GL11/glViewport 0 0 w h))))
+               (GL45/glViewport 0 0 w h))))
           (GLFW/glfwSetKeyCallback
            window
            (reify GLFWKeyCallbackI
@@ -169,32 +169,32 @@ void main() {
                (when (and (= key GLFW/GLFW_KEY_ESCAPE)
                           (= action GLFW/GLFW_PRESS))
                  (GLFW/glfwSetWindowShouldClose win true)))))
-          (GL20/glUseProgram program)
-          (when (<= 0 tex-loc) (GL20/glUniform1i tex-loc 0))
+          (GL45/glUseProgram program)
+          (when (<= 0 tex-loc) (GL45/glUniform1i tex-loc 0))
           (upload-mat! view mat-buf view-loc)
           (upload-mat! projection mat-buf proj-loc)
           (loop []
             (when-not (GLFW/glfwWindowShouldClose window)
-              (GL11/glClearColor 0.08 0.1 0.12 1.0)
-              (GL11/glClear (bit-or GL11/GL_COLOR_BUFFER_BIT GL11/GL_DEPTH_BUFFER_BIT))
-              (GL13/glActiveTexture GL13/GL_TEXTURE0)
-              (GL11/glBindTexture GL11/GL_TEXTURE_2D tex)
-              (GL30/glBindVertexArray vao)
+              (GL45/glClearColor 0.08 0.1 0.12 1.0)
+              (GL45/glClear (bit-or GL45/GL_COLOR_BUFFER_BIT GL45/GL_DEPTH_BUFFER_BIT))
+              (GL45/glActiveTexture GL45/GL_TEXTURE0)
+              (GL45/glBindTexture GL45/GL_TEXTURE_2D tex)
+              (GL45/glBindVertexArray vao)
               (doseq [[idx pos] (map-indexed vector cube-positions)]
                 (.identity model)
                 (.translate model pos)
                 (let [angle (float (+ (* base-rotation-step idx) (GLFW/glfwGetTime)))]
                   (.rotate model angle 0.5 1.0 0.0))
                 (upload-mat! model mat-buf model-loc)
-                (GL11/glDrawArrays GL11/GL_TRIANGLES 0 36))
+                (GL45/glDrawArrays GL45/GL_TRIANGLES 0 36))
               (GLFW/glfwSwapBuffers window)
               (GLFW/glfwPollEvents)
               (recur)))
           (finally
-            (delete-if-positive program #(GL20/glDeleteProgram %))
-            (delete-if-positive vbo #(GL15/glDeleteBuffers %))
-            (delete-if-positive vao #(GL30/glDeleteVertexArrays %))
-            (delete-if-positive tex #(GL11/glDeleteTextures %)))))
+            (delete-if-positive program #(GL45/glDeleteProgram %))
+            (delete-if-positive vbo #(GL45/glDeleteBuffers %))
+            (delete-if-positive vao #(GL45/glDeleteVertexArrays %))
+            (delete-if-positive tex #(GL45/glDeleteTextures %)))))
       (finally
         (when (pos? window) (GLFW/glfwDestroyWindow window))
         (GLFW/glfwTerminate)

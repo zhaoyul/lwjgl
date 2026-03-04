@@ -15,7 +15,7 @@
            (org.lwjgl.glfw GLFW GLFWCursorPosCallbackI GLFWFramebufferSizeCallbackI
                            GLFWKeyCallbackI GLFWMouseButtonCallbackI GLFWScrollCallbackI
                            GLFWWindowSizeCallbackI)
-           (org.lwjgl.opengl GL GL11 GL13 GL15 GL20 GL30 GL32)
+           (org.lwjgl.opengl GL GL45)
            (org.joml Matrix4f)))
 
 ;; ---- 运行时状态 ---------------------------------------------------------
@@ -597,18 +597,18 @@ void main() {
   (let [{:keys [active? alpha]} (:transition @app)]
     (when (and active? (pos? alpha))
       (let [{:keys [overlay-program overlay-vao]} @state
-            color-loc (GL20/glGetUniformLocation overlay-program "uColor")]
-        (GL11/glDisable GL11/GL_DEPTH_TEST)
-        (GL11/glEnable GL11/GL_BLEND)
-        (GL11/glBlendFunc GL11/GL_SRC_ALPHA GL11/GL_ONE_MINUS_SRC_ALPHA)
-        (GL20/glUseProgram overlay-program)
+            color-loc (GL45/glGetUniformLocation overlay-program "uColor")]
+        (GL45/glDisable GL45/GL_DEPTH_TEST)
+        (GL45/glEnable GL45/GL_BLEND)
+        (GL45/glBlendFunc GL45/GL_SRC_ALPHA GL45/GL_ONE_MINUS_SRC_ALPHA)
+        (GL45/glUseProgram overlay-program)
         (when (<= 0 color-loc)
-          (GL20/glUniform4f color-loc 0.0 0.0 0.0 (float alpha)))
-        (GL30/glBindVertexArray overlay-vao)
-        (GL11/glDrawArrays GL11/GL_TRIANGLES 0 6)
-        (GL30/glBindVertexArray 0)
-        (GL11/glDisable GL11/GL_BLEND)
-        (GL11/glEnable GL11/GL_DEPTH_TEST)))))
+          (GL45/glUniform4f color-loc 0.0 0.0 0.0 (float alpha)))
+        (GL45/glBindVertexArray overlay-vao)
+        (GL45/glDrawArrays GL45/GL_TRIANGLES 0 6)
+        (GL45/glBindVertexArray 0)
+        (GL45/glDisable GL45/GL_BLEND)
+        (GL45/glEnable GL45/GL_DEPTH_TEST)))))
 
 (declare update-ui-rect-buffer! ensure-ui-texture!)
 
@@ -617,24 +617,24 @@ void main() {
   (when (seq rects)
     (let [{:keys [ui-rect-program ui-rect-vao ui-rect-vbo ui-rect-buffer
                   ui-rect-viewport-loc ui-rect-color-loc]} @state]
-      (GL11/glDisable GL11/GL_DEPTH_TEST)
-      (GL11/glEnable GL11/GL_BLEND)
-      (GL11/glBlendFunc GL11/GL_SRC_ALPHA GL11/GL_ONE_MINUS_SRC_ALPHA)
-      (GL20/glUseProgram ui-rect-program)
+      (GL45/glDisable GL45/GL_DEPTH_TEST)
+      (GL45/glEnable GL45/GL_BLEND)
+      (GL45/glBlendFunc GL45/GL_SRC_ALPHA GL45/GL_ONE_MINUS_SRC_ALPHA)
+      (GL45/glUseProgram ui-rect-program)
       (when (<= 0 ui-rect-viewport-loc)
-        (GL20/glUniform2f ui-rect-viewport-loc (float win-w) (float win-h)))
-      (GL30/glBindVertexArray ui-rect-vao)
+        (GL45/glUniform2f ui-rect-viewport-loc (float win-w) (float win-h)))
+      (GL45/glBindVertexArray ui-rect-vao)
       (doseq [{:keys [x y w h color]} rects]
         (let [[r g b a] (or color [1.0 1.0 1.0 1.0])]
           (when (<= 0 ui-rect-color-loc)
-            (GL20/glUniform4f ui-rect-color-loc (float r) (float g) (float b) (float a)))
+            (GL45/glUniform4f ui-rect-color-loc (float r) (float g) (float b) (float a)))
           (update-ui-rect-buffer! ui-rect-buffer (float x) (float y) (float w) (float h))
-          (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER ui-rect-vbo)
-          (GL15/glBufferSubData GL15/GL_ARRAY_BUFFER 0 ui-rect-buffer)
-          (GL11/glDrawArrays GL11/GL_TRIANGLES 0 6)))
-      (GL30/glBindVertexArray 0)
-      (GL11/glDisable GL11/GL_BLEND)
-      (GL11/glEnable GL11/GL_DEPTH_TEST))))
+          (GL45/glBindBuffer GL45/GL_ARRAY_BUFFER ui-rect-vbo)
+          (GL45/glBufferSubData GL45/GL_ARRAY_BUFFER 0 ui-rect-buffer)
+          (GL45/glDrawArrays GL45/GL_TRIANGLES 0 6)))
+      (GL45/glBindVertexArray 0)
+      (GL45/glDisable GL45/GL_BLEND)
+      (GL45/glEnable GL45/GL_DEPTH_TEST))))
 
 (defn- render-ui-text!
   [texts win-w win-h text-color]
@@ -649,24 +649,24 @@ void main() {
       (.clear ui-text-buffer)
       (.put ui-text-buffer ui-text-bytes 0 (* ui-text-tex-w ui-text-tex-h))
       (.flip ui-text-buffer)
-      (GL11/glBindTexture GL11/GL_TEXTURE_2D ui-text-tex)
-      (GL11/glTexSubImage2D GL11/GL_TEXTURE_2D 0 0 0 ui-text-tex-w ui-text-tex-h
-                            GL11/GL_RED GL11/GL_UNSIGNED_BYTE ui-text-buffer)
-      (GL11/glDisable GL11/GL_DEPTH_TEST)
-      (GL11/glEnable GL11/GL_BLEND)
-      (GL11/glBlendFunc GL11/GL_SRC_ALPHA GL11/GL_ONE_MINUS_SRC_ALPHA)
-      (GL20/glUseProgram ui-text-program)
+      (GL45/glBindTexture GL45/GL_TEXTURE_2D ui-text-tex)
+      (GL45/glTexSubImage2D GL45/GL_TEXTURE_2D 0 0 0 ui-text-tex-w ui-text-tex-h
+                            GL45/GL_RED GL45/GL_UNSIGNED_BYTE ui-text-buffer)
+      (GL45/glDisable GL45/GL_DEPTH_TEST)
+      (GL45/glEnable GL45/GL_BLEND)
+      (GL45/glBlendFunc GL45/GL_SRC_ALPHA GL45/GL_ONE_MINUS_SRC_ALPHA)
+      (GL45/glUseProgram ui-text-program)
       (when (<= 0 ui-text-viewport-loc)
-        (GL20/glUniform2f ui-text-viewport-loc (float win-w) (float win-h)))
+        (GL45/glUniform2f ui-text-viewport-loc (float win-w) (float win-h)))
       (when (<= 0 ui-text-color-loc)
-        (GL20/glUniform3f ui-text-color-loc (float r) (float g) (float b)))
-      (GL13/glActiveTexture GL13/GL_TEXTURE0)
-      (GL11/glBindTexture GL11/GL_TEXTURE_2D ui-text-tex)
-      (GL30/glBindVertexArray ui-text-vao)
-      (GL11/glDrawArrays GL11/GL_TRIANGLES 0 6)
-      (GL30/glBindVertexArray 0)
-      (GL11/glDisable GL11/GL_BLEND)
-      (GL11/glEnable GL11/GL_DEPTH_TEST))))
+        (GL45/glUniform3f ui-text-color-loc (float r) (float g) (float b)))
+      (GL45/glActiveTexture GL45/GL_TEXTURE0)
+      (GL45/glBindTexture GL45/GL_TEXTURE_2D ui-text-tex)
+      (GL45/glBindVertexArray ui-text-vao)
+      (GL45/glDrawArrays GL45/GL_TRIANGLES 0 6)
+      (GL45/glBindVertexArray 0)
+      (GL45/glDisable GL45/GL_BLEND)
+      (GL45/glEnable GL45/GL_DEPTH_TEST))))
 
 (defn- render-ui!
   []
@@ -701,7 +701,7 @@ void main() {
   (.get m buf)
   (.rewind buf)
   (when (<= 0 loc)
-    (GL20/glUniformMatrix4fv loc false buf)))
+    (GL45/glUniformMatrix4fv loc false buf)))
 
 (defn- sprite-color
   "补齐精灵颜色并保证有 alpha. "
@@ -750,8 +750,8 @@ void main() {
             (.put buf (float a))
             (.put buf s)))
         (.flip buf)
-        (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER (:sprite-vbo @state))
-        (GL15/glBufferData GL15/GL_ARRAY_BUFFER buf GL15/GL_DYNAMIC_DRAW)
+        (GL45/glBindBuffer GL45/GL_ARRAY_BUFFER (:sprite-vbo @state))
+        (GL45/glBufferData GL45/GL_ARRAY_BUFFER buf GL45/GL_DYNAMIC_DRAW)
         (swap! state assoc :sprite-count count)
         count))))
 
@@ -764,31 +764,31 @@ void main() {
                    -0.5 -0.5  0.0      0.0 0.0
                    -0.5  0.5  0.0      0.0 1.0])
         indices (int-array [0 1 3 1 2 3])
-        vao (GL30/glGenVertexArrays)
-        vbo (GL15/glGenBuffers)
-        ebo (GL15/glGenBuffers)
+        vao (GL45/glGenVertexArrays)
+        vbo (GL45/glGenBuffers)
+        ebo (GL45/glGenBuffers)
         vbuf (BufferUtils/createFloatBuffer (alength vertices))
         ibuf (BufferUtils/createIntBuffer (alength indices))
         stride (* 5 Float/BYTES)]
-    (GL30/glBindVertexArray vao)
+    (GL45/glBindVertexArray vao)
     (.put vbuf vertices)
     (.flip vbuf)
-    (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER vbo)
-    (GL15/glBufferData GL15/GL_ARRAY_BUFFER vbuf GL15/GL_STATIC_DRAW)
+    (GL45/glBindBuffer GL45/GL_ARRAY_BUFFER vbo)
+    (GL45/glBufferData GL45/GL_ARRAY_BUFFER vbuf GL45/GL_STATIC_DRAW)
     (.put ibuf indices)
     (.flip ibuf)
-    (GL15/glBindBuffer GL15/GL_ELEMENT_ARRAY_BUFFER ebo)
-    (GL15/glBufferData GL15/GL_ELEMENT_ARRAY_BUFFER ibuf GL15/GL_STATIC_DRAW)
-    (GL20/glVertexAttribPointer 0 3 GL11/GL_FLOAT false stride 0)
-    (GL20/glEnableVertexAttribArray 0)
-    (GL20/glVertexAttribPointer 1 2 GL11/GL_FLOAT false stride (* 3 Float/BYTES))
-    (GL20/glEnableVertexAttribArray 1)
-    (GL30/glBindVertexArray 0)
+    (GL45/glBindBuffer GL45/GL_ELEMENT_ARRAY_BUFFER ebo)
+    (GL45/glBufferData GL45/GL_ELEMENT_ARRAY_BUFFER ibuf GL45/GL_STATIC_DRAW)
+    (GL45/glVertexAttribPointer 0 3 GL45/GL_FLOAT false stride 0)
+    (GL45/glEnableVertexAttribArray 0)
+    (GL45/glVertexAttribPointer 1 2 GL45/GL_FLOAT false stride (* 3 Float/BYTES))
+    (GL45/glEnableVertexAttribArray 1)
+    (GL45/glBindVertexArray 0)
     {:vao vao :vbo vbo :ebo ebo :index-count 6}))
 
 (defn- create-texture
   [w h]
-  (let [tex (GL11/glGenTextures)
+  (let [tex (GL45/glGenTextures)
         buf (BufferUtils/createByteBuffer (* w h 3))]
     (dotimes [y h]
       (dotimes [x w]
@@ -798,30 +798,30 @@ void main() {
           (.put buf (inc idx) (unchecked-byte checker))
           (.put buf (+ idx 2) (unchecked-byte 220)))))
     (.rewind buf)
-    (GL11/glBindTexture GL11/GL_TEXTURE_2D tex)
-    (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_MIN_FILTER GL11/GL_LINEAR)
-    (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_MAG_FILTER GL11/GL_LINEAR)
-    (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_WRAP_S GL11/GL_REPEAT)
-    (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_WRAP_T GL11/GL_REPEAT)
-    (GL11/glTexImage2D GL11/GL_TEXTURE_2D 0 GL11/GL_RGB w h 0 GL11/GL_RGB GL11/GL_UNSIGNED_BYTE buf)
+    (GL45/glBindTexture GL45/GL_TEXTURE_2D tex)
+    (GL45/glTexParameteri GL45/GL_TEXTURE_2D GL45/GL_TEXTURE_MIN_FILTER GL45/GL_LINEAR)
+    (GL45/glTexParameteri GL45/GL_TEXTURE_2D GL45/GL_TEXTURE_MAG_FILTER GL45/GL_LINEAR)
+    (GL45/glTexParameteri GL45/GL_TEXTURE_2D GL45/GL_TEXTURE_WRAP_S GL45/GL_REPEAT)
+    (GL45/glTexParameteri GL45/GL_TEXTURE_2D GL45/GL_TEXTURE_WRAP_T GL45/GL_REPEAT)
+    (GL45/glTexImage2D GL45/GL_TEXTURE_2D 0 GL45/GL_RGB w h 0 GL45/GL_RGB GL45/GL_UNSIGNED_BYTE buf)
     tex))
 
 (defn- build-axis-vao
   [vertices]
-  (let [vao (GL30/glGenVertexArrays)
-        vbo (GL15/glGenBuffers)
+  (let [vao (GL45/glGenVertexArrays)
+        vbo (GL45/glGenBuffers)
         vbuf (BufferUtils/createFloatBuffer (alength vertices))
         stride (* 6 Float/BYTES)]
-    (GL30/glBindVertexArray vao)
+    (GL45/glBindVertexArray vao)
     (.put vbuf vertices)
     (.flip vbuf)
-    (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER vbo)
-    (GL15/glBufferData GL15/GL_ARRAY_BUFFER vbuf GL15/GL_STATIC_DRAW)
-    (GL20/glVertexAttribPointer 0 3 GL11/GL_FLOAT false stride 0)
-    (GL20/glEnableVertexAttribArray 0)
-    (GL20/glVertexAttribPointer 1 3 GL11/GL_FLOAT false stride (* 3 Float/BYTES))
-    (GL20/glEnableVertexAttribArray 1)
-    (GL30/glBindVertexArray 0)
+    (GL45/glBindBuffer GL45/GL_ARRAY_BUFFER vbo)
+    (GL45/glBufferData GL45/GL_ARRAY_BUFFER vbuf GL45/GL_STATIC_DRAW)
+    (GL45/glVertexAttribPointer 0 3 GL45/GL_FLOAT false stride 0)
+    (GL45/glEnableVertexAttribArray 0)
+    (GL45/glVertexAttribPointer 1 3 GL45/GL_FLOAT false stride (* 3 Float/BYTES))
+    (GL45/glEnableVertexAttribArray 1)
+    (GL45/glBindVertexArray 0)
     {:vao vao :vbo vbo :count (int (/ (alength vertices) 6))}))
 
 (defn- build-grid-vao
@@ -868,40 +868,40 @@ void main() {
 
 (defn- build-point-vao
   []
-  (let [vao (GL30/glGenVertexArrays)
-        vbo (GL15/glGenBuffers)
+  (let [vao (GL45/glGenVertexArrays)
+        vbo (GL45/glGenBuffers)
         stride (* 6 Float/BYTES)]
-    (GL30/glBindVertexArray vao)
-    (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER vbo)
-    (GL15/glBufferData GL15/GL_ARRAY_BUFFER (* 6 Float/BYTES) GL15/GL_DYNAMIC_DRAW)
-    (GL20/glVertexAttribPointer 0 3 GL11/GL_FLOAT false stride 0)
-    (GL20/glEnableVertexAttribArray 0)
-    (GL20/glVertexAttribPointer 1 3 GL11/GL_FLOAT false stride (* 3 Float/BYTES))
-    (GL20/glEnableVertexAttribArray 1)
-    (GL30/glBindVertexArray 0)
+    (GL45/glBindVertexArray vao)
+    (GL45/glBindBuffer GL45/GL_ARRAY_BUFFER vbo)
+    (GL45/glBufferData GL45/GL_ARRAY_BUFFER (* 6 Float/BYTES) GL45/GL_DYNAMIC_DRAW)
+    (GL45/glVertexAttribPointer 0 3 GL45/GL_FLOAT false stride 0)
+    (GL45/glEnableVertexAttribArray 0)
+    (GL45/glVertexAttribPointer 1 3 GL45/GL_FLOAT false stride (* 3 Float/BYTES))
+    (GL45/glEnableVertexAttribArray 1)
+    (GL45/glBindVertexArray 0)
     {:vao vao :vbo vbo}))
 
 (defn- build-sprite-vao
   []
-  (let [vao (GL30/glGenVertexArrays)
-        vbo (GL15/glGenBuffers)
+  (let [vao (GL45/glGenVertexArrays)
+        vbo (GL45/glGenBuffers)
         stride (* 8 Float/BYTES)]
-    (GL30/glBindVertexArray vao)
-    (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER vbo)
-    (GL15/glBufferData GL15/GL_ARRAY_BUFFER 0 GL15/GL_DYNAMIC_DRAW)
-    (GL20/glVertexAttribPointer 0 3 GL11/GL_FLOAT false stride 0)
-    (GL20/glEnableVertexAttribArray 0)
-    (GL20/glVertexAttribPointer 1 4 GL11/GL_FLOAT false stride (* 3 Float/BYTES))
-    (GL20/glEnableVertexAttribArray 1)
-    (GL20/glVertexAttribPointer 2 1 GL11/GL_FLOAT false stride (* 7 Float/BYTES))
-    (GL20/glEnableVertexAttribArray 2)
-    (GL30/glBindVertexArray 0)
+    (GL45/glBindVertexArray vao)
+    (GL45/glBindBuffer GL45/GL_ARRAY_BUFFER vbo)
+    (GL45/glBufferData GL45/GL_ARRAY_BUFFER 0 GL45/GL_DYNAMIC_DRAW)
+    (GL45/glVertexAttribPointer 0 3 GL45/GL_FLOAT false stride 0)
+    (GL45/glEnableVertexAttribArray 0)
+    (GL45/glVertexAttribPointer 1 4 GL45/GL_FLOAT false stride (* 3 Float/BYTES))
+    (GL45/glEnableVertexAttribArray 1)
+    (GL45/glVertexAttribPointer 2 1 GL45/GL_FLOAT false stride (* 7 Float/BYTES))
+    (GL45/glEnableVertexAttribArray 2)
+    (GL45/glBindVertexArray 0)
     {:vao vao :vbo vbo}))
 
 (defn- build-overlay-vao
   []
-  (let [vao (GL30/glGenVertexArrays)
-        vbo (GL15/glGenBuffers)
+  (let [vao (GL45/glGenVertexArrays)
+        vbo (GL45/glGenBuffers)
         vertices (float-array
                   [;; full screen quad in NDC
                    -1.0 -1.0
@@ -912,27 +912,27 @@ void main() {
                    -1.0 -1.0])
         buf (BufferUtils/createFloatBuffer (alength vertices))
         stride (* 2 Float/BYTES)]
-    (GL30/glBindVertexArray vao)
+    (GL45/glBindVertexArray vao)
     (.put buf vertices)
     (.flip buf)
-    (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER vbo)
-    (GL15/glBufferData GL15/GL_ARRAY_BUFFER buf GL15/GL_STATIC_DRAW)
-    (GL20/glVertexAttribPointer 0 2 GL11/GL_FLOAT false stride 0)
-    (GL20/glEnableVertexAttribArray 0)
-    (GL30/glBindVertexArray 0)
+    (GL45/glBindBuffer GL45/GL_ARRAY_BUFFER vbo)
+    (GL45/glBufferData GL45/GL_ARRAY_BUFFER buf GL45/GL_STATIC_DRAW)
+    (GL45/glVertexAttribPointer 0 2 GL45/GL_FLOAT false stride 0)
+    (GL45/glEnableVertexAttribArray 0)
+    (GL45/glBindVertexArray 0)
     {:vao vao :vbo vbo}))
 
 (defn- build-ui-rect-vao
   []
-  (let [vao (GL30/glGenVertexArrays)
-        vbo (GL15/glGenBuffers)
+  (let [vao (GL45/glGenVertexArrays)
+        vbo (GL45/glGenBuffers)
         stride (* 2 Float/BYTES)]
-    (GL30/glBindVertexArray vao)
-    (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER vbo)
-    (GL15/glBufferData GL15/GL_ARRAY_BUFFER (* 6 2 Float/BYTES) GL15/GL_STREAM_DRAW)
-    (GL20/glVertexAttribPointer 0 2 GL11/GL_FLOAT false stride 0)
-    (GL20/glEnableVertexAttribArray 0)
-    (GL30/glBindVertexArray 0)
+    (GL45/glBindVertexArray vao)
+    (GL45/glBindBuffer GL45/GL_ARRAY_BUFFER vbo)
+    (GL45/glBufferData GL45/GL_ARRAY_BUFFER (* 6 2 Float/BYTES) GL45/GL_STREAM_DRAW)
+    (GL45/glVertexAttribPointer 0 2 GL45/GL_FLOAT false stride 0)
+    (GL45/glEnableVertexAttribArray 0)
+    (GL45/glBindVertexArray 0)
     {:vao vao :vbo vbo}))
 
 (defn- update-ui-rect-buffer!
@@ -964,8 +964,8 @@ void main() {
                                   0.0 (float win-h) 0.0 v-bottom
                                   0.0 0.0 0.0 0.0]))
     (.flip ui-text-vertex-buffer)
-    (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER ui-text-vbo)
-    (GL15/glBufferSubData GL15/GL_ARRAY_BUFFER 0 ui-text-vertex-buffer)))
+    (GL45/glBindBuffer GL45/GL_ARRAY_BUFFER ui-text-vbo)
+    (GL45/glBufferSubData GL45/GL_ARRAY_BUFFER 0 ui-text-vertex-buffer)))
 
 (defn- ensure-ui-texture!
   [win-w win-h]
@@ -978,7 +978,7 @@ void main() {
           tex-h (max ui-text-tex-h win-h)]
       (when need-resize?
         (when (pos? ui-text-tex)
-          (GL11/glDeleteTextures ui-text-tex))
+          (GL45/glDeleteTextures ui-text-tex))
         (let [tex (u/create-overlay-texture tex-w tex-h)
               bytes (byte-array (* tex-w tex-h))
               buffer (BufferUtils/createByteBuffer (* tex-w tex-h))]
@@ -994,55 +994,55 @@ void main() {
 
 (defn- build-mesh-vao
   []
-  (let [vao (GL30/glGenVertexArrays)
-        vbo (GL15/glGenBuffers)
-        ebo (GL15/glGenBuffers)
+  (let [vao (GL45/glGenVertexArrays)
+        vbo (GL45/glGenBuffers)
+        ebo (GL45/glGenBuffers)
         stride (* 6 Float/BYTES)]
-    (GL30/glBindVertexArray vao)
-    (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER vbo)
-    (GL15/glBufferData GL15/GL_ARRAY_BUFFER 0 GL15/GL_DYNAMIC_DRAW)
-    (GL15/glBindBuffer GL15/GL_ELEMENT_ARRAY_BUFFER ebo)
-    (GL15/glBufferData GL15/GL_ELEMENT_ARRAY_BUFFER 0 GL15/GL_DYNAMIC_DRAW)
-    (GL20/glVertexAttribPointer 0 3 GL11/GL_FLOAT false stride 0)
-    (GL20/glEnableVertexAttribArray 0)
-    (GL20/glVertexAttribPointer 1 3 GL11/GL_FLOAT false stride (* 3 Float/BYTES))
-    (GL20/glEnableVertexAttribArray 1)
-    (GL30/glBindVertexArray 0)
+    (GL45/glBindVertexArray vao)
+    (GL45/glBindBuffer GL45/GL_ARRAY_BUFFER vbo)
+    (GL45/glBufferData GL45/GL_ARRAY_BUFFER 0 GL45/GL_DYNAMIC_DRAW)
+    (GL45/glBindBuffer GL45/GL_ELEMENT_ARRAY_BUFFER ebo)
+    (GL45/glBufferData GL45/GL_ELEMENT_ARRAY_BUFFER 0 GL45/GL_DYNAMIC_DRAW)
+    (GL45/glVertexAttribPointer 0 3 GL45/GL_FLOAT false stride 0)
+    (GL45/glEnableVertexAttribArray 0)
+    (GL45/glVertexAttribPointer 1 3 GL45/GL_FLOAT false stride (* 3 Float/BYTES))
+    (GL45/glEnableVertexAttribArray 1)
+    (GL45/glBindVertexArray 0)
     {:vao vao :vbo vbo :ebo ebo}))
 
 (defn- build-spring-vao
   []
-  (let [vao (GL30/glGenVertexArrays)
-        vbo (GL15/glGenBuffers)
+  (let [vao (GL45/glGenVertexArrays)
+        vbo (GL45/glGenBuffers)
         stride (* 6 Float/BYTES)]
-    (GL30/glBindVertexArray vao)
-    (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER vbo)
-    (GL15/glBufferData GL15/GL_ARRAY_BUFFER 0 GL15/GL_DYNAMIC_DRAW)
-    (GL20/glVertexAttribPointer 0 3 GL11/GL_FLOAT false stride 0)
-    (GL20/glEnableVertexAttribArray 0)
-    (GL20/glVertexAttribPointer 1 3 GL11/GL_FLOAT false stride (* 3 Float/BYTES))
-    (GL20/glEnableVertexAttribArray 1)
-    (GL30/glBindVertexArray 0)
+    (GL45/glBindVertexArray vao)
+    (GL45/glBindBuffer GL45/GL_ARRAY_BUFFER vbo)
+    (GL45/glBufferData GL45/GL_ARRAY_BUFFER 0 GL45/GL_DYNAMIC_DRAW)
+    (GL45/glVertexAttribPointer 0 3 GL45/GL_FLOAT false stride 0)
+    (GL45/glEnableVertexAttribArray 0)
+    (GL45/glVertexAttribPointer 1 3 GL45/GL_FLOAT false stride (* 3 Float/BYTES))
+    (GL45/glEnableVertexAttribArray 1)
+    (GL45/glBindVertexArray 0)
     {:vao vao :vbo vbo}))
 
 (defn- create-cube-vao
   []
-  (let [vao (GL30/glGenVertexArrays)
-        vbo (GL15/glGenBuffers)
+  (let [vao (GL45/glGenVertexArrays)
+        vbo (GL45/glGenBuffers)
         vbuf (BufferUtils/createFloatBuffer (alength cube-vertices))
         stride (* 6 Float/BYTES)]
-    (GL30/glBindVertexArray vao)
+    (GL45/glBindVertexArray vao)
     (.put vbuf cube-vertices)
     (.flip vbuf)
-    (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER vbo)
-    (GL15/glBufferData GL15/GL_ARRAY_BUFFER vbuf GL15/GL_STATIC_DRAW)
+    (GL45/glBindBuffer GL45/GL_ARRAY_BUFFER vbo)
+    (GL45/glBufferData GL45/GL_ARRAY_BUFFER vbuf GL45/GL_STATIC_DRAW)
     ;; 顶点位置
-    (GL20/glVertexAttribPointer 0 3 GL11/GL_FLOAT false stride 0)
-    (GL20/glEnableVertexAttribArray 0)
+    (GL45/glVertexAttribPointer 0 3 GL45/GL_FLOAT false stride 0)
+    (GL45/glEnableVertexAttribArray 0)
     ;; 法线
-    (GL20/glVertexAttribPointer 1 3 GL11/GL_FLOAT false stride (* 3 Float/BYTES))
-    (GL20/glEnableVertexAttribArray 1)
-    (GL30/glBindVertexArray 0)
+    (GL45/glVertexAttribPointer 1 3 GL45/GL_FLOAT false stride (* 3 Float/BYTES))
+    (GL45/glEnableVertexAttribArray 1)
+    (GL45/glBindVertexArray 0)
     {:vao vao :vbo vbo :count (/ (alength cube-vertices) 6)}))
 
 (defn uv-sphere
@@ -1253,24 +1253,24 @@ void main() {
   [program base-name values]
   ;; 逐元素设置数组 uniform，避免假设连续 location
   (doseq [[idx [x y z]] (map-indexed vector values)]
-    (let [loc (GL20/glGetUniformLocation program (str base-name "[" idx "]"))]
+    (let [loc (GL45/glGetUniformLocation program (str base-name "[" idx "]"))]
       (when (<= 0 loc)
-        (GL20/glUniform3f loc (float x) (float y) (float z))))))
+        (GL45/glUniform3f loc (float x) (float y) (float z))))))
 
 (defn- set-uniform-float-array!
   [program base-name values]
   ;; 逐元素设置数组 uniform，避免假设连续 location
   (doseq [[idx v] (map-indexed vector values)]
-    (let [loc (GL20/glGetUniformLocation program (str base-name "[" idx "]"))]
+    (let [loc (GL45/glGetUniformLocation program (str base-name "[" idx "]"))]
       (when (<= 0 loc)
-        (GL20/glUniform1f loc (float v))))))
+        (GL45/glUniform1f loc (float v))))))
 
 (defn- init-resources!
   []
   (let [program (u/create-program @vs-source @fs-source)
         {:keys [vao vbo ebo index-count]} (create-quad)
         tex (create-texture 256 256)
-        tex-loc (GL20/glGetUniformLocation program "texture1")
+        tex-loc (GL45/glGetUniformLocation program "texture1")
         axis-program (u/create-program axis-vs-source axis-fs-source)
         point-program (u/create-program point-vs-source point-fs-source)
         sprite-program (u/create-program sprite-vs-source sprite-fs-source)
@@ -1278,11 +1278,11 @@ void main() {
         ui-rect-program (u/create-program ui-rect-vs-source ui-rect-fs-source)
         ui-text-program (u/create-program (u/slurp-resource "shaders/overlay.vert")
                                              (u/slurp-resource "shaders/overlay.frag"))
-        ui-rect-viewport-loc (GL20/glGetUniformLocation ui-rect-program "uViewport")
-        ui-rect-color-loc (GL20/glGetUniformLocation ui-rect-program "uColor")
-        ui-text-viewport-loc (GL20/glGetUniformLocation ui-text-program "uViewport")
-        ui-text-color-loc (GL20/glGetUniformLocation ui-text-program "uTextColor")
-        ui-text-sampler-loc (GL20/glGetUniformLocation ui-text-program "uText")
+        ui-rect-viewport-loc (GL45/glGetUniformLocation ui-rect-program "uViewport")
+        ui-rect-color-loc (GL45/glGetUniformLocation ui-rect-program "uColor")
+        ui-text-viewport-loc (GL45/glGetUniformLocation ui-text-program "uViewport")
+        ui-text-color-loc (GL45/glGetUniformLocation ui-text-program "uTextColor")
+        ui-text-sampler-loc (GL45/glGetUniformLocation ui-text-program "uText")
         {:keys [length arrow-length arrow-radius shaft-radius]} @axis-style
         {line-vao :vao line-vbo :vbo line-count :count}
         (build-axis-vao (axis-line-vertices length shaft-radius))
@@ -1301,12 +1301,12 @@ void main() {
         {mesh-vao :vao mesh-vbo :vbo mesh-ebo :ebo} (build-mesh-vao)
         {spring-vao :vao spring-vbo :vbo} (build-spring-vao)
         {cube-vao :vao cube-vbo :vbo cube-count :count} (create-cube-vao)]
-    (GL20/glUseProgram program)
+    (GL45/glUseProgram program)
     (when (<= 0 tex-loc)
-      (GL20/glUniform1i tex-loc 0))
-    (GL20/glUseProgram ui-text-program)
+      (GL45/glUniform1i tex-loc 0))
+    (GL45/glUseProgram ui-text-program)
     (when (<= 0 ui-text-sampler-loc)
-      (GL20/glUniform1i ui-text-sampler-loc 0))
+      (GL45/glUniform1i ui-text-sampler-loc 0))
     (swap! state assoc
            :program program
            :vao vao
@@ -1380,10 +1380,10 @@ void main() {
         (build-axis-vao (axis-line-vertices length shaft-radius))
         {arrow-vao :vao arrow-vbo :vbo arrow-count :count}
         (build-axis-vao (axis-arrow-vertices length arrow-length arrow-radius))]
-    (delete-if-positive axis-line-vbo #(GL15/glDeleteBuffers %))
-    (delete-if-positive axis-line-vao #(GL30/glDeleteVertexArrays %))
-    (delete-if-positive axis-arrow-vbo #(GL15/glDeleteBuffers %))
-    (delete-if-positive axis-arrow-vao #(GL30/glDeleteVertexArrays %))
+    (delete-if-positive axis-line-vbo #(GL45/glDeleteBuffers %))
+    (delete-if-positive axis-line-vao #(GL45/glDeleteVertexArrays %))
+    (delete-if-positive axis-arrow-vbo #(GL45/glDeleteBuffers %))
+    (delete-if-positive axis-arrow-vao #(GL45/glDeleteVertexArrays %))
     (swap! state assoc
            :axis-line-vao line-vao
            :axis-line-vbo line-vbo
@@ -1396,8 +1396,8 @@ void main() {
   []
   (let [{:keys [grid-vao grid-vbo]} @state
         {new-vao :vao new-vbo :vbo new-count :count} (build-grid-vao)]
-    (delete-if-positive grid-vbo #(GL15/glDeleteBuffers %))
-    (delete-if-positive grid-vao #(GL30/glDeleteVertexArrays %))
+    (delete-if-positive grid-vbo #(GL45/glDeleteBuffers %))
+    (delete-if-positive grid-vao #(GL45/glDeleteVertexArrays %))
     (swap! state assoc
            :grid-vao new-vao
            :grid-vbo new-vbo
@@ -1416,49 +1416,49 @@ void main() {
                 ui-text-program ui-text-vao ui-text-vbo ui-text-tex
                 mesh-vao mesh-vbo mesh-ebo
                 spring-vao spring-vbo]} @state]
-    (delete-if-positive program #(GL20/glDeleteProgram %))
-    (delete-if-positive vbo #(GL15/glDeleteBuffers %))
-    (delete-if-positive ebo #(GL15/glDeleteBuffers %))
-    (delete-if-positive vao #(GL30/glDeleteVertexArrays %))
-    (delete-if-positive tex #(GL11/glDeleteTextures %))
-    (delete-if-positive axis-program #(GL20/glDeleteProgram %))
-    (delete-if-positive axis-line-vbo #(GL15/glDeleteBuffers %))
-    (delete-if-positive axis-line-vao #(GL30/glDeleteVertexArrays %))
-    (delete-if-positive axis-arrow-vbo #(GL15/glDeleteBuffers %))
-    (delete-if-positive axis-arrow-vao #(GL30/glDeleteVertexArrays %))
-    (delete-if-positive grid-vbo #(GL15/glDeleteBuffers %))
-    (delete-if-positive grid-vao #(GL30/glDeleteVertexArrays %))
+    (delete-if-positive program #(GL45/glDeleteProgram %))
+    (delete-if-positive vbo #(GL45/glDeleteBuffers %))
+    (delete-if-positive ebo #(GL45/glDeleteBuffers %))
+    (delete-if-positive vao #(GL45/glDeleteVertexArrays %))
+    (delete-if-positive tex #(GL45/glDeleteTextures %))
+    (delete-if-positive axis-program #(GL45/glDeleteProgram %))
+    (delete-if-positive axis-line-vbo #(GL45/glDeleteBuffers %))
+    (delete-if-positive axis-line-vao #(GL45/glDeleteVertexArrays %))
+    (delete-if-positive axis-arrow-vbo #(GL45/glDeleteBuffers %))
+    (delete-if-positive axis-arrow-vao #(GL45/glDeleteVertexArrays %))
+    (delete-if-positive grid-vbo #(GL45/glDeleteBuffers %))
+    (delete-if-positive grid-vao #(GL45/glDeleteVertexArrays %))
     ;; 清理立方体资源
-    (delete-if-positive cube-program #(GL20/glDeleteProgram %))
-    (delete-if-positive cube-vbo #(GL15/glDeleteBuffers %))
-    (delete-if-positive cube-vao #(GL30/glDeleteVertexArrays %))
+    (delete-if-positive cube-program #(GL45/glDeleteProgram %))
+    (delete-if-positive cube-vbo #(GL45/glDeleteBuffers %))
+    (delete-if-positive cube-vao #(GL45/glDeleteVertexArrays %))
     ;; 清理点云资源
-    (delete-if-positive point-program #(GL20/glDeleteProgram %))
-    (delete-if-positive point-vbo #(GL15/glDeleteBuffers %))
-    (delete-if-positive point-vao #(GL30/glDeleteVertexArrays %))
+    (delete-if-positive point-program #(GL45/glDeleteProgram %))
+    (delete-if-positive point-vbo #(GL45/glDeleteBuffers %))
+    (delete-if-positive point-vao #(GL45/glDeleteVertexArrays %))
     ;; 清理精灵资源
-    (delete-if-positive sprite-program #(GL20/glDeleteProgram %))
-    (delete-if-positive sprite-vbo #(GL15/glDeleteBuffers %))
-    (delete-if-positive sprite-vao #(GL30/glDeleteVertexArrays %))
+    (delete-if-positive sprite-program #(GL45/glDeleteProgram %))
+    (delete-if-positive sprite-vbo #(GL45/glDeleteBuffers %))
+    (delete-if-positive sprite-vao #(GL45/glDeleteVertexArrays %))
     ;; 清理网格资源
-    (delete-if-positive mesh-vbo #(GL15/glDeleteBuffers %))
-    (delete-if-positive mesh-ebo #(GL15/glDeleteBuffers %))
-    (delete-if-positive mesh-vao #(GL30/glDeleteVertexArrays %))
+    (delete-if-positive mesh-vbo #(GL45/glDeleteBuffers %))
+    (delete-if-positive mesh-ebo #(GL45/glDeleteBuffers %))
+    (delete-if-positive mesh-vao #(GL45/glDeleteVertexArrays %))
     ;; 清理弹簧线段资源
-    (delete-if-positive spring-vbo #(GL15/glDeleteBuffers %))
-    (delete-if-positive spring-vao #(GL30/glDeleteVertexArrays %))
+    (delete-if-positive spring-vbo #(GL45/glDeleteBuffers %))
+    (delete-if-positive spring-vao #(GL45/glDeleteVertexArrays %))
     ;; 清理覆盖层资源
-    (delete-if-positive overlay-program #(GL20/glDeleteProgram %))
-    (delete-if-positive overlay-vbo #(GL15/glDeleteBuffers %))
-    (delete-if-positive overlay-vao #(GL30/glDeleteVertexArrays %))
+    (delete-if-positive overlay-program #(GL45/glDeleteProgram %))
+    (delete-if-positive overlay-vbo #(GL45/glDeleteBuffers %))
+    (delete-if-positive overlay-vao #(GL45/glDeleteVertexArrays %))
     ;; 清理 UI 资源
-    (delete-if-positive ui-rect-program #(GL20/glDeleteProgram %))
-    (delete-if-positive ui-rect-vbo #(GL15/glDeleteBuffers %))
-    (delete-if-positive ui-rect-vao #(GL30/glDeleteVertexArrays %))
-    (delete-if-positive ui-text-program #(GL20/glDeleteProgram %))
-    (delete-if-positive ui-text-vbo #(GL15/glDeleteBuffers %))
-    (delete-if-positive ui-text-vao #(GL30/glDeleteVertexArrays %))
-    (delete-if-positive ui-text-tex #(GL11/glDeleteTextures %)))
+    (delete-if-positive ui-rect-program #(GL45/glDeleteProgram %))
+    (delete-if-positive ui-rect-vbo #(GL45/glDeleteBuffers %))
+    (delete-if-positive ui-rect-vao #(GL45/glDeleteVertexArrays %))
+    (delete-if-positive ui-text-program #(GL45/glDeleteProgram %))
+    (delete-if-positive ui-text-vbo #(GL45/glDeleteBuffers %))
+    (delete-if-positive ui-text-vao #(GL45/glDeleteVertexArrays %))
+    (delete-if-positive ui-text-tex #(GL45/glDeleteTextures %)))
   (reset! state {:program 0 :vao 0 :vbo 0 :ebo 0 :tex 0 :index-count 0
                  :axis-program 0
                  :axis-line-vao 0 :axis-line-vbo 0 :axis-line-count 0
@@ -1480,19 +1480,19 @@ void main() {
   "将渲染模式映射为 OpenGL 多边形模式。"
   [mode]
   (case mode
-    :wire GL11/GL_LINE
-    :point GL11/GL_POINT
-    GL11/GL_FILL))
+    :wire GL45/GL_LINE
+    :point GL45/GL_POINT
+    GL45/GL_FILL))
 
 (defn- with-polygon-mode
   "在指定多边形模式下执行绘制。"
   [mode f]
   (let [gl-mode (render-mode->gl mode)]
-    (GL11/glPolygonMode GL11/GL_FRONT_AND_BACK gl-mode)
+    (GL45/glPolygonMode GL45/GL_FRONT_AND_BACK gl-mode)
     (try
       (f)
       (finally
-        (GL11/glPolygonMode GL11/GL_FRONT_AND_BACK GL11/GL_FILL)))))
+        (GL45/glPolygonMode GL45/GL_FRONT_AND_BACK GL45/GL_FILL)))))
 
 (defn- default-render
   [ctx]
@@ -1507,15 +1507,15 @@ void main() {
         {:keys [yaw pitch distance]} (:camera ctx)
         {:keys [fb-width fb-height]} (:input ctx)
         [r g b a] @clear-color]
-    (GL11/glEnable GL11/GL_DEPTH_TEST)
+    (GL45/glEnable GL45/GL_DEPTH_TEST)
     (if (:backface-cull? @display-state)
       (do
-        (GL11/glEnable GL11/GL_CULL_FACE)
-        (GL11/glCullFace GL11/GL_BACK))
-      (GL11/glDisable GL11/GL_CULL_FACE))
-    (GL11/glPointSize 8.0)
-    (GL11/glClearColor r g b a)
-    (GL11/glClear (bit-or GL11/GL_COLOR_BUFFER_BIT GL11/GL_DEPTH_BUFFER_BIT))
+        (GL45/glEnable GL45/GL_CULL_FACE)
+        (GL45/glCullFace GL45/GL_BACK))
+      (GL45/glDisable GL45/GL_CULL_FACE))
+    (GL45/glPointSize 8.0)
+    (GL45/glClearColor r g b a)
+    (GL45/glClear (bit-or GL45/GL_COLOR_BUFFER_BIT GL45/GL_DEPTH_BUFFER_BIT))
 
     ;; 通用矩阵
     (let [aspect (/ (float fb-width) (float fb-height))
@@ -1529,61 +1529,61 @@ void main() {
                  (.rotateY (float yaw)))
           camera-pos (camera-position {:yaw yaw :pitch pitch :distance distance})
           mat-buf (BufferUtils/createFloatBuffer 16)
-          axis-mvp-loc (GL20/glGetUniformLocation axis-program "mvp")
+          axis-mvp-loc (GL45/glGetUniformLocation axis-program "mvp")
           ;; Cube shader locations
-          cube-proj-loc (GL20/glGetUniformLocation cube-program "projection")
-          cube-view-loc (GL20/glGetUniformLocation cube-program "view")
-          cube-model-loc (GL20/glGetUniformLocation cube-program "model")
-          cube-color-loc (GL20/glGetUniformLocation cube-program "uColor")
-          cube-viewpos-loc (GL20/glGetUniformLocation cube-program "uViewPos")
-          cube-ambient-loc (GL20/glGetUniformLocation cube-program "uAmbient")
-          cube-specular-loc (GL20/glGetUniformLocation cube-program "uSpecularStrength")
-          cube-shininess-loc (GL20/glGetUniformLocation cube-program "uShininess")
-          cube-light-count-loc (GL20/glGetUniformLocation cube-program "uLightCount")
-          sprite-mvp-loc (GL20/glGetUniformLocation sprite-program "mvp")
-          sprite-soft-loc (GL20/glGetUniformLocation sprite-program "uSoftness")]
+          cube-proj-loc (GL45/glGetUniformLocation cube-program "projection")
+          cube-view-loc (GL45/glGetUniformLocation cube-program "view")
+          cube-model-loc (GL45/glGetUniformLocation cube-program "model")
+          cube-color-loc (GL45/glGetUniformLocation cube-program "uColor")
+          cube-viewpos-loc (GL45/glGetUniformLocation cube-program "uViewPos")
+          cube-ambient-loc (GL45/glGetUniformLocation cube-program "uAmbient")
+          cube-specular-loc (GL45/glGetUniformLocation cube-program "uSpecularStrength")
+          cube-shininess-loc (GL45/glGetUniformLocation cube-program "uShininess")
+          cube-light-count-loc (GL45/glGetUniformLocation cube-program "uLightCount")
+          sprite-mvp-loc (GL45/glGetUniformLocation sprite-program "mvp")
+          sprite-soft-loc (GL45/glGetUniformLocation sprite-program "uSoftness")]
 
       ;; Draw grid
       (when (:show-grid? @display-state)
         (let [mvp (doto (Matrix4f. projection) (.mul view))
               grid-width (:line-width @grid-style)]
           (when (pos? grid-count)
-            (GL20/glUseProgram axis-program)
+            (GL45/glUseProgram axis-program)
             (upload-mat! mvp mat-buf axis-mvp-loc)
-            (GL11/glLineWidth (float grid-width))
-            (GL30/glBindVertexArray grid-vao)
-            (GL11/glDrawArrays GL11/GL_LINES 0 grid-count)
-            (GL11/glLineWidth 1.0))))
+            (GL45/glLineWidth (float grid-width))
+            (GL45/glBindVertexArray grid-vao)
+            (GL45/glDrawArrays GL45/GL_LINES 0 grid-count)
+            (GL45/glLineWidth 1.0))))
 
       ;; Draw axes
       (when (:show-axes? @display-state)
         (let [mvp (doto (Matrix4f. projection) (.mul view))]
-          (GL20/glUseProgram axis-program)
+          (GL45/glUseProgram axis-program)
           (upload-mat! mvp mat-buf axis-mvp-loc)
-          (GL30/glBindVertexArray axis-line-vao)
-          (GL11/glDrawArrays GL11/GL_TRIANGLES 0 axis-line-count)
-          (GL30/glBindVertexArray axis-arrow-vao)
-          (GL11/glDrawArrays GL11/GL_TRIANGLES 0 axis-arrow-count)
-          (GL11/glLineWidth 1.0)))
+          (GL45/glBindVertexArray axis-line-vao)
+          (GL45/glDrawArrays GL45/GL_TRIANGLES 0 axis-line-count)
+          (GL45/glBindVertexArray axis-arrow-vao)
+          (GL45/glDrawArrays GL45/GL_TRIANGLES 0 axis-arrow-count)
+          (GL45/glLineWidth 1.0)))
 
       ;; Draw spring lines
       (when (and (:show-lines? @display-state) (pos? spring-count))
         (let [mvp (doto (Matrix4f. projection) (.mul view))]
-          (GL20/glUseProgram axis-program)
+          (GL45/glUseProgram axis-program)
           (upload-mat! mvp mat-buf axis-mvp-loc)
-          (GL11/glLineWidth 1.5)
-          (GL30/glBindVertexArray spring-vao)
-          (GL11/glDrawArrays GL11/GL_LINES 0 spring-count)
-          (GL11/glLineWidth 1.0)))
+          (GL45/glLineWidth 1.5)
+          (GL45/glBindVertexArray spring-vao)
+          (GL45/glDrawArrays GL45/GL_LINES 0 spring-count)
+          (GL45/glLineWidth 1.0)))
 
       ;; Draw point cloud
       (when (and (:show-points? @display-state) (pos? point-count))
         (let [mvp (doto (Matrix4f. projection) (.mul view))
-              point-mvp-loc (GL20/glGetUniformLocation point-program "mvp")]
-          (GL20/glUseProgram point-program)
+              point-mvp-loc (GL45/glGetUniformLocation point-program "mvp")]
+          (GL45/glUseProgram point-program)
           (upload-mat! mvp mat-buf point-mvp-loc)
-          (GL30/glBindVertexArray point-vao)
-          (GL11/glDrawArrays GL11/GL_POINTS 0 point-count)))
+          (GL45/glBindVertexArray point-vao)
+          (GL45/glDrawArrays GL45/GL_POINTS 0 point-count)))
 
       ;; Draw sprites (透明排序后绘制)
       (when (:show-points? @display-state)
@@ -1591,26 +1591,26 @@ void main() {
           (when (pos? sprite-count)
             (let [mvp (doto (Matrix4f. projection) (.mul view))
                   softness (float (:softness @sprite-style))]
-              (GL11/glEnable GL32/GL_PROGRAM_POINT_SIZE)
-              (GL11/glEnable GL11/GL_BLEND)
-              (GL11/glBlendFunc GL11/GL_SRC_ALPHA GL11/GL_ONE_MINUS_SRC_ALPHA)
-              (GL11/glDepthMask false)
-              (GL20/glUseProgram sprite-program)
+              (GL45/glEnable GL45/GL_PROGRAM_POINT_SIZE)
+              (GL45/glEnable GL45/GL_BLEND)
+              (GL45/glBlendFunc GL45/GL_SRC_ALPHA GL45/GL_ONE_MINUS_SRC_ALPHA)
+              (GL45/glDepthMask false)
+              (GL45/glUseProgram sprite-program)
               (upload-mat! mvp mat-buf sprite-mvp-loc)
               (when (<= 0 sprite-soft-loc)
-                (GL20/glUniform1f sprite-soft-loc softness))
-              (GL30/glBindVertexArray sprite-vao)
-              (GL11/glDrawArrays GL11/GL_POINTS 0 sprite-count)
-              (GL30/glBindVertexArray 0)
-              (GL11/glDepthMask true)
-              (GL11/glDisable GL11/GL_BLEND)))))
+                (GL45/glUniform1f sprite-soft-loc softness))
+              (GL45/glBindVertexArray sprite-vao)
+              (GL45/glDrawArrays GL45/GL_POINTS 0 sprite-count)
+              (GL45/glBindVertexArray 0)
+              (GL45/glDepthMask true)
+              (GL45/glDisable GL45/GL_BLEND)))))
 
       (letfn [(draw-geometry! [mode]
                 (with-polygon-mode mode
                   (fn []
                     ;; Draw cubes
                     (when (:show-cubes? @display-state)
-                      (GL20/glUseProgram cube-program)
+                      (GL45/glUseProgram cube-program)
                       (when (<= 0 cube-proj-loc)
                         (upload-mat! projection mat-buf cube-proj-loc))
                       (when (<= 0 cube-view-loc)
@@ -1622,33 +1622,33 @@ void main() {
                             shininess (if lighting? shininess 1.0)
                             lights (if lighting? (active-lights camera-pos) [])]
                         (when (<= 0 cube-viewpos-loc)
-                          (GL20/glUniform3f cube-viewpos-loc
+                          (GL45/glUniform3f cube-viewpos-loc
                                             (float (nth camera-pos 0))
                                             (float (nth camera-pos 1))
                                             (float (nth camera-pos 2))))
                         (when (and (<= 0 cube-ambient-loc) ambient)
-                          (GL20/glUniform3f cube-ambient-loc
+                          (GL45/glUniform3f cube-ambient-loc
                                             (float (nth ambient 0))
                                             (float (nth ambient 1))
                                             (float (nth ambient 2))))
                         (when (<= 0 cube-specular-loc)
-                          (GL20/glUniform1f cube-specular-loc (float (or specular-strength 0.0))))
+                          (GL45/glUniform1f cube-specular-loc (float (or specular-strength 0.0))))
                         (when (<= 0 cube-shininess-loc)
-                          (GL20/glUniform1f cube-shininess-loc (float (or shininess 1.0))))
+                          (GL45/glUniform1f cube-shininess-loc (float (or shininess 1.0))))
                         (when (<= 0 cube-light-count-loc)
-                          (GL20/glUniform1i cube-light-count-loc (count lights)))
+                          (GL45/glUniform1i cube-light-count-loc (count lights)))
                         (set-uniform-vec3-array! cube-program "uLightPos" (map :pos lights))
                         (set-uniform-vec3-array! cube-program "uLightColor" (map :color lights))
                         (set-uniform-float-array! cube-program "uLightIntensity" (map :intensity lights)))
 
-                      (GL30/glBindVertexArray cube-vao)
+                      (GL45/glBindVertexArray cube-vao)
                       (doseq [{:keys [pos rot scale color]} @cubes]
                         (let [model (compose-transform pos rot scale)]
                           (when (<= 0 cube-model-loc)
                             (upload-mat! model mat-buf cube-model-loc))
                           (when (<= 0 cube-color-loc)
-                            (GL20/glUniform3f cube-color-loc (float (nth color 0)) (float (nth color 1)) (float (nth color 2))))
-                          (GL11/glDrawArrays GL11/GL_TRIANGLES 0 cube-vertex-count)))
+                            (GL45/glUniform3f cube-color-loc (float (nth color 0)) (float (nth color 1)) (float (nth color 2))))
+                          (GL45/glDrawArrays GL45/GL_TRIANGLES 0 cube-vertex-count)))
 
                       ;; Draw rig segments
                       (when (seq (:segments @rig-state))
@@ -1656,8 +1656,8 @@ void main() {
                           (when (<= 0 cube-model-loc)
                             (upload-mat! model mat-buf cube-model-loc))
                           (when (<= 0 cube-color-loc)
-                            (GL20/glUniform3f cube-color-loc (float (nth color 0)) (float (nth color 1)) (float (nth color 2))))
-                          (GL11/glDrawArrays GL11/GL_TRIANGLES 0 cube-vertex-count))))
+                            (GL45/glUniform3f cube-color-loc (float (nth color 0)) (float (nth color 1)) (float (nth color 2))))
+                          (GL45/glDrawArrays GL45/GL_TRIANGLES 0 cube-vertex-count))))
 
                     ;; Draw generic mesh (e.g. sphere)
                     (when (and (:show-mesh? @display-state) (pos? mesh-index-count))
@@ -1666,24 +1666,24 @@ void main() {
                         (when (<= 0 cube-model-loc)
                           (upload-mat! model mat-buf cube-model-loc))
                         (when (<= 0 cube-color-loc)
-                          (GL20/glUniform3f cube-color-loc (float (nth color 0)) (float (nth color 1)) (float (nth color 2))))
-                        (GL30/glBindVertexArray mesh-vao)
-                        (GL11/glDrawElements GL11/GL_TRIANGLES mesh-index-count GL11/GL_UNSIGNED_INT 0)
+                          (GL45/glUniform3f cube-color-loc (float (nth color 0)) (float (nth color 1)) (float (nth color 2))))
+                        (GL45/glBindVertexArray mesh-vao)
+                        (GL45/glDrawElements GL45/GL_TRIANGLES mesh-index-count GL45/GL_UNSIGNED_INT 0)
                         (when (and (= mode :fill) (:enabled? @wireframe-overlay))
                           (let [{:keys [line-width color]} @wireframe-overlay
                                 [wr wg wb] color]
-                            (GL11/glEnable GL11/GL_POLYGON_OFFSET_LINE)
-                            (GL11/glPolygonOffset -1.0 -1.0)
-                            (GL11/glPolygonMode GL11/GL_FRONT_AND_BACK GL11/GL_LINE)
-                            (GL11/glLineWidth (float line-width))
+                            (GL45/glEnable GL45/GL_POLYGON_OFFSET_LINE)
+                            (GL45/glPolygonOffset -1.0 -1.0)
+                            (GL45/glPolygonMode GL45/GL_FRONT_AND_BACK GL45/GL_LINE)
+                            (GL45/glLineWidth (float line-width))
                             (when (<= 0 cube-model-loc)
                               (upload-mat! model mat-buf cube-model-loc))
                             (when (<= 0 cube-color-loc)
-                              (GL20/glUniform3f cube-color-loc (float wr) (float wg) (float wb)))
-                            (GL11/glDrawElements GL11/GL_TRIANGLES mesh-index-count GL11/GL_UNSIGNED_INT 0)
-                            (GL11/glPolygonMode GL11/GL_FRONT_AND_BACK GL11/GL_FILL)
-                            (GL11/glDisable GL11/GL_POLYGON_OFFSET_LINE)
-                            (GL11/glLineWidth 1.0))))))))]
+                              (GL45/glUniform3f cube-color-loc (float wr) (float wg) (float wb)))
+                            (GL45/glDrawElements GL45/GL_TRIANGLES mesh-index-count GL45/GL_UNSIGNED_INT 0)
+                            (GL45/glPolygonMode GL45/GL_FRONT_AND_BACK GL45/GL_FILL)
+                            (GL45/glDisable GL45/GL_POLYGON_OFFSET_LINE)
+                            (GL45/glLineWidth 1.0))))))))]
         (when (:display-filled? @display-state)
           (draw-geometry! :fill))
         (when (:display-wireframe? @display-state)
@@ -1697,14 +1697,14 @@ void main() {
                   (.translate 0.0 0.0 -2.0)
                   (.rotateX (float pitch))
                   (.rotateY (float yaw)))
-            quad-mvp-loc (GL20/glGetUniformLocation program "mvp")
+            quad-mvp-loc (GL45/glGetUniformLocation program "mvp")
             mat-buf (BufferUtils/createFloatBuffer 16)]
-        (GL20/glUseProgram program)
+        (GL45/glUseProgram program)
         (upload-mat! mvp mat-buf quad-mvp-loc)
-        (GL13/glActiveTexture GL13/GL_TEXTURE0)
-        (GL11/glBindTexture GL11/GL_TEXTURE_2D tex)
-        (GL30/glBindVertexArray vao)
-        (GL11/glDrawElements GL11/GL_TRIANGLES index-count GL11/GL_UNSIGNED_INT 0)))))
+        (GL45/glActiveTexture GL45/GL_TEXTURE0)
+        (GL45/glBindTexture GL45/GL_TEXTURE_2D tex)
+        (GL45/glBindVertexArray vao)
+        (GL45/glDrawElements GL45/GL_TRIANGLES index-count GL45/GL_UNSIGNED_INT 0)))))
 
 (defn render-default
   "公开的默认渲染入口. "
@@ -2292,11 +2292,11 @@ void main() {
    (fn []
      (let [old (:program @state)
            program (u/create-program @vs-source @fs-source)
-           tex-loc (GL20/glGetUniformLocation program "texture1")]
-       (when (pos? old) (GL20/glDeleteProgram old))
-       (GL20/glUseProgram program)
+           tex-loc (GL45/glGetUniformLocation program "texture1")]
+       (when (pos? old) (GL45/glDeleteProgram old))
+       (GL45/glUseProgram program)
        (when (<= 0 tex-loc)
-         (GL20/glUniform1i tex-loc 0))
+         (GL45/glUniform1i tex-loc 0))
        (swap! state assoc :program program)
        program))))
 
@@ -2311,12 +2311,12 @@ void main() {
            ibuf (BufferUtils/createIntBuffer (alength indices))]
        (.put vbuf vertices)
        (.flip vbuf)
-       (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER vbo)
-       (GL15/glBufferData GL15/GL_ARRAY_BUFFER vbuf GL15/GL_STATIC_DRAW)
+       (GL45/glBindBuffer GL45/GL_ARRAY_BUFFER vbo)
+       (GL45/glBufferData GL45/GL_ARRAY_BUFFER vbuf GL45/GL_STATIC_DRAW)
        (.put ibuf indices)
        (.flip ibuf)
-       (GL15/glBindBuffer GL15/GL_ELEMENT_ARRAY_BUFFER ebo)
-       (GL15/glBufferData GL15/GL_ELEMENT_ARRAY_BUFFER ibuf GL15/GL_STATIC_DRAW)
+       (GL45/glBindBuffer GL45/GL_ELEMENT_ARRAY_BUFFER ebo)
+       (GL45/glBufferData GL45/GL_ELEMENT_ARRAY_BUFFER ibuf GL45/GL_STATIC_DRAW)
        (swap! state assoc :index-count (alength indices))))))
 
 (defn- normalize3
@@ -2370,14 +2370,14 @@ void main() {
            ibuf (BufferUtils/createIntBuffer (alength indices))]
        (.put vbuf vertices)
        (.flip vbuf)
-       (GL30/glBindVertexArray mesh-vao)
-       (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER mesh-vbo)
-       (GL15/glBufferData GL15/GL_ARRAY_BUFFER vbuf GL15/GL_DYNAMIC_DRAW)
+       (GL45/glBindVertexArray mesh-vao)
+       (GL45/glBindBuffer GL45/GL_ARRAY_BUFFER mesh-vbo)
+       (GL45/glBufferData GL45/GL_ARRAY_BUFFER vbuf GL45/GL_DYNAMIC_DRAW)
        (.put ibuf indices)
        (.flip ibuf)
-       (GL15/glBindBuffer GL15/GL_ELEMENT_ARRAY_BUFFER mesh-ebo)
-       (GL15/glBufferData GL15/GL_ELEMENT_ARRAY_BUFFER ibuf GL15/GL_DYNAMIC_DRAW)
-       (GL30/glBindVertexArray 0)
+       (GL45/glBindBuffer GL45/GL_ELEMENT_ARRAY_BUFFER mesh-ebo)
+       (GL45/glBufferData GL45/GL_ELEMENT_ARRAY_BUFFER ibuf GL45/GL_DYNAMIC_DRAW)
+       (GL45/glBindVertexArray 0)
        (swap! state assoc :mesh-index-count (alength indices))))))
 
 (defn- apply-mesh-shading!
@@ -2426,8 +2426,8 @@ void main() {
         buf (BufferUtils/createFloatBuffer (alength line-data))]
     (.put buf line-data)
     (.flip buf)
-    (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER spring-vbo)
-    (GL15/glBufferData GL15/GL_ARRAY_BUFFER buf GL15/GL_DYNAMIC_DRAW)
+    (GL45/glBindBuffer GL45/GL_ARRAY_BUFFER spring-vbo)
+    (GL45/glBufferData GL45/GL_ARRAY_BUFFER buf GL45/GL_DYNAMIC_DRAW)
     (swap! state assoc :spring-count count)))
 
 (defn- clear-spring-lines!
@@ -2466,8 +2466,8 @@ void main() {
     (let [buf (BufferUtils/createFloatBuffer (alength data))]
       (.put buf data)
       (.flip buf)
-      (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER point-vbo)
-      (GL15/glBufferData GL15/GL_ARRAY_BUFFER buf GL15/GL_DYNAMIC_DRAW))
+      (GL45/glBindBuffer GL45/GL_ARRAY_BUFFER point-vbo)
+      (GL45/glBufferData GL45/GL_ARRAY_BUFFER buf GL45/GL_DYNAMIC_DRAW))
     (swap! state assoc :point-count point-count)))
 
 (defn set-point-cloud!
@@ -2558,7 +2558,7 @@ void main() {
          (invoke [_ _ w h]
            (swap! app assoc-in [:input :fb-width] w)
            (swap! app assoc-in [:input :fb-height] h)
-           (GL11/glViewport 0 0 w h))))
+           (GL45/glViewport 0 0 w h))))
       (GLFW/glfwSetKeyCallback
        window
        (reify GLFWKeyCallbackI
@@ -2692,11 +2692,11 @@ void main() {
   ;; 替换渲染逻辑
   (set-render!
    (fn [{:keys [program vao index-count]}]
-     (GL11/glClearColor 0.1 0.2 0.1 1.0)
-     (GL11/glClear GL11/GL_COLOR_BUFFER_BIT)
-     (GL20/glUseProgram program)
-     (GL30/glBindVertexArray vao)
-     (GL11/glDrawElements GL11/GL_TRIANGLES index-count GL11/GL_UNSIGNED_INT 0)))
+     (GL45/glClearColor 0.1 0.2 0.1 1.0)
+     (GL45/glClear GL45/GL_COLOR_BUFFER_BIT)
+     (GL45/glUseProgram program)
+     (GL45/glBindVertexArray vao)
+     (GL45/glDrawElements GL45/GL_TRIANGLES index-count GL45/GL_UNSIGNED_INT 0)))
 
   ;; 更新顶点(创建一个更小的四边形)
   (update-vertices!
@@ -2742,11 +2742,11 @@ void main() {
 ;; ;; 替换渲染逻辑
 ;; (hr/set-render!
 ;;  (fn [{:keys [program vao index-count]}]
-;;    (GL11/glClearColor 0.1 0.1 0.1 1.0)
-;;    (GL11/glClear GL11/GL_COLOR_BUFFER_BIT)
-;;    (GL20/glUseProgram program)
-;;    (GL30/glBindVertexArray vao)
-;;    (GL11/glDrawElements GL11/GL_TRIANGLES index-count GL11/GL_UNSIGNED_INT 0)))
+;;    (GL45/glClearColor 0.1 0.1 0.1 1.0)
+;;    (GL45/glClear GL45/GL_COLOR_BUFFER_BIT)
+;;    (GL45/glUseProgram program)
+;;    (GL45/glBindVertexArray vao)
+;;    (GL45/glDrawElements GL45/GL_TRIANGLES index-count GL45/GL_UNSIGNED_INT 0)))
 ;;
 ;; ;; 更新顶点(创建更小的四边形)
 ;; (async/<!!

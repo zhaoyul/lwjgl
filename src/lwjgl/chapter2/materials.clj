@@ -4,7 +4,7 @@
             [lwjgl.chapter2.lighting-common :as lc])
   (:import (org.lwjgl BufferUtils)
            (org.lwjgl.glfw GLFW GLFWFramebufferSizeCallbackI GLFWKeyCallbackI)
-           (org.lwjgl.opengl GL GL11 GL13 GL15 GL20 GL30)
+           (org.lwjgl.opengl GL GL45)
            (org.joml Matrix4f Vector3f)))
 
 (defn- delete-if-positive
@@ -25,7 +25,7 @@
    window
    (reify GLFWFramebufferSizeCallbackI
      (invoke [_ _ w h]
-       (GL11/glViewport 0 0 w h))))
+       (GL45/glViewport 0 0 w h))))
   (GLFW/glfwSetKeyCallback
    window
    (reify GLFWKeyCallbackI
@@ -36,45 +36,45 @@
 
 (defn- set-material-uniforms!
   [program {:keys [ambient diffuse specular shininess use-diffuse? use-specular? use-emission?]}]
-  (let [amb-loc (GL20/glGetUniformLocation program "material.ambient")
-        diff-loc (GL20/glGetUniformLocation program "material.diffuse")
-        spec-loc (GL20/glGetUniformLocation program "material.specular")
-        shin-loc (GL20/glGetUniformLocation program "material.shininess")
-        use-diff-loc (GL20/glGetUniformLocation program "useDiffuseMap")
-        use-spec-loc (GL20/glGetUniformLocation program "useSpecularMap")
-        use-em-loc (GL20/glGetUniformLocation program "useEmissionMap")]
-    (when (<= 0 amb-loc) (apply GL20/glUniform3f amb-loc ambient))
-    (when (<= 0 diff-loc) (apply GL20/glUniform3f diff-loc diffuse))
-    (when (<= 0 spec-loc) (apply GL20/glUniform3f spec-loc specular))
-    (when (<= 0 shin-loc) (GL20/glUniform1f shin-loc (float shininess)))
-    (when (<= 0 use-diff-loc) (GL20/glUniform1i use-diff-loc (if use-diffuse? 1 0)))
-    (when (<= 0 use-spec-loc) (GL20/glUniform1i use-spec-loc (if use-specular? 1 0)))
-    (when (<= 0 use-em-loc) (GL20/glUniform1i use-em-loc (if use-emission? 1 0)))))
+  (let [amb-loc (GL45/glGetUniformLocation program "material.ambient")
+        diff-loc (GL45/glGetUniformLocation program "material.diffuse")
+        spec-loc (GL45/glGetUniformLocation program "material.specular")
+        shin-loc (GL45/glGetUniformLocation program "material.shininess")
+        use-diff-loc (GL45/glGetUniformLocation program "useDiffuseMap")
+        use-spec-loc (GL45/glGetUniformLocation program "useSpecularMap")
+        use-em-loc (GL45/glGetUniformLocation program "useEmissionMap")]
+    (when (<= 0 amb-loc) (apply GL45/glUniform3f amb-loc ambient))
+    (when (<= 0 diff-loc) (apply GL45/glUniform3f diff-loc diffuse))
+    (when (<= 0 spec-loc) (apply GL45/glUniform3f spec-loc specular))
+    (when (<= 0 shin-loc) (GL45/glUniform1f shin-loc (float shininess)))
+    (when (<= 0 use-diff-loc) (GL45/glUniform1i use-diff-loc (if use-diffuse? 1 0)))
+    (when (<= 0 use-spec-loc) (GL45/glUniform1i use-spec-loc (if use-specular? 1 0)))
+    (when (<= 0 use-em-loc) (GL45/glUniform1i use-em-loc (if use-emission? 1 0)))))
 
 (defn- set-light-uniforms!
   [program {:keys [type position direction ambient diffuse specular constant linear quadratic cut-off outer-cut-off]}]
-  (let [type-loc (GL20/glGetUniformLocation program "light.type")
-        pos-loc (GL20/glGetUniformLocation program "light.position")
-        dir-loc (GL20/glGetUniformLocation program "light.direction")
-        amb-loc (GL20/glGetUniformLocation program "light.ambient")
-        diff-loc (GL20/glGetUniformLocation program "light.diffuse")
-        spec-loc (GL20/glGetUniformLocation program "light.specular")
-        const-loc (GL20/glGetUniformLocation program "light.constant")
-        lin-loc (GL20/glGetUniformLocation program "light.linear")
-        quad-loc (GL20/glGetUniformLocation program "light.quadratic")
-        cut-loc (GL20/glGetUniformLocation program "light.cutOff")
-        outer-loc (GL20/glGetUniformLocation program "light.outerCutOff")]
-    (when (<= 0 type-loc) (GL20/glUniform1i type-loc (int type)))
-    (when (and position (<= 0 pos-loc)) (apply GL20/glUniform3f pos-loc position))
-    (when (and direction (<= 0 dir-loc)) (apply GL20/glUniform3f dir-loc direction))
-    (when (and ambient (<= 0 amb-loc)) (apply GL20/glUniform3f amb-loc ambient))
-    (when (and diffuse (<= 0 diff-loc)) (apply GL20/glUniform3f diff-loc diffuse))
-    (when (and specular (<= 0 spec-loc)) (apply GL20/glUniform3f spec-loc specular))
-    (when (<= 0 const-loc) (GL20/glUniform1f const-loc (float (or constant 1.0))))
-    (when (<= 0 lin-loc) (GL20/glUniform1f lin-loc (float (or linear 0.09))))
-    (when (<= 0 quad-loc) (GL20/glUniform1f quad-loc (float (or quadratic 0.032))))
-    (when (<= 0 cut-loc) (GL20/glUniform1f cut-loc (float (or cut-off 0.0))))
-    (when (<= 0 outer-loc) (GL20/glUniform1f outer-loc (float (or outer-cut-off 0.0))))))
+  (let [type-loc (GL45/glGetUniformLocation program "light.type")
+        pos-loc (GL45/glGetUniformLocation program "light.position")
+        dir-loc (GL45/glGetUniformLocation program "light.direction")
+        amb-loc (GL45/glGetUniformLocation program "light.ambient")
+        diff-loc (GL45/glGetUniformLocation program "light.diffuse")
+        spec-loc (GL45/glGetUniformLocation program "light.specular")
+        const-loc (GL45/glGetUniformLocation program "light.constant")
+        lin-loc (GL45/glGetUniformLocation program "light.linear")
+        quad-loc (GL45/glGetUniformLocation program "light.quadratic")
+        cut-loc (GL45/glGetUniformLocation program "light.cutOff")
+        outer-loc (GL45/glGetUniformLocation program "light.outerCutOff")]
+    (when (<= 0 type-loc) (GL45/glUniform1i type-loc (int type)))
+    (when (and position (<= 0 pos-loc)) (apply GL45/glUniform3f pos-loc position))
+    (when (and direction (<= 0 dir-loc)) (apply GL45/glUniform3f dir-loc direction))
+    (when (and ambient (<= 0 amb-loc)) (apply GL45/glUniform3f amb-loc ambient))
+    (when (and diffuse (<= 0 diff-loc)) (apply GL45/glUniform3f diff-loc diffuse))
+    (when (and specular (<= 0 spec-loc)) (apply GL45/glUniform3f spec-loc specular))
+    (when (<= 0 const-loc) (GL45/glUniform1f const-loc (float (or constant 1.0))))
+    (when (<= 0 lin-loc) (GL45/glUniform1f lin-loc (float (or linear 0.09))))
+    (when (<= 0 quad-loc) (GL45/glUniform1f quad-loc (float (or quadratic 0.032))))
+    (when (<= 0 cut-loc) (GL45/glUniform1f cut-loc (float (or cut-off 0.0))))
+    (when (<= 0 outer-loc) (GL45/glUniform1f outer-loc (float (or outer-cut-off 0.0))))))
 
 (defn- run-mode!
   [mode]
@@ -83,7 +83,7 @@
         {:keys [window error-callback]} (setup-window (str "LearnOpenGL - " (name mode) " (LWJGL)") width height)]
     (try
       (GL/createCapabilities)
-      (GL11/glEnable GL11/GL_DEPTH_TEST)
+      (GL45/glEnable GL45/GL_DEPTH_TEST)
       (let [program (lc/create-single-light-program)
             lamp-program (lc/create-lamp-program)
             {:keys [vao vbo]} (lc/create-textured-cube-mesh)
@@ -95,24 +95,24 @@
                                                        (/ width (float height))
                                                        0.1 100.0))
             light-pos (Vector3f. 1.2 1.0 2.0)
-            model-loc (GL20/glGetUniformLocation program "model")
-            view-loc (GL20/glGetUniformLocation program "view")
-            proj-loc (GL20/glGetUniformLocation program "projection")
-            view-pos-loc (GL20/glGetUniformLocation program "viewPos")
-            lamp-model-loc (GL20/glGetUniformLocation lamp-program "model")
-            lamp-view-loc (GL20/glGetUniformLocation lamp-program "view")
-            lamp-proj-loc (GL20/glGetUniformLocation lamp-program "projection")
-            lamp-color-loc (GL20/glGetUniformLocation lamp-program "lightColor")]
+            model-loc (GL45/glGetUniformLocation program "model")
+            view-loc (GL45/glGetUniformLocation program "view")
+            proj-loc (GL45/glGetUniformLocation program "projection")
+            view-pos-loc (GL45/glGetUniformLocation program "viewPos")
+            lamp-model-loc (GL45/glGetUniformLocation lamp-program "model")
+            lamp-view-loc (GL45/glGetUniformLocation lamp-program "view")
+            lamp-proj-loc (GL45/glGetUniformLocation lamp-program "projection")
+            lamp-color-loc (GL45/glGetUniformLocation lamp-program "lightColor")]
         (try
           (configure-window! window width height)
 
-          (GL20/glUseProgram program)
+          (GL45/glUseProgram program)
           (lc/upload-mat! view mat-buf view-loc)
           (lc/upload-mat! projection mat-buf proj-loc)
           (when (<= 0 view-pos-loc)
-            (GL20/glUniform3f view-pos-loc 0.0 0.0 3.0))
+            (GL45/glUniform3f view-pos-loc 0.0 0.0 3.0))
 
-          (GL20/glUseProgram lamp-program)
+          (GL45/glUseProgram lamp-program)
           (lc/upload-mat! view mat-buf lamp-view-loc)
           (lc/upload-mat! projection mat-buf lamp-proj-loc)
 
@@ -146,10 +146,10 @@
                                 :use-diffuse? false
                                 :use-specular? false
                                 :use-emission? false})]
-                (GL11/glClearColor 0.1 0.1 0.12 1.0)
-                (GL11/glClear (bit-or GL11/GL_COLOR_BUFFER_BIT GL11/GL_DEPTH_BUFFER_BIT))
+                (GL45/glClearColor 0.1 0.1 0.12 1.0)
+                (GL45/glClear (bit-or GL45/GL_COLOR_BUFFER_BIT GL45/GL_DEPTH_BUFFER_BIT))
 
-                (GL20/glUseProgram program)
+                (GL45/glUseProgram program)
                 (.identity model)
                 (lc/upload-mat! model mat-buf model-loc)
                 (set-material-uniforms! program material)
@@ -162,27 +162,27 @@
                                               :constant 1.0
                                               :linear 0.09
                                               :quadratic 0.032})
-                (GL30/glBindVertexArray vao)
-                (GL11/glDrawArrays GL11/GL_TRIANGLES 0 36)
+                (GL45/glBindVertexArray vao)
+                (GL45/glDrawArrays GL45/GL_TRIANGLES 0 36)
 
-                (GL20/glUseProgram lamp-program)
+                (GL45/glUseProgram lamp-program)
                 (.identity lamp-model)
                 (.translate lamp-model light-pos)
                 (.scale lamp-model 0.2)
                 (lc/upload-mat! lamp-model mat-buf lamp-model-loc)
                 (when (<= 0 lamp-color-loc)
-                  (GL20/glUniform3f lamp-color-loc (.x light-color) (.y light-color) (.z light-color)))
-                (GL30/glBindVertexArray vao)
-                (GL11/glDrawArrays GL11/GL_TRIANGLES 0 36)
+                  (GL45/glUniform3f lamp-color-loc (.x light-color) (.y light-color) (.z light-color)))
+                (GL45/glBindVertexArray vao)
+                (GL45/glDrawArrays GL45/GL_TRIANGLES 0 36)
 
                 (GLFW/glfwSwapBuffers window)
                 (GLFW/glfwPollEvents)
                 (recur))))
           (finally
-            (delete-if-positive program #(GL20/glDeleteProgram %))
-            (delete-if-positive lamp-program #(GL20/glDeleteProgram %))
-            (delete-if-positive vbo #(GL15/glDeleteBuffers %))
-            (delete-if-positive vao #(GL30/glDeleteVertexArrays %)))))
+            (delete-if-positive program #(GL45/glDeleteProgram %))
+            (delete-if-positive lamp-program #(GL45/glDeleteProgram %))
+            (delete-if-positive vbo #(GL45/glDeleteBuffers %))
+            (delete-if-positive vao #(GL45/glDeleteVertexArrays %)))))
       (finally
         (when (pos? window) (GLFW/glfwDestroyWindow window))
         (GLFW/glfwTerminate)

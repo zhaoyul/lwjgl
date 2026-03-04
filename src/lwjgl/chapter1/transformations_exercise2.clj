@@ -3,7 +3,7 @@
   (:require [lwjgl.utils :as u])
   (:import (org.lwjgl BufferUtils)
            (org.lwjgl.glfw GLFW GLFWFramebufferSizeCallbackI GLFWKeyCallbackI)
-           (org.lwjgl.opengl GL GL11 GL13 GL15 GL20 GL30)
+           (org.lwjgl.opengl GL GL45)
            (org.joml Matrix4f)))
 
 (def ^:private vertex-shader-source
@@ -39,31 +39,31 @@ void main() {
                    -0.5 -0.5  0.0      0.0 0.0
                    -0.5  0.5  0.0      0.0 1.0])
         indices (int-array [0 1 3 1 2 3])
-        vao (GL30/glGenVertexArrays)
-        vbo (GL15/glGenBuffers)
-        ebo (GL15/glGenBuffers)
+        vao (GL45/glGenVertexArrays)
+        vbo (GL45/glGenBuffers)
+        ebo (GL45/glGenBuffers)
         vbuf (BufferUtils/createFloatBuffer (alength vertices))
         ibuf (BufferUtils/createIntBuffer (alength indices))
         stride (* 5 Float/BYTES)]
-    (GL30/glBindVertexArray vao)
+    (GL45/glBindVertexArray vao)
     (.put vbuf vertices)
     (.flip vbuf)
-    (GL15/glBindBuffer GL15/GL_ARRAY_BUFFER vbo)
-    (GL15/glBufferData GL15/GL_ARRAY_BUFFER vbuf GL15/GL_STATIC_DRAW)
+    (GL45/glBindBuffer GL45/GL_ARRAY_BUFFER vbo)
+    (GL45/glBufferData GL45/GL_ARRAY_BUFFER vbuf GL45/GL_STATIC_DRAW)
     (.put ibuf indices)
     (.flip ibuf)
-    (GL15/glBindBuffer GL15/GL_ELEMENT_ARRAY_BUFFER ebo)
-    (GL15/glBufferData GL15/GL_ELEMENT_ARRAY_BUFFER ibuf GL15/GL_STATIC_DRAW)
-    (GL20/glVertexAttribPointer 0 3 GL11/GL_FLOAT false stride 0)
-    (GL20/glEnableVertexAttribArray 0)
-    (GL20/glVertexAttribPointer 1 2 GL11/GL_FLOAT false stride (* 3 Float/BYTES))
-    (GL20/glEnableVertexAttribArray 1)
-    (GL30/glBindVertexArray 0)
+    (GL45/glBindBuffer GL45/GL_ELEMENT_ARRAY_BUFFER ebo)
+    (GL45/glBufferData GL45/GL_ELEMENT_ARRAY_BUFFER ibuf GL45/GL_STATIC_DRAW)
+    (GL45/glVertexAttribPointer 0 3 GL45/GL_FLOAT false stride 0)
+    (GL45/glEnableVertexAttribArray 0)
+    (GL45/glVertexAttribPointer 1 2 GL45/GL_FLOAT false stride (* 3 Float/BYTES))
+    (GL45/glEnableVertexAttribArray 1)
+    (GL45/glBindVertexArray 0)
     {:vao vao :vbo vbo :ebo ebo}))
 
 (defn- create-texture
   [w h]
-  (let [tex (GL11/glGenTextures)
+  (let [tex (GL45/glGenTextures)
         buf (BufferUtils/createByteBuffer (* w h 3))]
     (dotimes [y h]
       (dotimes [x w]
@@ -75,12 +75,12 @@ void main() {
           (.put buf (inc idx) (unchecked-byte g))
           (.put buf (+ idx 2) (unchecked-byte b)))))
     (.rewind buf)
-    (GL11/glBindTexture GL11/GL_TEXTURE_2D tex)
-    (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_MIN_FILTER GL11/GL_LINEAR)
-    (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_MAG_FILTER GL11/GL_LINEAR)
-    (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_WRAP_S GL11/GL_REPEAT)
-    (GL11/glTexParameteri GL11/GL_TEXTURE_2D GL11/GL_TEXTURE_WRAP_T GL11/GL_REPEAT)
-    (GL11/glTexImage2D GL11/GL_TEXTURE_2D 0 GL11/GL_RGB w h 0 GL11/GL_RGB GL11/GL_UNSIGNED_BYTE buf)
+    (GL45/glBindTexture GL45/GL_TEXTURE_2D tex)
+    (GL45/glTexParameteri GL45/GL_TEXTURE_2D GL45/GL_TEXTURE_MIN_FILTER GL45/GL_LINEAR)
+    (GL45/glTexParameteri GL45/GL_TEXTURE_2D GL45/GL_TEXTURE_MAG_FILTER GL45/GL_LINEAR)
+    (GL45/glTexParameteri GL45/GL_TEXTURE_2D GL45/GL_TEXTURE_WRAP_S GL45/GL_REPEAT)
+    (GL45/glTexParameteri GL45/GL_TEXTURE_2D GL45/GL_TEXTURE_WRAP_T GL45/GL_REPEAT)
+    (GL45/glTexImage2D GL45/GL_TEXTURE_2D 0 GL45/GL_RGB w h 0 GL45/GL_RGB GL45/GL_UNSIGNED_BYTE buf)
     tex))
 
 (defn- upload-transform!
@@ -89,7 +89,7 @@ void main() {
   (.get m buf)
   (.rewind buf)
   (when (<= 0 loc)
-    (GL20/glUniformMatrix4fv loc false buf)))
+    (GL45/glUniformMatrix4fv loc false buf)))
 
 (defn run-example!
   []
@@ -104,8 +104,8 @@ void main() {
       (let [program (u/create-program vertex-shader-source fragment-shader-source)
             {:keys [vao vbo ebo]} (create-quad)
             tex (create-texture 256 256)
-            transform-loc (GL20/glGetUniformLocation program "transform")
-            tex-loc (GL20/glGetUniformLocation program "texture1")
+            transform-loc (GL45/glGetUniformLocation program "transform")
+            tex-loc (GL45/glGetUniformLocation program "texture1")
             buf (BufferUtils/createFloatBuffer 16)]
         (try
           (u/init-viewport! window width height)
@@ -113,7 +113,7 @@ void main() {
            window
            (reify GLFWFramebufferSizeCallbackI
              (invoke [_ _ w h]
-               (GL11/glViewport 0 0 w h))))
+               (GL45/glViewport 0 0 w h))))
           (GLFW/glfwSetKeyCallback
            window
            (reify GLFWKeyCallbackI
@@ -121,8 +121,8 @@ void main() {
                (when (and (= key GLFW/GLFW_KEY_ESCAPE)
                           (= action GLFW/GLFW_PRESS))
                  (GLFW/glfwSetWindowShouldClose win true)))))
-          (GL20/glUseProgram program)
-          (when (<= 0 tex-loc) (GL20/glUniform1i tex-loc 0))
+          (GL45/glUseProgram program)
+          (when (<= 0 tex-loc) (GL45/glUniform1i tex-loc 0))
           (loop []
             (when-not (GLFW/glfwWindowShouldClose window)
               (let [time (float (GLFW/glfwGetTime))
@@ -132,22 +132,22 @@ void main() {
                                 (.translate -0.3 0.3 0.0)
                                 (.rotate time 0.0 0.0 1.0)
                                 (.scale scale))]
-                (GL11/glClearColor 0.2 0.3 0.3 1.0)
-                (GL11/glClear GL11/GL_COLOR_BUFFER_BIT)
-                (GL13/glActiveTexture GL13/GL_TEXTURE0)
-                (GL11/glBindTexture GL11/GL_TEXTURE_2D tex)
-                (GL30/glBindVertexArray vao)
+                (GL45/glClearColor 0.2 0.3 0.3 1.0)
+                (GL45/glClear GL45/GL_COLOR_BUFFER_BIT)
+                (GL45/glActiveTexture GL45/GL_TEXTURE0)
+                (GL45/glBindTexture GL45/GL_TEXTURE_2D tex)
+                (GL45/glBindVertexArray vao)
                 (upload-transform! transform buf transform-loc)
-                (GL11/glDrawElements GL11/GL_TRIANGLES 6 GL11/GL_UNSIGNED_INT 0)
+                (GL45/glDrawElements GL45/GL_TRIANGLES 6 GL45/GL_UNSIGNED_INT 0)
                 (GLFW/glfwSwapBuffers window)
                 (GLFW/glfwPollEvents)
                 (recur))))
           (finally
-            (delete-if-positive program #(GL20/glDeleteProgram %))
-            (delete-if-positive vbo #(GL15/glDeleteBuffers %))
-            (delete-if-positive ebo #(GL15/glDeleteBuffers %))
-            (delete-if-positive vao #(GL30/glDeleteVertexArrays %))
-            (delete-if-positive tex #(GL11/glDeleteTextures %)))))
+            (delete-if-positive program #(GL45/glDeleteProgram %))
+            (delete-if-positive vbo #(GL45/glDeleteBuffers %))
+            (delete-if-positive ebo #(GL45/glDeleteBuffers %))
+            (delete-if-positive vao #(GL45/glDeleteVertexArrays %))
+            (delete-if-positive tex #(GL45/glDeleteTextures %)))))
       (finally
         (when (pos? window) (GLFW/glfwDestroyWindow window))
         (GLFW/glfwTerminate)
