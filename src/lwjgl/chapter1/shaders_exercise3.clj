@@ -8,7 +8,7 @@
 (def ^:private vertex-shader-source
   "#version 330 core
 layout (location = 0) in vec3 aPos;
-layout (location = 2) in vec3 aColor;
+layout (location = 2) in vec3 aColor; //注意 `location`
 out vec3 vertexColor;
 void main() {
     gl_Position = vec4(aPos, 1.0);
@@ -45,6 +45,7 @@ void main() {
     (GL45/glBufferData GL45/GL_ARRAY_BUFFER buf GL45/GL_STATIC_DRAW)
     (GL45/glVertexAttribPointer 0 3 GL45/GL_FLOAT false stride 0)
     (GL45/glEnableVertexAttribArray 0)
+    ;; 注意 `location`
     (GL45/glVertexAttribPointer 2 3 GL45/GL_FLOAT false stride (* 3 Float/BYTES))
     (GL45/glEnableVertexAttribArray 2)
     (GL45/glBindVertexArray 0)
