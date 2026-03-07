@@ -31,8 +31,8 @@ Just poking the scene and watching it change in real time.
 - [x] 4.5.textures_exercise3 [[file:src/lwjgl/chapter1/textures_exercise3.clj][代码]] [[elisp:(shell-command "./run.sh textures-exercise3")][执行]]
 - [x] 4.6.textures_exercise4 [[file:src/lwjgl/chapter1/textures_exercise4.clj][代码]] [[elisp:(shell-command "./run.sh textures-exercise4")][执行]]
 - [x] 5.1.transformations [[file:src/lwjgl/chapter1/transformations.clj][代码]] [[elisp:(shell-command "./run.sh transformations")][执行]]
-- [x] 5.2.transformations_exercise1 [[file:src/lwjgl/chapter1/transformations_exercise1.clj][代码]] [[elisp:(shell-command "./run.sh transformations-exercise1")][执行]]
-- [x] 5.3.transformations_exercise2 [[file:src/lwjgl/chapter1/transformations_exercise2.clj][代码]] [[elisp:(shell-command "./run.sh transformations-exercise2")][执行]]
+- [x] 5.2.transformations_exercise1 [[file:src/lwjgl/chapter1/transformations_exercise1.clj][代码]] [[elisp:(shell-command "./run.sh transformations-ex1")][执行]]
+- [x] 5.3.transformations_exercise2 [[file:src/lwjgl/chapter1/transformations_exercise2.clj][代码]] [[elisp:(shell-command "./run.sh transformations-ex2")][执行]]
 - [x] 6.1.coordinate_systems [[file:src/lwjgl/chapter1/coordinate_systems.clj][代码]] [[elisp:(shell-command "./run.sh coordinate-systems")][执行]]
 - [x] 6.2.coordinate_systems_depth [[file:src/lwjgl/chapter1/coordinate_systems_depth.clj][代码]] [[elisp:(shell-command "./run.sh coordinate-systems-depth")][执行]]
 - [x] 6.3.coordinate_systems_multiple [[file:src/lwjgl/chapter1/coordinate_systems_multiple.clj][代码]] [[elisp:(shell-command "./run.sh coordinate-systems-multiple")][执行]]
@@ -41,8 +41,8 @@ Just poking the scene and watching it change in real time.
 - [x] 7.2.camera_keyboard_dt [[file:src/lwjgl/chapter1/camera.clj][代码]] [[elisp:(shell-command "./run.sh camera-keyboard-dt")][执行]]
 - [x] 7.3.camera_mouse_zoom [[file:src/lwjgl/chapter1/camera.clj][代码]] [[elisp:(shell-command "./run.sh camera-mouse-zoom")][执行]]
 - [x] 7.4.camera_class [[file:src/lwjgl/chapter1/camera.clj][代码]] [[elisp:(shell-command "./run.sh camera-class")][执行]]
-- [x] 7.5.camera_exercise1 [[file:src/lwjgl/chapter1/camera.clj][代码]] [[elisp:(shell-command "./run.sh camera-exercise1")][执行]]
-- [x] 7.6.camera_exercise2 [[file:src/lwjgl/chapter1/camera.clj][代码]] [[elisp:(shell-command "./run.sh camera-exercise2")][执行]]
+- [x] 7.5.camera_exercise1 [[file:src/lwjgl/chapter1/camera.clj][代码]] [[elisp:(shell-command "./run.sh camera-ex1")][执行]]
+- [x] 7.6.camera_exercise2 [[file:src/lwjgl/chapter1/camera.clj][代码]] [[elisp:(shell-command "./run.sh camera-ex2")][执行]]
 
 * Chapter 2 migration TODO (Lighting)
 - [x] 1.colors [[file:src/lwjgl/chapter2/colors.clj][代码]] [[elisp:(shell-command "./run.sh colors")][执行]]

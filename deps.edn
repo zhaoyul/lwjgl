@@ -34,7 +34,7 @@
                                            "--enable-native-access=ALL-UNNAMED"]}
 
            :hello-point {:main-opts ["-m" "lwjgl.chapter1.hello-point"]
-                            :jvm-opts ["-XstartOnFirstThread"]}
+                         :jvm-opts ["-XstartOnFirstThread"]}
 
            :hello-triangle {:main-opts ["-m" "lwjgl.chapter1.hello-triangle"]
                             :jvm-opts ["-XstartOnFirstThread"
@@ -183,12 +183,12 @@
            :camera-class {:main-opts ["-m" "lwjgl.chapter1.camera" "class"]
                           :jvm-opts ["-XstartOnFirstThread"
                                      "--enable-native-access=ALL-UNNAMED"]}
-           :camera-exercise1 {:main-opts ["-m" "lwjgl.chapter1.camera" "exercise1"]
-                              :jvm-opts ["-XstartOnFirstThread"
-                                         "--enable-native-access=ALL-UNNAMED"]}
-           :camera-exercise2 {:main-opts ["-m" "lwjgl.chapter1.camera" "exercise2"]
-                              :jvm-opts ["-XstartOnFirstThread"
-                                         "--enable-native-access=ALL-UNNAMED"]}
+           :camera-ex1 {:main-opts ["-m" "lwjgl.chapter1.camera" "exercise1"]
+                        :jvm-opts ["-XstartOnFirstThread"
+                                   "--enable-native-access=ALL-UNNAMED"]}
+           :camera-ex2 {:main-opts ["-m" "lwjgl.chapter1.camera" "exercise2"]
+                        :jvm-opts ["-XstartOnFirstThread"
+                                   "--enable-native-access=ALL-UNNAMED"]}
            :tetrahedron-input {:main-opts ["-m" "lwjgl.chapter1.tetrahedron-input"]
                                :jvm-opts ["-XstartOnFirstThread"
                                           "--enable-native-access=ALL-UNNAMED"]}
