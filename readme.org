@@ -36,7 +36,7 @@ Just poking the scene and watching it change in real time.
 - [x] 6.1.coordinate_systems [[file:src/lwjgl/chapter1/coordinate_systems.clj][代码]] [[elisp:(shell-command "./run.sh coordinate-systems")][执行]]
 - [x] 6.2.coordinate_systems_depth [[file:src/lwjgl/chapter1/coordinate_systems_depth.clj][代码]] [[elisp:(shell-command "./run.sh coordinate-systems-depth")][执行]]
 - [x] 6.3.coordinate_systems_multiple [[file:src/lwjgl/chapter1/coordinate_systems_multiple.clj][代码]] [[elisp:(shell-command "./run.sh coordinate-systems-multiple")][执行]]
-- [x] 6.4.coordinate_systems_exercise3 [[file:src/lwjgl/chapter1/coordinate_systems_exercise3.clj][代码]] [[elisp:(shell-command "./run.sh coordinate-systems-exercise3")][执行]]
+- [x] 6.4.coordinate_systems_exercise3 [[file:src/lwjgl/chapter1/coordinate_systems_exercise3.clj][代码]] [[elisp:(shell-command "./run.sh coordinate-systems-ex3")][执行]]
 - [x] 7.1.camera_circle [[file:src/lwjgl/chapter1/camera.clj][代码]] [[elisp:(shell-command "./run.sh camera-circle")][执行]]
 - [x] 7.2.camera_keyboard_dt [[file:src/lwjgl/chapter1/camera.clj][代码]] [[elisp:(shell-command "./run.sh camera-keyboard-dt")][执行]]
 - [x] 7.3.camera_mouse_zoom [[file:src/lwjgl/chapter1/camera.clj][代码]] [[elisp:(shell-command "./run.sh camera-mouse-zoom")][执行]]
