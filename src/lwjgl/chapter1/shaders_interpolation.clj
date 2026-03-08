@@ -43,10 +43,13 @@ void main() {
     (.flip buf)
     (GL45/glBindBuffer GL45/GL_ARRAY_BUFFER vbo)
     (GL45/glBufferData GL45/GL_ARRAY_BUFFER buf GL45/GL_STATIC_DRAW)
+    ;; 属性1, 每个顶点3个float, 偏移0个float
     (GL45/glVertexAttribPointer 0 3 GL45/GL_FLOAT false stride 0)
     (GL45/glEnableVertexAttribArray 0)
+    ;; 属性2, 每个顶点3个float, 偏移3个float
     (GL45/glVertexAttribPointer 1 3 GL45/GL_FLOAT false stride (* 3 Float/BYTES))
     (GL45/glEnableVertexAttribArray 1)
+    ;; 解绑 VAO, 防止误改
     (GL45/glBindVertexArray 0)
     {:vao vao :vbo vbo}))
 

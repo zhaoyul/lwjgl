@@ -124,7 +124,9 @@ void main() {
             (when-not (GLFW/glfwWindowShouldClose window)
               (let [time (float (GLFW/glfwGetTime))
                     transform (doto (Matrix4f.)
+                                ;; 重置为单位矩阵
                                 (.identity)
+                                ;; 保持图元位于原点, 让旋转发生在屏幕正中.
                                 (.translate 0.5 -0.5 0.0)
                                 (.rotate time 0.0 0.0 1.0))]
                 (GL45/glUseProgram program)
