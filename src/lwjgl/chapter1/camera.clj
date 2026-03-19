@@ -170,13 +170,13 @@ void main() {
   [window {:keys [^Vector3f pos ^Vector3f front ^Vector3f right] :as state} dt restrict-ground?]
   (let [velocity (float (* base-speed dt))]
     (when (= GLFW/GLFW_PRESS (GLFW/glfwGetKey window GLFW/GLFW_KEY_W))
-      (.fma pos front velocity))
+      (.fma pos velocity front))
     (when (= GLFW/GLFW_PRESS (GLFW/glfwGetKey window GLFW/GLFW_KEY_S))
-      (.fma pos front (- velocity)))
+      (.fma pos (- velocity) front))
     (when (= GLFW/GLFW_PRESS (GLFW/glfwGetKey window GLFW/GLFW_KEY_A))
-      (.fma pos right (- velocity)))
+      (.fma pos (- velocity) right))
     (when (= GLFW/GLFW_PRESS (GLFW/glfwGetKey window GLFW/GLFW_KEY_D))
-      (.fma pos right velocity))
+      (.fma pos velocity right))
     (when restrict-ground?
       (.setComponent pos 1 (float 0.0))))
   state)
